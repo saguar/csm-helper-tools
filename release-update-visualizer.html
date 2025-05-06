@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salesforce Release Updates Visualizer</title> <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6; /* Light gray background */
+            color: #333; /* Dark gray text */
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        .card {
+            background-color: #ffffff; /* White background for cards */
+            border-radius: 0.5rem; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.2s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px); /* Slight lift on hover */
+        }
+        .status-needsaction {
+            border-left: 8px solid #3b82f6; /* Blue border for NeedsAction */
+        }
+        .status-overdue {
+            border-left: 8px solid #ef4444; /* Red border for Overdue */
+        }
+        .badge {
+            display: inline-block;
+            background-color: #e5e7eb; /* Light gray background for badges */
+            color: #4b5563; /* Dark gray text for badges */
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px; /* Pill shape */
+            font-size: 0.875rem; /* Small text */
+            font-weight: 600;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .detail {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb; /* Separator line */
+            font-size: 0.95rem;
+            color: #555;
+        }
+        input[type="file"], input[type="text"] {
+            margin-bottom: 1.5rem;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: #ffffff;
+        }
+         input[type="text"] {
+            display: block; /* Make search input a block element */
+            margin-left: auto; /* Center the search input */
+            margin-right: auto; /* Center the search input */
+            width: 95%; /* Make it take most of the width */
+            max-width: 600px; /* Limit maximum width */
+        }
+        .collapsible-header {
+            cursor: pointer;
+            color: #3b82f6; /* Blue text for the link */
+            text-decoration: underline;
+            margin-bottom: 0.5rem;
+            display: inline-block; /* Allow margin-bottom */
+        }
+        .collapsible-content {
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            background-color: #f9fafb; /* Light background for content */
+            margin-bottom: 1.5rem;
+            display: none; /* Initially hidden */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center my-6">Salesforce Release Updates Visualizer</h1> <label for="csvFile" class="block text-center text-gray-700 font-semibold mb-2">Upload here the CSV file exported from Blacktab</label> <div class="flex justify-center mb-6">
+             <input type="file" id="csvFile" accept=".csv" class="block w-full md:w-auto">
+        </div>
+
+        <div class="flex justify-center">
+             <span id="instructionsToggle" class="collapsible-header">Don't you know how to retrieve the CSV file? Click here for the instructions</span>
+        </div>
+        <div id="instructionsContent" class="collapsible-content">
+            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        </div>
+
+
+        <input type="text" id="searchInput" placeholder="Search by Release Update Name...">
+
+        <div id="updatesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <p id="initialMessage" class="text-center text-gray-600 col-span-full">Please upload a CSV file to view the release updates.</p>
+        </div>
+
+        <div id="errorMessage" class="text-center text-red-600 mt-4 hidden col-span-full"></div>
+
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('csvFile');
+        const updatesContainer = document.getElementById('updatesContainer');
+        const errorMessageDiv = document.getElementById('errorMessage');
+        const initialMessage = document.getElementById('initialMessage');
+        const searchInput = document.getElementById('searchInput'); // Get the search input element
+        const instructionsToggle = document.getElementById('instructionsToggle'); // Get the instructions toggle element
+        const instructionsContent = document.getElementById('instructionsContent'); // Get the instructions content element
+
+
+        let allUpdatesData = []; // Variable to store the original parsed data
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                return; // No file selected
+            }
+
+            // Hide initial message and previous errors
+            initialMessage.classList.add('hidden');
+            errorMessageDiv.classList.add('hidden');
+            errorMessageDiv.textContent = '';
+            updatesContainer.innerHTML = ''; // Clear previous content
+            searchInput.value = ''; // Clear search input on new file load
+
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                const text = e.target.result;
+                try {
+                    allUpdatesData = parseCSV(text); // Store the parsed data
+                    displayUpdates(allUpdatesData); // Display all data initially
+                } catch (error) {
+                    console.error("Error parsing or displaying CSV:", error); // Log the actual error to console
+                    // Display a more specific message if available, otherwise a general one
+                    errorMessageDiv.textContent = `Error processing file: ${error.message || 'An unknown error occurred during parsing.'} Please ensure it is a valid CSV and check the browser console for details.`;
+                    errorMessageDiv.classList.remove('hidden');
+                    allUpdatesData = []; // Clear data on error
+                     updatesContainer.innerHTML = ''; // Clear updates container on error
+                }
+            };
+
+            reader.onerror = (e) => {
+                console.error("Error reading file:", e); // Log the actual error to console
+                errorMessageDiv.textContent = 'Error reading file.';
+                errorMessageDiv.classList.remove('hidden');
+                 allUpdatesData = []; // Clear data on error
+                 updatesContainer.innerHTML = ''; // Clear updates container on error
+            };
+
+            reader.readAsText(file);
+        });
+
+        // Add event listener for the search input
+        searchInput.addEventListener('input', (event) => {
+            const searchTerm = event.target.value.toLowerCase();
+            const filteredUpdates = allUpdatesData.filter(update => {
+                // Check if 'Release Update Name' exists and contains the search term (case-insensitive)
+                return update['Release Update Name'] && update['Release Update Name'].toLowerCase().includes(searchTerm);
+            });
+            displayUpdates(filteredUpdates); // Display filtered data
+        });
+
+         // Add event listener for the instructions toggle
+        instructionsToggle.addEventListener('click', () => {
+            instructionsContent.style.display = instructionsContent.style.display === 'none' || instructionsContent.style.display === '' ? 'block' : 'none';
+        });
+
+
+        // More robust CSV parsing function to handle quoted fields
+        function parseCSV(text) {
+            const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== ''); // Split into lines, handle different line endings, remove empty lines
+            if (lines.length === 0) {
+                 throw new Error("CSV file is empty.");
+            }
+
+            const headers = [];
+            const data = [];
+            const delimiter = ',';
+            const quote = '"';
+
+            // Parse headers (first line)
+            let headerLine = lines[0];
+            let inQuote = false;
+            let field = '';
+            for (let i = 0; i < headerLine.length; i++) {
+                const char = headerLine[i];
+                if (char === quote) {
+                    if (inQuote && headerLine[i + 1] === quote) { // Handle escaped quotes ""
+                        field += quote;
+                        i++; // Skip the next quote
+                    } else {
+                        inQuote = !inQuote;
+                    }
+                } else if (char === delimiter && !inQuote) {
+                    headers.push(field.trim());
+                    field = '';
+                } else {
+                    field += char;
+                }
+            }
+            headers.push(field.trim()); // Add the last header
+
+
+            // Basic validation: check if expected headers are present
+            const requiredHeaders = ["Date", "OrganizationId", "Release Update Name", "Status", "Due by Date", "Badge", "Test Run Avail", "Detail", "Enforcement"];
+             const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+             if (missingHeaders.length > 0) {
+                 throw new Error(`Missing required headers: ${missingHeaders.join(', ')}`);
+             }
+
+
+            // Parse data rows
+            for (let i = 1; i < lines.length; i++) {
+                const dataLine = lines[i];
+                const rowObject = {};
+                let currentField = '';
+                let currentFieldIndex = 0;
+                inQuote = false; // Reset for each row
+
+                 for (let j = 0; j < dataLine.length; j++) {
+                    const char = dataLine[j];
+                     if (char === quote) {
+                        if (inQuote && dataLine[j + 1] === quote) { // Handle escaped quotes ""
+                            currentField += quote;
+                            j++; // Skip the next quote
+                        } else {
+                            inQuote = !inQuote;
+                        }
+                    } else if (char === delimiter && !inQuote) {
+                        rowObject[headers[currentFieldIndex]] = currentField.trim();
+                        currentField = '';
+                        currentFieldIndex++;
+                    } else {
+                        currentField += char;
+                    }
+                }
+                // Add the last field of the row
+                if (headers[currentFieldIndex] !== undefined) {
+                     rowObject[headers[currentFieldIndex]] = currentField.trim();
+                }
+
+
+                // Ensure all headers have a corresponding value, even if empty
+                headers.forEach(header => {
+                    if (rowObject[header] === undefined) {
+                        rowObject[header] = '';
+                    }
+                });
+
+                data.push(rowObject);
+            }
+
+            return data;
+        }
+
+        // Function to format date from YYMMDD to dd/MM/YYYY
+        function formatDate(yyyymmdd) {
+            if (!yyyymmdd || typeof yyyymmdd !== 'string' || yyyymmdd.length !== 6) {
+                return 'Invalid Date'; // Handle invalid input
+            }
+            const year = '20' + yyyymmdd.substring(0, 2); // Assuming 21st century
+            const month = yyyymmdd.substring(2, 4);
+            const day = yyyymmdd.substring(4, 6);
+
+            // Basic validation for month and day (optional but good practice)
+            if (parseInt(month) > 12 || parseInt(day) > 31) {
+                 return 'Invalid Date';
+            }
+
+            return `${day}/${month}/${year}`;
+        }
+
+
+        function displayUpdates(data) {
+            updatesContainer.innerHTML = ''; // Clear previous content before displaying
+
+            if (data.length === 0) {
+                updatesContainer.innerHTML = '<p class="text-center text-gray-600 col-span-full">No release updates found matching your criteria.</p>';
+                return;
+            }
+
+            data.forEach(update => {
+                const card = document.createElement('div');
+                // Add status-specific class for styling
+                const statusClass = update.Status ? update.Status.toLowerCase().replace(/\s+/g, '') : ''; // Handle potential empty status
+                card.classList.add('card', `status-${statusClass}`, 'flex', 'flex-col'); // Use flexbox for layout within card
+
+                // Format the Due by Date
+                const formattedDueDate = formatDate(update['Due by Date']);
+
+
+                card.innerHTML = `
+                    <h2 class="text-xl font-semibold mb-2">${update['Release Update Name'] || 'Unnamed Update'}</h2>
+                    <div class="flex flex-wrap items-center text-sm text-gray-700 mb-2">
+                        <span class="mr-4"><strong>Status:</strong> ${update.Status || 'N/A'}</span>
+                        <span><strong>Due by:</strong> ${formattedDueDate}</span>
+                    </div>
+                    <div class="flex flex-wrap items-center text-sm text-gray-700 mb-2">
+                         ${update.Badge ? `<span class="badge">${update.Badge}</span>` : ''}
+                         <span class="mr-4"><strong>Test Run Available:</strong> ${update['Test Run Avail'] || 'N/A'}</span>
+                         <span><strong>Enforcement:</strong> ${update.Enforcement || 'N/A'}</span>
+                    </div>
+                    <div class="detail">
+                        <p>${update.Detail || 'No details provided.'}</p>
+                    </div>
+                `;
+                updatesContainer.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
