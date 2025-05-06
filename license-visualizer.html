@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>License Adoption Visualizer</title>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+    }
+    header {
+      background-color: #2F66AB;
+      color: #fff;
+      padding: 16px;
+      text-align: center;
+    }
+    .container {
+      /* Maggiore larghezza e minori margini laterali */
+      max-width: 1200px;
+      margin: 10px auto;
+      padding: 10px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      box-sizing: border-box;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    select, input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 3px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+    .button-group {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+    }
+    button {
+      background-color: #2F66AB;
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    button:hover {
+      background-color: #244d7e;
+    }
+    h2, h3 {
+      margin-top: 0;
+    }
+    #licenseList ul {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    #licenseList li {
+      margin-bottom: 8px;
+    }
+    /* Stile per i pulsanti Edit */
+    .edit-btn {
+      background-color: #FFA500;
+      margin-left: 8px;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .edit-btn:hover {
+      background-color: #e59400;
+    }
+    footer {
+      text-align: center;
+      padding: 10px;
+      font-size: 0.85rem;
+      color: #666;
+    }
+    /* Dynamic grid per i grafici */
+    .chart-grid {
+      display: grid;
+      gap: 20px;
+      margin-top: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+    .chart-block {
+      background: #fafafa;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .chart-header-banner {
+      font-weight: bold;
+      text-align: center;
+      background-color: #ECECEC;
+      padding: 8px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 1rem;
+    }
+    .stats-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+      justify-content: center;
+    }
+    .stat-box {
+      flex: 0 0 auto;
+      background-color: #ECECEC;
+      border-radius: 8px;
+      padding: 8px 12px;
+      text-align: center;
+      min-width: 110px;
+      max-width: 140px;
+    }
+    .stat-box p {
+      margin: 0 0 5px;
+      font-size: 0.85rem;
+      color: #555;
+    }
+    .stat-box h2 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: bold;
+      color: #333;
+    }
+    canvas {
+      max-width: 100%;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>License Adoption Visualizer</h1>
+  </header>
+
+  <div class="container">
+    <h2>Add or Update License</h2>
+    <!-- Global Reference Month -->
+    <div class="form-group">
+      <label for="referenceMonth">Reference Month (Global):</label>
+      <select id="referenceMonth">
+        <option value="" disabled selected>-- Select Reference Month --</option>
+        <option value="January">January</option>
+        <option value="February">February</option>
+        <option value="March">March</option>
+        <option value="April">April</option>
+        <option value="May">May</option>
+        <option value="June">June</option>
+        <option value="July">July</option>
+        <option value="August">August</option>
+        <option value="September">September</option>
+        <option value="October">October</option>
+        <option value="November">November</option>
+        <option value="December">December</option>
+      </select>
+      <p style="font-style: italic; font-size: 0.85rem;">Select once; this applies to all entered licenses.</p>
+    </div>
+
+    <!-- License Type -->
+    <div class="form-group">
+      <label for="licenseType">License Type:</label>
+      <select id="licenseType">
+        <option value="" disabled selected>-- Select License Type --</option>
+        <option value="activation">Activation Based</option>
+        <option value="consumption">Consumption Based</option>
+      </select>
+    </div>
+
+    <!-- License Name -->
+    <div class="form-group">
+      <label for="licenseName">License Name:</label>
+      <input type="text" id="licenseName" placeholder="e.g., Service Cloud" />
+    </div>
+
+    <!-- Activation Fields -->
+    <div class="activation-fields hidden">
+      <div class="form-group">
+        <label for="provisioned">Provisioned Licenses:</label>
+        <input type="number" id="provisioned" placeholder="e.g., 13756" />
+      </div>
+      <div class="form-group">
+        <label for="activated">Activated Licenses:</label>
+        <input type="number" id="activated" placeholder="e.g., 12359" />
+      </div>
+      <div class="form-group">
+        <label for="mau">Monthly Active Users (Optional):</label>
+        <input type="number" id="mau" placeholder="e.g., 12350" />
+      </div>
+      <div class="form-group">
+        <label for="dau">Daily Active Users (Optional):</label>
+        <input type="number" id="dau" placeholder="e.g., 7178" />
+      </div>
+    </div>
+
+    <!-- Consumption Fields -->
+    <div class="consumption-fields hidden">
+      <div class="form-group">
+        <label for="allowance">Allowance:</label>
+        <input type="number" id="allowance" placeholder="e.g., 5000" />
+      </div>
+      <div class="form-group">
+        <label for="usage">Usage:</label>
+        <input type="number" id="usage" placeholder="e.g., 3000" />
+      </div>
+    </div>
+
+    <!-- CSV Upload -->
+    <div class="form-group">
+      <label for="csvUpload">Upload CSV File:</label>
+      <input type="file" id="csvUpload" accept=".csv" />
+      <p style="font-style: italic; font-size: 0.85rem;">Upload a CSV file to import license data automatically.</p>
+    </div>
+
+    <!-- Button Group: Save (Add/Update) and Generate Chart -->
+    <div class="button-group">
+      <button id="saveLicenseBtn">Add License</button>
+      <button id="generateChartBtn">Generate Chart</button>
+    </div>
+  </div>
+
+  <!-- Entered Licenses List -->
+  <div class="container">
+    <h3>Entered Licenses</h3>
+    <div id="licenseList"></div>
+  </div>
+
+  <!-- Charts -->
+  <div class="container" id="chartRoot"></div>
+
+  <footer>
+    This app was developed by Saverio Guardato for experimental purposes only.
+  </footer>
+
+  <script>
+    // Array per memorizzare le licenze
+    let licensesData = [];
+    let editIndex = -1; // -1 indica modalità "add", altrimenti indice in licensesData
+
+    // Riferimenti DOM
+    const referenceMonthSelect = document.getElementById('referenceMonth');
+    const licenseTypeSelect = document.getElementById('licenseType');
+    const licenseNameInput = document.getElementById('licenseName');
+    const provisionedInput = document.getElementById('provisioned');
+    const activatedInput = document.getElementById('activated');
+    const mauInput = document.getElementById('mau');
+    const dauInput = document.getElementById('dau');
+    const allowanceInput = document.getElementById('allowance');
+    const usageInput = document.getElementById('usage');
+    const csvUploadInput = document.getElementById('csvUpload');
+
+    const activationFields = document.querySelector('.activation-fields');
+    const consumptionFields = document.querySelector('.consumption-fields');
+
+    const saveLicenseBtn = document.getElementById('saveLicenseBtn');
+    const generateChartBtn = document.getElementById('generateChartBtn');
+    const licenseList = document.getElementById('licenseList');
+    const chartRoot = document.getElementById('chartRoot');
+
+    // Alterna visualizzazione campi in base al tipo di licenza
+    licenseTypeSelect.addEventListener('change', () => {
+      const selectedType = licenseTypeSelect.value;
+      if (selectedType === 'activation') {
+        activationFields.classList.remove('hidden');
+        consumptionFields.classList.add('hidden');
+      } else if (selectedType === 'consumption') {
+        consumptionFields.classList.remove('hidden');
+        activationFields.classList.add('hidden');
+      }
+    });
+
+    // Gestione del caricamento CSV
+    csvUploadInput.addEventListener('change', handleCSVUpload);
+    function handleCSVUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const text = event.target.result;
+        parseCSV(text);
+        // Aggiorna lista e grafici automaticamente
+        updateLicenseList();
+        renderCharts();
+      };
+      reader.readAsText(file);
+    }
+
+    // Funzione semplice di parsing CSV (assume separatore virgola, intestazione nella prima riga)
+    function parseCSV(text) {
+      licensesData = []; // Sovrascrivi eventuali dati esistenti
+      const lines = text.trim().split('\n');
+      if (lines.length < 2) return; // Nessun dato
+      const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+      // Atteso: licenseType, licenseName, provisioned, activated, mau, dau, allowance, usage
+      for (let i = 1; i < lines.length; i++) {
+        const row = lines[i].split(',').map(cell => cell.trim());
+        if (row.length < header.length) continue; // Salta righe incomplete
+        const record = {};
+        for (let j = 0; j < header.length; j++) {
+          record[header[j]] = row[j];
+        }
+        // Crea oggetto license, convertendo i valori numerici (se presenti)
+        licensesData.push({
+          licenseType: record['licensetype'] || '', 
+          licenseName: record['licensename'] || '',
+          provisioned: parseIfNotEmpty(record['provisioned']),
+          activated: parseIfNotEmpty(record['activated']),
+          mau: parseIfNotEmpty(record['mau']),
+          dau: parseIfNotEmpty(record['dau']),
+          allowance: parseIfNotEmpty(record['allowance']),
+          usage: parseIfNotEmpty(record['usage'])
+        });
+      }
+    }
+
+    function parseIfNotEmpty(value) {
+      if (!value || value === '') return null;
+      const n = parseInt(value);
+      return isNaN(n) ? null : n;
+    }
+
+    // Gestione salvataggio (Add oppure Update)
+    saveLicenseBtn.addEventListener('click', () => {
+      if (editIndex === -1) {
+        addLicense();
+      } else {
+        updateLicense();
+      }
+    });
+
+    function addLicense() {
+      const licenseType = licenseTypeSelect.value;
+      const licenseName = licenseNameInput.value.trim();
+      if (!licenseType) {
+        alert('Please select a License Type.');
+        return;
+      }
+      if (!licenseName) {
+        alert('Please enter a License Name.');
+        return;
+      }
+      let provisioned = null, activated = null, mau = null, dau = null;
+      let allowance = null, usage = null;
+      if (licenseType === 'activation') {
+        provisioned = parseIfNotEmpty(provisionedInput.value);
+        activated = parseIfNotEmpty(activatedInput.value);
+        mau = parseIfNotEmpty(mauInput.value);
+        dau = parseIfNotEmpty(dauInput.value);
+        if (provisioned === null || activated === null) {
+          alert('Please fill in at least Provisioned and Activated for Activation Based licenses.');
+          return;
+        }
+      } else if (licenseType === 'consumption') {
+        allowance = parseIfNotEmpty(allowanceInput.value);
+        usage = parseIfNotEmpty(usageInput.value);
+        if (allowance === null || usage === null) {
+          alert('Please fill in both Allowance and Usage for Consumption Based licenses.');
+          return;
+        }
+      }
+      licensesData.push({
+        licenseType,
+        licenseName,
+        provisioned,
+        activated,
+        mau,
+        dau,
+        allowance,
+        usage
+      });
+      resetForm();
+      updateLicenseList();
+    }
+
+    function updateLicense() {
+      const lic = licensesData[editIndex];
+      const licenseType = licenseTypeSelect.value;
+      const licenseName = licenseNameInput.value.trim();
+      if (!licenseType) {
+        alert('Please select a License Type.');
+        return;
+      }
+      if (!licenseName) {
+        alert('Please enter a License Name.');
+        return;
+      }
+      lic.licenseType = licenseType;
+      lic.licenseName = licenseName;
+      if (licenseType === 'activation') {
+        lic.provisioned = parseIfNotEmpty(provisionedInput.value);
+        lic.activated = parseIfNotEmpty(activatedInput.value);
+        lic.mau = parseIfNotEmpty(mauInput.value);
+        lic.dau = parseIfNotEmpty(dauInput.value);
+        if (lic.provisioned === null || lic.activated === null) {
+          alert('Please fill in at least Provisioned and Activated for Activation Based licenses.');
+          return;
+        }
+        lic.allowance = null;
+        lic.usage = null;
+      } else if (licenseType === 'consumption') {
+        lic.allowance = parseIfNotEmpty(allowanceInput.value);
+        lic.usage = parseIfNotEmpty(usageInput.value);
+        if (lic.allowance === null || lic.usage === null) {
+          alert('Please fill in both Allowance and Usage for Consumption Based licenses.');
+          return;
+        }
+        lic.provisioned = null;
+        lic.activated = null;
+        lic.mau = null;
+        lic.dau = null;
+      }
+      resetForm();
+      updateLicenseList();
+      renderCharts(); // Refresh automatico dei grafici
+    }
+
+    function resetForm() {
+      editIndex = -1;
+      saveLicenseBtn.textContent = 'Add License';
+      licenseTypeSelect.value = '';
+      licenseNameInput.value = '';
+      provisionedInput.value = '';
+      activatedInput.value = '';
+      mauInput.value = '';
+      dauInput.value = '';
+      allowanceInput.value = '';
+      usageInput.value = '';
+      activationFields.classList.add('hidden');
+      consumptionFields.classList.add('hidden');
+    }
+
+    // Riepilogo licenze con pulsanti Edit
+    function updateLicenseList() {
+      licenseList.innerHTML = '';
+      if (licensesData.length === 0) {
+        licenseList.innerHTML = '<p>No licenses added so far.</p>';
+        return;
+      }
+      let html = '<ul>';
+      licensesData.forEach((lic, idx) => {
+        if (lic.licenseType === 'activation') {
+          html += `
+            <li>
+              <strong>${idx + 1}. ${lic.licenseName} (Activation Based)</strong><br>
+              Provisioned: ${lic.provisioned} – Activated: ${lic.activated}
+              ${lic.mau !== null ? ' – MAU: ' + lic.mau : ''} 
+              ${lic.dau !== null ? ' – DAU: ' + lic.dau : ''}
+              <button class="edit-btn" onclick="startEditLicense(${idx})">Edit</button>
+            </li>
+          `;
+        } else {
+          html += `
+            <li>
+              <strong>${idx + 1}. ${lic.licenseName} (Consumption Based)</strong><br>
+              Allowance: ${lic.allowance} – Usage: ${lic.usage}
+              <button class="edit-btn" onclick="startEditLicense(${idx})">Edit</button>
+            </li>
+          `;
+        }
+      });
+      html += '</ul>';
+      licenseList.innerHTML = html;
+    }
+
+    window.startEditLicense = function(index) {
+      editIndex = index;
+      const lic = licensesData[index];
+      licenseTypeSelect.value = lic.licenseType;
+      licenseNameInput.value = lic.licenseName;
+      if (lic.licenseType === 'activation') {
+        activationFields.classList.remove('hidden');
+        consumptionFields.classList.add('hidden');
+        provisionedInput.value = lic.provisioned ?? '';
+        activatedInput.value = lic.activated ?? '';
+        mauInput.value = lic.mau ?? '';
+        dauInput.value = lic.dau ?? '';
+        allowanceInput.value = '';
+        usageInput.value = '';
+      } else {
+        consumptionFields.classList.remove('hidden');
+        activationFields.classList.add('hidden');
+        allowanceInput.value = lic.allowance ?? '';
+        usageInput.value = lic.usage ?? '';
+        provisionedInput.value = '';
+        activatedInput.value = '';
+        mauInput.value = '';
+        dauInput.value = '';
+      }
+      saveLicenseBtn.textContent = 'Update License';
+    };
+
+    // Renderizza i grafici
+    generateChartBtn.addEventListener('click', renderCharts);
+    function renderCharts() {
+      chartRoot.innerHTML = '';
+      if (licensesData.length === 0) {
+        alert('No licenses have been entered!');
+        return;
+      }
+      const selectedMonth = referenceMonthSelect.value;
+      if (!selectedMonth) {
+        alert('Please select a Reference Month (Global).');
+        return;
+      }
+      const bannerDiv = document.createElement('div');
+      bannerDiv.classList.add('chart-header-banner');
+      const currentYear = new Date().getFullYear();
+      bannerDiv.textContent = `Adoption status at ${selectedMonth} ${currentYear}`;
+      chartRoot.appendChild(bannerDiv);
+      const chartGridDiv = document.createElement('div');
+      chartGridDiv.classList.add('chart-grid');
+      licensesData.forEach((lic, index) => {
+        const blockDiv = document.createElement('div');
+        blockDiv.classList.add('chart-block');
+        let labels = [];
+        let dataArray = [];
+        let colors = [];
+        if (lic.licenseType === 'activation') {
+          labels = ["Provisioned", "Activated"];
+          dataArray = [lic.provisioned, lic.activated];
+          colors = ["#2F66AB", "#2F96AB"];
+          if (lic.mau !== null) {
+            labels.push("Monthly Active");
+            dataArray.push(lic.mau);
+            colors.push("#F0C43C");
+          }
+          if (lic.dau !== null) {
+            labels.push("Daily Active");
+            dataArray.push(lic.dau);
+            colors.push("#81DCEB");
+          }
+        } else {
+          labels = ["Allowance", "Usage"];
+          dataArray = [lic.allowance, lic.usage];
+          colors = ["#2F66AB", "#2F96AB"];
+        }
+        const chartData = {
+          labels: labels,
+          datasets: [{
+            data: dataArray,
+            backgroundColor: colors,
+            borderWidth: 1
+          }]
+        };
+        const config = {
+          type: 'bar',
+          data: chartData,
+          options: {
+            indexAxis: 'y',
+            elements: {
+              bar: {
+                borderRadius: 6,
+                barPercentage: 0.6,
+                categoryPercentage: 0.8
+              }
+            },
+            scales: {
+              x: {
+                beginAtZero: true
+              },
+              y: {
+                offset: true,
+                ticks: {
+                  autoSkip: false,
+                  maxRotation: 0,
+                  minRotation: 0,
+                  padding: 5,
+                  // Multiline label: testo + a capo + valore
+                  callback: function(value, idx) {
+                    const chart = this.chart;
+                    const lbl = chart.data.labels[idx] || "";
+                    const val = chart.data.datasets[0].data[idx] || 0;
+                    return [lbl, val.toLocaleString()];
+                  }
+                }
+              }
+            },
+            plugins: {
+              legend: { display: false },
+              title: {
+                display: true,
+                text: lic.licenseName
+              }
+            }
+          }
+        };
+        const canvas = document.createElement('canvas');
+        canvas.id = 'chart_' + index;
+        blockDiv.appendChild(canvas);
+        new Chart(canvas, config);
+        // Stats
+        const statsDiv = document.createElement('div');
+        statsDiv.classList.add('stats-container');
+        if (lic.licenseType === 'activation') {
+          let adoptionPct = (lic.provisioned && lic.provisioned > 0)
+            ? ((lic.activated / lic.provisioned) * 100).toFixed(1)
+            : "N/A";
+          const statBoxAdoption = document.createElement('div');
+          statBoxAdoption.classList.add('stat-box');
+          statBoxAdoption.innerHTML = `
+            <p>Adoption Rate</p>
+            <h2>${adoptionPct !== "N/A" ? adoptionPct + '%' : adoptionPct} <span>▲</span></h2>
+          `;
+          statsDiv.appendChild(statBoxAdoption);
+          if (lic.mau !== null && lic.activated && lic.activated > 0) {
+            let utilizedPct = ((lic.mau / lic.activated) * 100).toFixed(1);
+            const statBoxUtilized = document.createElement('div');
+            statBoxUtilized.classList.add('stat-box');
+            statBoxUtilized.innerHTML = `
+              <p>Utilization Rate</p>
+              <h2>${utilizedPct}% <span>▲</span></h2>
+            `;
+            statsDiv.appendChild(statBoxUtilized);
+          }
+        } else {
+          let usageRate = (lic.allowance && lic.allowance > 0)
+            ? ((lic.usage / lic.allowance) * 100).toFixed(1)
+            : "N/A";
+          const statBoxUsage = document.createElement('div');
+          statBoxUsage.classList.add('stat-box');
+          statBoxUsage.innerHTML = `
+            <p>Utilization Rate</p>
+            <h2>${usageRate !== "N/A" ? usageRate + '%' : usageRate} <span>▲</span></h2>
+          `;
+          statsDiv.appendChild(statBoxUsage);
+        }
+        blockDiv.appendChild(statsDiv);
+        chartGridDiv.appendChild(blockDiv);
+      });
+      chartRoot.appendChild(chartGridDiv);
+    }
+  </script>
+</body>
+</html>
