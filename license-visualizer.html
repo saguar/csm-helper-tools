@@ -56,19 +56,23 @@
             margin-top: 2rem; /* More space above buttons */
         }
         button {
-            background-color: #4f46e5; /* Indigo primary button color */
-            color: #fff;
+            /* Updated default button style */
+            background-color: #dbeafe; /* Very light blue background (Tailwind blue-100) */
+            color: #1e3a8a; /* Dark blue text color (Tailwind blue-900) */
             border: none;
-            padding: 0.75rem 1.5rem; /* Increased padding */
+            padding: 0.75rem 1.5rem; /* Padding around text */
             border-radius: 0.375rem; /* Rounded corners */
             cursor: pointer;
             font-size: 1rem; /* Standard font size */
             font-weight: 600; /* Semi-bold text */
-            transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+            transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Add box-shadow to transition */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle initial shadow */
         }
         button:hover {
-            background-color: #4338ca; /* Darker indigo on hover */
+            /* Updated hover style */
+            background-color: #93c5fd; /* Slightly darker light blue on hover (Tailwind blue-300) */
             transform: translateY(-2px); /* Slight lift on hover */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Stronger shadow on hover */
         }
          /* Specific style for the edit button */
         .edit-btn {
@@ -77,10 +81,12 @@
             padding: 0.3rem 0.75rem; /* Smaller padding */
             font-size: 0.875rem; /* Smaller font size */
             font-weight: 400; /* Normal font weight */
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); /* Subtle shadow for edit button */
         }
         .edit-btn:hover {
              background-color: #d97706; /* Darker amber on hover */
              transform: translateY(-1px); /* Smaller lift on hover */
+             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12); /* Stronger shadow on hover */
         }
 
         h1, h2, h3 {
@@ -91,6 +97,7 @@
          h1 {
              text-align: center; /* Center the main title */
              margin-bottom: 2rem; /* More space below the main title */
+             font-size: 2.25rem; /* Larger font size for main title */
          }
          h2, h3 {
              margin-top: 0; /* Remove default top margin */
@@ -195,7 +202,9 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">License Adoption Visualizer</h1> <h2>Add or Update License</h2>
+        <h1>License Adoption Visualizer</h1>
+
+        <h2>Add or Update License</h2>
         <div class="form-group">
             <label for="referenceMonth">Reference Month (Global):</label>
             <select id="referenceMonth">
@@ -213,7 +222,8 @@
                 <option value="November">November</option>
                 <option value="December">December</option>
             </select>
-            <p class="text-sm italic text-gray-600 mt-1">Select once; this applies to all entered licenses.</p> </div>
+            <p class="text-sm italic text-gray-600 mt-1">Select once; this applies to all entered licenses.</p>
+        </div>
 
         <div class="form-group">
             <label for="licenseType">License Type:</label>
@@ -262,7 +272,8 @@
         <div class="form-group">
             <label for="csvUpload">Upload CSV File:</label>
             <input type="file" id="csvUpload" accept=".csv" />
-            <p class="text-sm italic text-gray-600 mt-1">Upload a CSV file to import license data automatically.</p> </div>
+            <p class="text-sm italic text-gray-600 mt-1">Upload a CSV file to import license data automatically.</p>
+        </div>
 
         <div class="button-group">
             <button id="saveLicenseBtn">Add License</button>
@@ -596,10 +607,58 @@
                         borderWidth: 1
                     }]
                 };
+                const config = {
+                    type: 'bar',
+                    data: chartData,
+                    options: {
+                        indexAxis: 'y',
+                        elements: {
+                            bar: {
+                                borderRadius: 6,
+                                barPercentage: 0.6,
+                                categoryPercentage: 0.8
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true
+                            },
+                            y: {
+                                offset: true,
+                                ticks: {
+                                    autoSkip: false,
+                                    maxRotation: 0,
+                                    minRotation: 0,
+                                    padding: 5,
+                                    // Multiline label: testo + a capo + valore
+                                    callback: function(value, idx) {
+                                        const chart = this.chart;
+                                        const lbl = chart.data.labels[idx] || "";
+                                        const val = chart.data.datasets[0].data[idx] || 0;
+                                        return [lbl, val.toLocaleString()];
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            title: {
+                                display: true,
+                                text: lic.licenseName
+                            }
+                        }
+                    }
+                };
+                // Ensure the old chart instance is destroyed before creating a new one
+                if (lic.chartInstance) {
+                    lic.chartInstance.destroy();
+                }
                 const canvas = document.createElement('canvas');
                 canvas.id = 'chart_' + index;
                 blockDiv.appendChild(canvas);
-                new Chart(canvas, config);
+                // Store the new chart instance on the license object
+                lic.chartInstance = new Chart(canvas, config);
+
                 // Stats
                 const statsDiv = document.createElement('div');
                 statsDiv.classList.add('stats-container');
@@ -638,6 +697,16 @@
             });
             chartRoot.appendChild(chartGridDiv);
         }
+
+        // Ensure charts are destroyed when the page is unloaded or before re-rendering
+        window.addEventListener('beforeunload', () => {
+            licensesData.forEach(lic => {
+                if (lic.chartInstance) {
+                    lic.chartInstance.destroy();
+                }
+            });
+        });
+
     </script>
 </body>
 </html>
