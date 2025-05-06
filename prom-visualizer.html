@@ -1,132 +1,135 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ProM Alert Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <style>
-        /* Basic styling for layout */
         body {
-            font-family: sans-serif;
-            margin-bottom: 60px;
-            /* Add space at bottom for footer */
-            line-height: 1.5; /* Improve readability */
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6; /* Light gray background */
+            color: #333; /* Dark gray text */
+            line-height: 1.6;
+            padding: 1rem; /* Add some padding */
+        }
+        .container {
+            max-width: 1200px; /* Keep a wider container for the visualizer content */
+            margin: 2rem auto; /* Center the container with more vertical margin */
+            background-color: #ffffff; /* White background */
+            border-radius: 0.75rem; /* More rounded corners */
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); /* Stronger shadow */
+            padding: 2rem; /* Increase padding */
+            box-sizing: border-box; /* Include padding in element's total width and height */
         }
 
-        .container {
-            width: 90%;
-            max-width: 1100px;
-            margin: 20px auto;
-            text-align: center;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background-color: #f9f9f9;
+        h1, h2, h3 {
+            color: #1a202c; /* Darker heading color */
+            margin-bottom: 1rem; /* Space below headings */
+            font-weight: 700; /* Bold headings */
         }
+         h1 {
+             text-align: center; /* Center the main title */
+             margin-bottom: 2rem; /* More space below the main title */
+         }
+         h2, h3 {
+             margin-top: 0; /* Remove default top margin */
+         }
 
         textarea {
-            width: 95%;
-            margin-bottom: 20px; /* Increased margin */
-            padding: 10px; /* Increased padding */
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            min-height: 180px; /* Increased height */
-            font-family: monospace;
-            /* Use monospace for raw data input */
-            font-size: 0.9em;
+            width: 100%; /* Make textarea take full width */
+            margin-bottom: 1.5rem; /* Increased margin */
+            padding: 0.75rem; /* Increased padding */
+            border-radius: 0.375rem; /* Rounded corners */
+            border: 1px solid #d1d5db; /* Lighter border */
+            min-height: 200px; /* Keep a good minimum height */
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; /* Use system monospace stack */
+            font-size: 0.95em; /* Slightly larger font size */
+            box-sizing: border-box; /* Include padding in element's total width and height */
         }
 
         /* Style for buttons container */
         .button-group {
-            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 1rem; /* Increased gap between buttons */
+            flex-wrap: wrap;
+            margin-top: 2rem; /* More space above buttons */
+            margin-bottom: 2rem; /* More space below buttons */
         }
 
         button {
-            padding: 10px 20px;
-            cursor: pointer;
+            background-color: #4f46e5; /* Indigo primary button color */
+            color: #fff;
             border: none;
-            border-radius: 4px;
-            color: white;
-            font-size: 1em;
-            margin: 0 10px;
-            transition: background-color 0.3s ease;
+            padding: 0.75rem 1.5rem; /* Increased padding */
+            border-radius: 0.375rem; /* Rounded corners */
+            cursor: pointer;
+            font-size: 1rem; /* Standard font size */
+            font-weight: 600; /* Semi-bold text */
+            transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
         }
 
-        /* Specific button styles */
-        #visualizeButton {
-            background-color: #007bff; /* Changed to a standard blue color */
-        }
-
-        #visualizeButton:hover {
-            background-color: #0056b3;
+        button:hover {
+            background-color: #4338ca; /* Darker indigo on hover */
+            transform: translateY(-2px); /* Slight lift on hover */
         }
 
         /* NEW Styles for Summary Widgets */
         .summary-widgets-container {
             display: flex;
-            /* Use flexbox to put cards side-by-side */
-            gap: 20px;
-            /* Space between cards */
-            margin-bottom: 20px;
-            /* Space below the widgets */
+            gap: 2rem; /* Increased space between cards */
+            margin-bottom: 2rem; /* Increased space below the widgets */
             flex-wrap: wrap;
-            /* Allow wrapping on smaller screens */
              justify-content: center; /* Center widgets if they wrap */
         }
 
         .widget-card {
             flex: 1;
-            /* Each card takes equal space */
-            min-width: 320px;
-            /* Minimum width before wrapping */
-            max-width: 500px; /* Max width to prevent cards from becoming too wide on very large screens */
-            background-color: #fff;
-            border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 15px 20px; /* Increased padding */
+            min-width: 300px; /* Minimum width before wrapping */
+            max-width: 500px; /* Max width */
+            background-color: #ffffff; /* White background */
+            border: 1px solid #e5e7eb; /* Lighter border */
+            border-radius: 0.5rem; /* Rounded corners */
+            padding: 1.5rem; /* Increased padding */
             text-align: left;
-            /* Align text within the card */
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
-            /* Subtle shadow */
-            display: flex; /* Use flexbox for internal layout */
-            flex-direction: column; /* Stack content vertically */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+            display: flex;
+            flex-direction: column;
         }
 
         .widget-card h3 {
             margin-top: 0;
-            margin-bottom: 15px; /* Increased space below title */
-            color: #333;
-            font-size: 1.2em; /* Slightly larger title */
+            margin-bottom: 1rem; /* Increased space below title */
+            color: #1f2937; /* Darker title color */
+            font-size: 1.25em; /* Slightly larger title */
             display: flex;
-            /* Align title and info icon */
             align-items: center;
-            border-bottom: 1px solid #eee; /* Separator below title */
-            padding-bottom: 10px; /* Space between title and separator */
+            border-bottom: 1px solid #e5e7eb; /* Separator below title */
+            padding-bottom: 0.75rem; /* Space between title and separator */
         }
 
         .widget-card .info-icon {
             font-size: 0.8em;
-            margin-left: 8px; /* Increased space */
-            color: #6c757d;
+            margin-left: 0.5rem; /* Increased space */
+            color: #6b7280; /* Gray color */
             cursor: help;
-            /* Indicate it's interactive (shows title on hover) */
         }
 
         .widget-card .total-count {
-            font-size: 3em;
-            /* Larger number style */
-            font-weight: bold;
-            color: #007bff;
-            /* A prominent color */
-            margin-bottom: 20px; /* Increased space */
+            font-size: 3.5em; /* Larger number style */
+            font-weight: 700; /* Bold */
+            color: #4f46e5; /* Indigo color */
+            margin-bottom: 1.5rem; /* Increased space */
              text-align: center; /* Center the total count */
         }
 
         .level-breakdown,
         .top-metrics-list {
             list-style: none;
-            /* Remove default list bullets */
             padding: 0;
             margin: 0;
             flex-grow: 1; /* Allow lists to take available space */
@@ -134,87 +137,75 @@
 
         .level-breakdown li,
         .top-metrics-list li {
-            margin-bottom: 12px; /* Increased space between list items */
+            margin-bottom: 0.75rem; /* Increased space between list items */
             font-size: 0.95em;
-            color: #555;
+            color: #4b5563; /* Darker gray */
         }
 
         .level-breakdown li {
             display: flex;
-            /* Align level name, bar, and count */
             align-items: center;
             justify-content: space-between;
-            /* Distribute space */
         }
 
         .level-breakdown .level-name {
-            flex-basis: 80px;
-            /* Fixed width for level name */
+            flex-basis: 90px; /* Slightly wider fixed width */
             flex-shrink: 0;
-            margin-right: 15px; /* Increased space */
-            font-weight: bold;
-             color: #333; /* Darker color for name */
+            margin-right: 1rem; /* Increased space */
+            font-weight: 600; /* Semi-bold */
+             color: #1f2937; /* Darker color for name */
         }
 
         .level-breakdown .level-bar {
             flex-grow: 1;
-            /* Bar takes remaining space */
-            height: 10px; /* Thicker bar */
-            background-color: #e9ecef;
-            /* Background for the bar track */
-            border-radius: 5px; /* More rounded corners */
+            height: 12px; /* Thicker bar */
+            background-color: #e5e7eb; /* Light gray background for the bar track */
+            border-radius: 6px; /* More rounded corners */
             overflow: hidden;
-            /* Hide overflow of the inner colored bar */
-            margin-right: 15px; /* Increased space */
+            margin-right: 1rem; /* Increased space */
         }
 
         .level-breakdown .level-bar-inner {
             height: 100%;
-            background-color: #ffc107;
-            /* Default bar color (Warning) */
-            border-radius: 5px;
-            /* Match outer border-radius */
             /* Width will be set by JS */
             transition: width 0.5s ease-in-out; /* Smooth transition for bar width */
         }
 
-        /* Specific colors for levels */
+        /* Specific colors for levels (using Tailwind color palette where possible) */
         .level-breakdown .level-bar-inner.warning {
-            background-color: #ffc107;
-            /* Orange/Yellow */
+            background-color: #fcd34d; /* Tailwind amber-400 */
         }
 
         .level-breakdown .level-bar-inner.critical {
-            background-color: #dc3545;
-            /* Red */
+            background-color: #ef4444; /* Tailwind red-500 */
         }
 
         .level-breakdown .level-bar-inner.exhausted {
-            background-color: #6f42c1;
-            /* Purple, assuming Exhausted is a specific state */
+            background-color: #a78bfa; /* Tailwind violet-400 */
         }
 
-        /* Add more colors if other levels exist */
         .level-breakdown .level-bar-inner.info {
-             background-color: #17a2b8; /* Cyan */
+             background-color: #38b2ac; /* Tailwind teal-500 */
+        }
+         /* Add more colors if other levels exist */
+        .level-breakdown .level-bar-inner.other {
+             background-color: #6b7280; /* Tailwind gray-500 for unknown */
         }
 
 
         .level-breakdown .level-count,
         .top-metrics-list .metric-count {
-            font-weight: bold;
+            font-weight: 600; /* Semi-bold */
             flex-shrink: 0;
-            /* Don't shrink the count */
-             color: #333; /* Darker color for count */
+             color: #1f2937; /* Darker color for count */
         }
 
         .top-metrics-list li {
             display: flex;
             justify-content: space-between;
             align-items: center;
-             padding-bottom: 5px; /* space before bottom border */
-             border-bottom: 1px dashed #eee; /* subtle separator */
-             /* Remove last item border bottom in JS or CSS if needed */
+             padding-bottom: 0.5rem; /* space before bottom border */
+             border-bottom: 1px dashed #d1d5db; /* subtle separator */
         }
          .top-metrics-list li:last-child {
              border-bottom: none;
@@ -225,80 +216,71 @@
 
         .top-metrics-list .metric-name {
             flex-grow: 1;
-            /* Allow name to take space */
-            margin-right: 10px;
-            /* space between name and count */
-             color: #333; /* Darker color */
+            margin-right: 0.75rem; /* space between name and count */
+             color: #374151; /* Darker color */
              word-break: break-word; /* Allow long names to wrap */
         }
 
 
         .chart-container {
-            margin-bottom: 40px;
-            padding: 15px;
-            border: 1px solid #eee;
-            border-radius: 5px;
-            background-color: #fff;
-             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* Match widget shadow */
+            margin-bottom: 2rem; /* Increased margin */
+            padding: 1.5rem; /* Increased padding */
+            border: 1px solid #e5e7eb; /* Lighter border */
+            border-radius: 0.5rem; /* Rounded corners */
+            background-color: #ffffff; /* White background */
+             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Match widget shadow */
         }
 
         canvas {
             max-width: 100%;
-        }
-
-        h3 {
-            color: #333;
+            height: auto; /* Maintain aspect ratio */
         }
 
         /* Message box styling */
         .message-box {
             display: none;
             position: fixed;
-            top: 20px;
+            top: 1rem; /* Adjusted top position */
             left: 50%;
             transform: translateX(-50%);
-            padding: 15px;
-            background-color: #f8d7da;
-            /* Default error */
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            border-radius: 5px;
+            padding: 1rem; /* Increased padding */
+            background-color: #fef2f2; /* Tailwind red-50 */
+            color: #991b1b; /* Tailwind red-800 */
+            border: 1px solid #fca5a5; /* Tailwind red-300 */
+            border-radius: 0.375rem; /* Rounded corners */
             z-index: 1000;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            max-width: 80%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 90%; /* Increased max-width */
             text-align: left;
         }
 
         .message-box.success {
-            background-color: #d4edda;
-            color: #155724;
-            border-color: #c3e6cb;
+            background-color: #ecfdf5; /* Tailwind green-50 */
+            color: #065f46; /* Tailwind green-800 */
+            border-color: #a7f3d0; /* Tailwind green-200 */
         }
 
         .message-box.warning {
-            background-color: #fff3cd;
-            color: #856404;
-            border-color: #ffeeba;
+            background-color: #fffbeb; /* Tailwind amber-50 */
+            color: #92400e; /* Tailwind amber-800 */
+            border-color: #fcd34d; /* Tailwind amber-300 */
         }
 
         /* Footer styling */
         footer {
-            margin-top: 40px;
-            padding: 15px;
             text-align: center;
-            font-size: 0.8em;
-            color: #6c757d;
-            /* Gray color */
-            border-top: 1px solid #eee;
+            padding: 1.5rem; /* Increased padding */
+            font-size: 0.875rem; /* Smaller text size */
+            color: #6b7280; /* Gray text color */
+            margin-top: 2rem; /* Space above the footer */
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h2>ProM Alert Visualizer</h2>
-        <textarea id="alertData" rows="15"
-            placeholder="Paste RAW data copied from the alert source here..."></textarea><br>
+        <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">ProM Alert Visualizer</h1> <textarea id="alertData" rows="15"
+            placeholder="Paste RAW data copied from the alert source here..."></textarea>
 
         <div class="summary-widgets-container">
             <div class="widget-card">
@@ -313,7 +295,6 @@
                      </div>
             </div>
         </div>
-
 
         <div class="button-group">
             <button id="visualizeButton">Visualize Data</button>
@@ -333,10 +314,7 @@
     <div id="messageBox" class="message-box"></div>
 
     <footer>
-        <p>
-            Disclaimer: This web application was developed by Saverio Guardato as an internal prototype. Use at your own
-            risk. No responsibility is assumed for its use.
-        </p>
+        These tools are not official or Salesforce authorized. They have been developed for personal purpose by Saverio Guardato with the aim of improving CSM tasks.
     </footer>
 
     <script>
@@ -385,7 +363,7 @@
                 }
 
                 // Remove potential surrounding brackets and split into lines
-                const lines = rawText.replace(/^\[|\]$/g, '').split('\n')
+                const lines = rawText.replace(/^\[|\]$/g, '').split(/\r\n|\n/) // Handle different line endings
                     .map(line => line.trim())
                     .filter(line => line.length > 0);
 
@@ -523,7 +501,7 @@
                  hideMessage();
                  // Clear previous charts and widget data
                  if (alertCountChartInstance) { alertCountChartInstance.destroy(); alertCountChartInstance = null; }
-                 if (totalDurationChartInstance) { totalDurationChartChartInstance = null; totalDurationChartInstance = null;} // Destroy instance and set var to null
+                 if (totalDurationChartInstance) { totalDurationChartInstance.destroy(); totalDurationChartInstance = null;} // Destroy instance and set var to null
                  totalAlertCountWidget.textContent = '0';
                  levelBreakdownWidget.innerHTML = '';
                  topMetricsListWidget.innerHTML = '';
@@ -553,7 +531,7 @@
                         countByMetricOverall: {}
                      });
                      renderAlertCountChart({ labels: [], datasets: [] }); // Provide empty data for charts
-                     renderTotalDurationChart({ labels: [], groupedData: {}, alertLevelsList: [] }); // Provide empty data for charts
+                     renderTotalDurationChart({ labels: [], groupedDataByLevel: {}, alertLevelsList: [] }); // Provide empty data for charts
                      return;
                  }
 
@@ -803,11 +781,18 @@
                     const percentage = total > 0 ? (count / total) * 100 : 0;
                     const listItem = document.createElement('li');
 
+                    // Determine the correct class for the level bar based on level name
+                    const levelClass = level.toLowerCase();
+                    let barClass = 'other'; // Default class for unknown levels
+                    if (['warning', 'critical', 'exhausted', 'info'].includes(levelClass)) {
+                         barClass = levelClass;
+                    }
+
+
                     listItem.innerHTML = `
                         <span class="level-name">${level}</span>
                         <div class="level-bar">
-                            <div class="level-bar-inner ${level.toLowerCase()}" style="width: ${percentage}%;"></div>
-                        </div>
+                            <div class="level-bar-inner ${barClass}" style="width: ${percentage.toFixed(1)}%;"></div> </div>
                         <span class="level-count">${count}</span>
                     `;
                      levelBreakdownWidget.appendChild(listItem);
@@ -947,12 +932,12 @@
              function getLevelColor(level) {
                  const lowerLevel = level.toLowerCase();
                  switch(lowerLevel) {
-                     case 'warning': return 'rgba(255, 193, 7, 0.8)'; // Bootstrap Warning Yellow
-                     case 'critical': return 'rgba(220, 53, 69, 0.8)'; // Bootstrap Danger Red
-                     case 'exhausted': return 'rgba(111, 66, 193, 0.8)'; // Bootstrap Purple
-                     case 'info': return 'rgba(23, 162, 184, 0.8)'; // Bootstrap Info Cyan
+                     case 'warning': return 'rgba(252, 211, 77, 0.8)'; // Tailwind amber-300 with alpha
+                     case 'critical': return 'rgba(239, 68, 68, 0.8)'; // Tailwind red-500 with alpha
+                     case 'exhausted': return 'rgba(167, 139, 250, 0.8)'; // Tailwind violet-400 with alpha
+                     case 'info': return 'rgba(56, 178, 172, 0.8)'; // Tailwind teal-500 with alpha
                      // Add other levels if known
-                     default: return 'rgba(108, 117, 125, 0.8)'; // Bootstrap Secondary Gray for unknown levels
+                     default: return 'rgba(107, 114, 128, 0.8)'; // Tailwind gray-500 with alpha for unknown levels
                  }
              }
 
