@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Salesforce Release Updates Visualizer</title> <script src="https://cdn.tailwindcss.com"></script>
+    <title>Salesforce Release Updates Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -11,54 +12,45 @@
             background-color: #f4f7f6; /* Light gray background */
             color: #333; /* Dark gray text */
             line-height: 1.6;
+            padding: 1rem; /* Add some padding */
         }
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1rem;
+            max-width: 1200px; /* Keep a wider container for the visualizer content */
+            margin: 2rem auto; /* Center the container with more vertical margin */
+            background-color: #ffffff; /* White background */
+            border-radius: 0.75rem; /* More rounded corners */
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); /* Stronger shadow */
+            padding: 2rem; /* Increase padding */
+            box-sizing: border-box; /* Include padding in element's total width and height */
         }
-        .card {
-            background-color: #ffffff; /* White background for cards */
-            border-radius: 0.5rem; /* Rounded corners */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            transition: transform 0.2s ease-in-out;
+        h1 {
+            text-align: center; /* Center the main title */
+            margin-bottom: 2rem; /* More space below the main title */
+            font-size: 2.25rem; /* Larger font size for main title */
+            font-weight: 700; /* Bold font weight */
+            color: #1a202c; /* Darker heading color */
         }
-        .card:hover {
-            transform: translateY(-5px); /* Slight lift on hover */
-        }
-        .status-needsaction {
-            border-left: 8px solid #3b82f6; /* Blue border for NeedsAction */
-        }
-        .status-overdue {
-            border-left: 8px solid #ef4444; /* Red border for Overdue */
-        }
-        .badge {
-            display: inline-block;
-            background-color: #e5e7eb; /* Light gray background for badges */
-            color: #4b5563; /* Dark gray text for badges */
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px; /* Pill shape */
-            font-size: 0.875rem; /* Small text */
-            font-weight: 600;
-            margin-right: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-        .detail {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid #e5e7eb; /* Separator line */
-            font-size: 0.95rem;
-            color: #555;
+
+        /* Styling for labels and inputs */
+        label {
+            display: block;
+            font-weight: 600; /* Semi-bold font */
+            margin-bottom: 0.5rem; /* Space below labels */
+            color: #4a5568; /* Slightly darker gray for labels */
+            text-align: center; /* Center the labels */
         }
         input[type="file"], input[type="text"] {
-            margin-bottom: 1.5rem;
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.375rem;
+            margin-bottom: 1.5rem; /* Increased margin below inputs */
+            padding: 0.75rem; /* Increased padding */
+            border: 1px solid #d1d5db; /* Lighter border */
+            border-radius: 0.375rem; /* Rounded corners */
             background-color: #ffffff;
+            box-sizing: border-box; /* Include padding in element's total width and height */
+            font-size: 1rem; /* Standard font size */
         }
+         input[type="file"] {
+             cursor: pointer;
+         }
          input[type="text"] {
             display: block; /* Make search input a block element */
             margin-left: auto; /* Center the search input */
@@ -66,26 +58,99 @@
             width: 95%; /* Make it take most of the width */
             max-width: 600px; /* Limit maximum width */
         }
+
+        /* Styling for the collapsible instructions */
         .collapsible-header {
             cursor: pointer;
-            color: #3b82f6; /* Blue text for the link */
+            color: #4f46e5; /* Indigo text for the link */
             text-decoration: underline;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem; /* Increased bottom margin */
             display: inline-block; /* Allow margin-bottom */
+            font-size: 0.95rem; /* Slightly smaller font size */
+            font-weight: 600; /* Semi-bold */
         }
         .collapsible-content {
             border: 1px solid #d1d5db;
             border-radius: 0.375rem;
-            padding: 1rem;
+            padding: 1.5rem; /* Increased padding */
             background-color: #f9fafb; /* Light background for content */
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem; /* Increased bottom margin */
             display: none; /* Initially hidden */
+            color: #374151; /* Darker gray text */
+            line-height: 1.6;
+        }
+
+        /* Styling for the release update cards */
+        .card {
+            background-color: #ffffff; /* White background for cards */
+            border-radius: 0.5rem; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.2s ease-in-out;
+            display: flex; /* Use flexbox for layout within card */
+            flex-direction: column; /* Stack content vertically */
+        }
+        .card:hover {
+            transform: translateY(-5px); /* Slight lift on hover */
+        }
+        .card h2 {
+            font-size: 1.25rem; /* Slightly larger title in card */
+            font-weight: 700; /* Bold title */
+            margin-bottom: 0.75rem; /* Space below title */
+            color: #1f2937; /* Darker gray for title */
+        }
+
+        /* Status border colors */
+        .status-needsaction {
+            border-left: 8px solid #3b82f6; /* Tailwind blue-500 */
+        }
+        .status-overdue {
+            border-left: 8px solid #ef4444; /* Tailwind red-500 */
+        }
+
+        /* Styling for badges */
+        .badge {
+            display: inline-block;
+            background-color: #e5e7eb; /* Tailwind gray-200 */
+            color: #4b5563; /* Tailwind gray-600 */
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px; /* Pill shape */
+            font-size: 0.875rem; /* Small text */
+            font-weight: 600;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Styling for the detail section */
+        .detail {
+            margin-top: 1.5rem; /* More space above detail */
+            padding-top: 1.5rem; /* More padding above detail */
+            border-top: 1px solid #e5e7eb; /* Separator line */
+            font-size: 0.95rem;
+            color: #4b5563; /* Darker gray for detail text */
+        }
+
+        /* Styling for the initial message and empty state */
+        #initialMessage, .col-span-full.text-center.text-gray-600 {
+             margin-top: 2rem; /* Add some space above these messages */
+             font-size: 1.125rem; /* Slightly larger font size */
+        }
+
+
+        /* Footer styling */
+        footer {
+            text-align: center;
+            padding: 1.5rem; /* Increased padding */
+            font-size: 0.875rem; /* Smaller text size */
+            color: #6b7280; /* Gray text color */
+            margin-top: 2rem; /* Space above the footer */
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="text-3xl font-bold text-center my-6">Salesforce Release Updates Visualizer</h1> <label for="csvFile" class="block text-center text-gray-700 font-semibold mb-2">Upload here the CSV file exported from Blacktab</label> <div class="flex justify-center mb-6">
+        <h1>Salesforce Release Updates Visualizer</h1> <label for="csvFile" class="block text-center text-gray-700 font-semibold mb-2">Upload here the CSV file exported from Blacktab</label> <div class="flex justify-center mb-6">
              <input type="file" id="csvFile" accept=".csv" class="block w-full md:w-auto">
         </div>
 
@@ -96,7 +161,6 @@
             <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
         </div>
 
-
         <input type="text" id="searchInput" placeholder="Search by Release Update Name...">
 
         <div id="updatesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -106,6 +170,10 @@
         <div id="errorMessage" class="text-center text-red-600 mt-4 hidden col-span-full"></div>
 
     </div>
+
+    <footer>
+        These tools are not official or Salesforce authorized. They have been developed for personal purpose by Saverio Guardato with the aim of improving CSM tasks.
+    </footer>
 
     <script>
         const fileInput = document.getElementById('csvFile');
