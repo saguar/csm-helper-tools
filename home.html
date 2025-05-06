@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>ProM Alert Visualizer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <style>
+        /* Basic styling for layout */
+        body {
+            font-family: sans-serif;
+            margin-bottom: 60px;
+            /* Add space at bottom for footer */
+            line-height: 1.5; /* Improve readability */
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1100px;
+            margin: 20px auto;
+            text-align: center;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        textarea {
+            width: 95%;
+            margin-bottom: 20px; /* Increased margin */
+            padding: 10px; /* Increased padding */
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            min-height: 180px; /* Increased height */
+            font-family: monospace;
+            /* Use monospace for raw data input */
+            font-size: 0.9em;
+        }
+
+        /* Style for buttons container */
+        .button-group {
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-size: 1em;
+            margin: 0 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        /* Specific button styles */
+        #visualizeButton {
+            background-color: #007bff; /* Changed to a standard blue color */
+        }
+
+        #visualizeButton:hover {
+            background-color: #0056b3;
+        }
+
+        /* NEW Styles for Summary Widgets */
+        .summary-widgets-container {
+            display: flex;
+            /* Use flexbox to put cards side-by-side */
+            gap: 20px;
+            /* Space between cards */
+            margin-bottom: 20px;
+            /* Space below the widgets */
+            flex-wrap: wrap;
+            /* Allow wrapping on smaller screens */
+             justify-content: center; /* Center widgets if they wrap */
+        }
+
+        .widget-card {
+            flex: 1;
+            /* Each card takes equal space */
+            min-width: 320px;
+            /* Minimum width before wrapping */
+            max-width: 500px; /* Max width to prevent cards from becoming too wide on very large screens */
+            background-color: #fff;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 15px 20px; /* Increased padding */
+            text-align: left;
+            /* Align text within the card */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+            /* Subtle shadow */
+            display: flex; /* Use flexbox for internal layout */
+            flex-direction: column; /* Stack content vertically */
+        }
+
+        .widget-card h3 {
+            margin-top: 0;
+            margin-bottom: 15px; /* Increased space below title */
+            color: #333;
+            font-size: 1.2em; /* Slightly larger title */
+            display: flex;
+            /* Align title and info icon */
+            align-items: center;
+            border-bottom: 1px solid #eee; /* Separator below title */
+            padding-bottom: 10px; /* Space between title and separator */
+        }
+
+        .widget-card .info-icon {
+            font-size: 0.8em;
+            margin-left: 8px; /* Increased space */
+            color: #6c757d;
+            cursor: help;
+            /* Indicate it's interactive (shows title on hover) */
+        }
+
+        .widget-card .total-count {
+            font-size: 3em;
+            /* Larger number style */
+            font-weight: bold;
+            color: #007bff;
+            /* A prominent color */
+            margin-bottom: 20px; /* Increased space */
+             text-align: center; /* Center the total count */
+        }
+
+        .level-breakdown,
+        .top-metrics-list {
+            list-style: none;
+            /* Remove default list bullets */
+            padding: 0;
+            margin: 0;
+            flex-grow: 1; /* Allow lists to take available space */
+        }
+
+        .level-breakdown li,
+        .top-metrics-list li {
+            margin-bottom: 12px; /* Increased space between list items */
+            font-size: 0.95em;
+            color: #555;
+        }
+
+        .level-breakdown li {
+            display: flex;
+            /* Align level name, bar, and count */
+            align-items: center;
+            justify-content: space-between;
+            /* Distribute space */
+        }
+
+        .level-breakdown .level-name {
+            flex-basis: 80px;
+            /* Fixed width for level name */
+            flex-shrink: 0;
+            margin-right: 15px; /* Increased space */
+            font-weight: bold;
+             color: #333; /* Darker color for name */
+        }
+
+        .level-breakdown .level-bar {
+            flex-grow: 1;
+            /* Bar takes remaining space */
+            height: 10px; /* Thicker bar */
+            background-color: #e9ecef;
+            /* Background for the bar track */
+            border-radius: 5px; /* More rounded corners */
+            overflow: hidden;
+            /* Hide overflow of the inner colored bar */
+            margin-right: 15px; /* Increased space */
+        }
+
+        .level-breakdown .level-bar-inner {
+            height: 100%;
+            background-color: #ffc107;
+            /* Default bar color (Warning) */
+            border-radius: 5px;
+            /* Match outer border-radius */
+            /* Width will be set by JS */
+            transition: width 0.5s ease-in-out; /* Smooth transition for bar width */
+        }
+
+        /* Specific colors for levels */
+        .level-breakdown .level-bar-inner.warning {
+            background-color: #ffc107;
+            /* Orange/Yellow */
+        }
+
+        .level-breakdown .level-bar-inner.critical {
+            background-color: #dc3545;
+            /* Red */
+        }
+
+        .level-breakdown .level-bar-inner.exhausted {
+            background-color: #6f42c1;
+            /* Purple, assuming Exhausted is a specific state */
+        }
+
+        /* Add more colors if other levels exist */
+        .level-breakdown .level-bar-inner.info {
+             background-color: #17a2b8; /* Cyan */
+        }
+
+
+        .level-breakdown .level-count,
+        .top-metrics-list .metric-count {
+            font-weight: bold;
+            flex-shrink: 0;
+            /* Don't shrink the count */
+             color: #333; /* Darker color for count */
+        }
+
+        .top-metrics-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+             padding-bottom: 5px; /* space before bottom border */
+             border-bottom: 1px dashed #eee; /* subtle separator */
+             /* Remove last item border bottom in JS or CSS if needed */
+        }
+         .top-metrics-list li:last-child {
+             border-bottom: none;
+             padding-bottom: 0;
+             margin-bottom: 0;
+         }
+
+
+        .top-metrics-list .metric-name {
+            flex-grow: 1;
+            /* Allow name to take space */
+            margin-right: 10px;
+            /* space between name and count */
+             color: #333; /* Darker color */
+             word-break: break-word; /* Allow long names to wrap */
+        }
+
+
+        .chart-container {
+            margin-bottom: 40px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            background-color: #fff;
+             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08); /* Match widget shadow */
+        }
+
+        canvas {
+            max-width: 100%;
+        }
+
+        h3 {
+            color: #333;
+        }
+
+        /* Message box styling */
+        .message-box {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px;
+            background-color: #f8d7da;
+            /* Default error */
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            max-width: 80%;
+            text-align: left;
+        }
+
+        .message-box.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+
+        .message-box.warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffeeba;
+        }
+
+        /* Footer styling */
+        footer {
+            margin-top: 40px;
+            padding: 15px;
+            text-align: center;
+            font-size: 0.8em;
+            color: #6c757d;
+            /* Gray color */
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>ProM Alert Visualizer</h2>
+        <textarea id="alertData" rows="15"
+            placeholder="Paste RAW data copied from the alert source here..."></textarea><br>
+
+        <div class="summary-widgets-container">
+            <div class="widget-card">
+                <h3>Total ProM Alerts <span class="info-icon" title="Total count of alerts processed with valid dates and duration.">&#x24D8;</span></h3>
+                <div class="total-count" id="totalAlertCountWidget">0</div>
+                <div class="level-breakdown" id="levelBreakdownWidget">
+                    </div>
+            </div>
+            <div class="widget-card">
+                <h3>Top Alerts by Volume <span class="info-icon" title="Top 5 Alert Metrics by total count over the period.">&#x24D8;</span></h3>
+                 <div class="top-metrics-list" id="topMetricsListWidget">
+                     </div>
+            </div>
+        </div>
+
+
+        <div class="button-group">
+            <button id="visualizeButton">Visualize Data</button>
+        </div>
+
+        <div class="chart-container">
+             <h3 id="alertCountChartTitle">Timeline of ProM alerts</h3>
+            <canvas id="alertCountChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <h3>Total Alert Duration per Week (hours)</h3>
+            <canvas id="totalDurationChart"></canvas>
+        </div>
+    </div>
+
+    <div id="messageBox" class="message-box"></div>
+
+    <footer>
+        <p>
+            Disclaimer: This web application was developed by Saverio Guardato as an internal prototype. Use at your own
+            risk. No responsibility is assumed for its use.
+        </p>
+    </footer>
+
+    <script>
+        // Register the datalabels plugin globally
+        Chart.register(ChartDataLabels);
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const visualizeButton = document.getElementById('visualizeButton');
+            const alertDataTextarea = document.getElementById('alertData');
+            const messageBox = document.getElementById('messageBox');
+            const alertCountChartTitleElement = document.getElementById('alertCountChartTitle');
+
+            // NEW: Get references to widget elements
+            const totalAlertCountWidget = document.getElementById('totalAlertCountWidget');
+            const levelBreakdownWidget = document.getElementById('levelBreakdownWidget');
+            const topMetricsListWidget = document.getElementById('topMetricsListWidget');
+
+
+            let alertCountChartInstance = null;
+            let totalDurationChartInstance = null;
+            let currentProcessedData = null;
+
+            visualizeButton.addEventListener('click', visualizeData);
+
+            function showMessage(message, type = 'error') {
+                messageBox.textContent = message;
+                messageBox.className = `message-box ${type}`;
+                messageBox.style.display = 'block';
+                const duration = type === 'success' ? 3000 : 6000;
+                setTimeout(hideMessage, duration);
+            }
+
+            function hideMessage() {
+                messageBox.style.display = 'none';
+            }
+
+            // Removed handleCleanClick, cleanAndFormatData_v2, parseAlertData functions
+
+            // --- NEW PARSING FUNCTION FOR TAB-SEPARATED DATA ---
+            function parseNewRawData(rawText) {
+                console.log("Starting raw data parsing...");
+                const parsedAlerts = [];
+                if (!rawText || rawText.trim().length === 0) {
+                    showMessage("Textarea is empty. Paste raw data first.", "warning");
+                    return null;
+                }
+
+                // Remove potential surrounding brackets and split into lines
+                const lines = rawText.replace(/^\[|\]$/g, '').split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0);
+
+                if (lines.length < 2) {
+                    showMessage("No data rows found after headers. Paste raw data including headers.", "warning");
+                    return null;
+                }
+
+                // Assume the first line is header, split by tab
+                const headers = lines[0].split('\t').map(h => h.trim());
+                console.log("Detected headers:", headers);
+
+                // Define expected header mapping to indices
+                const headerMap = {
+                    'Level': -1,
+                    'Metric': -1,
+                    'Triggered Date/Time': -1,
+                    'Duration': -1
+                };
+
+                // Find indices of expected headers
+                headers.forEach((header, index) => {
+                    // Case-insensitive header matching
+                    const key = Object.keys(headerMap).find(k => k.toLowerCase() === header.toLowerCase());
+                    if (key) {
+                         headerMap[key] = index;
+                    }
+                });
+
+
+                // Check if all required headers are found
+                const requiredHeaders = ['Level', 'Metric', 'Triggered Date/Time', 'Duration'];
+                const missingHeaders = requiredHeaders.filter(h => headerMap[h] === -1);
+
+                if (missingHeaders.length > 0) {
+                    showMessage(`Missing required headers: ${missingHeaders.join(', ')}. Check pasted text format.`, "error");
+                    console.error("Missing headers:", missingHeaders);
+                    return null;
+                }
+
+                // Determine the maximum index needed for slicing values array
+                 const maxHeaderIndex = Math.max(...Object.values(headerMap));
+
+
+                // Process data rows
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split('\t').map(value => value.trim());
+
+                    // Basic check for column count based on the maximum required header index
+                    if (values.length < maxHeaderIndex + 1) {
+                         console.warn(`Skipping line ${i + 1}: Incorrect number of columns. Expected at least ${maxHeaderIndex + 1}, found ${values.length}.`, lines[i]);
+                         continue;
+                    }
+
+                    const level = values[headerMap['Level']];
+                    const metric = values[headerMap['Metric']];
+                    const triggeredDateTimeStr = values[headerMap['Triggered Date/Time']];
+                    const durationStr = values[headerMap['Duration']];
+
+                    // Parse date and duration
+                    const startDate = parseTriggeredDateTime(triggeredDateTimeStr);
+                    const durationMillis = parseDurationString(durationStr);
+
+                    // Only process if date is valid, duration is valid and positive, and metric and level are present
+                    if (!isNaN(startDate.getTime()) && durationMillis > 0 && metric && metric.length > 0 && level && level.length > 0) {
+                        const endDate = new Date(startDate.getTime() + durationMillis);
+
+                        // Create alert object (compatible structure for processing)
+                        parsedAlerts.push({
+                            alertName: metric,
+                            startDate: startDate, // Pass Date objects directly
+                            endDate: endDate, // Pass Date objects directly
+                            status: level // Use the Level as status
+                        });
+                    } else {
+                        console.warn(`Skipping line ${i + 1}: Invalid date (${triggeredDateTimeStr}), invalid/zero duration (${durationStr}), or missing metric/level.`, lines[i]);
+                    }
+                }
+
+                console.log('Finished Parsing Raw Data. Valid alerts for processing:', parsedAlerts.length);
+                if (parsedAlerts.length === 0) {
+                    showMessage("No valid alerts found in the provided data.", "warning");
+                    // Don't return null if no alerts, return empty array so widgets/charts can show 0
+                    return [];
+                }
+                return parsedAlerts;
+            }
+
+            // Helper to parse duration string (e.g., "19m", "2h", "10s", "1d") into milliseconds
+            function parseDurationString(durationStr) {
+                if (!durationStr) return 0;
+                durationStr = durationStr.trim().toLowerCase();
+                const value = parseInt(durationStr, 10);
+                if (isNaN(value)) {
+                     console.warn("Could not parse duration value:", durationStr);
+                    return 0;
+                 }
+
+                if (durationStr.endsWith('m')) {
+                    return value * 60 * 1000; // minutes to milliseconds
+                } else if (durationStr.endsWith('h')) {
+                    return value * 60 * 60 * 1000; // hours to milliseconds
+                } else if (durationStr.endsWith('s')) {
+                    return value * 1000; // seconds to milliseconds
+                } else if (durationStr.endsWith('d')) {
+                    return value * 24 * 60 * 60 * 1000; // days to milliseconds
+                }
+                 // If no unit or unknown unit, maybe assume minutes? Or return 0? Returning 0 is safer.
+                console.warn("Unknown or missing duration unit:", durationStr);
+                return 0;
+            }
+
+             // Helper to parse date string (e.g., "Apr 30, 2025, 04:09 (CEST)") into a Date object
+             function parseTriggeredDateTime(dateTimeStr) {
+                 if (!dateTimeStr) return new Date(NaN); // Return invalid date
+
+                 // Attempt to parse the string directly, removing the timezone part first for consistency.
+                 // New Date() is often able to parse "Month Day, Year HH:mm" formats reliably across browsers
+                 // when interpreted as local time or UTC depending on the exact format/browser.
+                 // We remove the part in parentheses like "(CEST)" as it's inconsistent for parsing.
+                 const cleanDateTimeStr = dateTimeStr.replace(/\s*\(.*\)$/, '').replace(',', ''); // Remove (CEST) and potential extra comma before time
+
+                 const date = new Date(cleanDateTimeStr);
+
+                 // Check if parsing was successful
+                 if (isNaN(date.getTime())) {
+                     console.warn("Failed to parse date string:", dateTimeStr, "-> Cleaned:", cleanDateTimeStr);
+                 }
+
+                 return date;
+             }
+
+
+            function visualizeData() {
+                 hideMessage();
+                 // Clear previous charts and widget data
+                 if (alertCountChartInstance) { alertCountChartInstance.destroy(); alertCountChartInstance = null; }
+                 if (totalDurationChartInstance) { totalDurationChartChartInstance = null; totalDurationChartInstance = null;} // Destroy instance and set var to null
+                 totalAlertCountWidget.textContent = '0';
+                 levelBreakdownWidget.innerHTML = '';
+                 topMetricsListWidget.innerHTML = '';
+
+
+                const rawText = alertDataTextarea.value.trim();
+                 if (!rawText) {
+                     showMessage("Textarea is empty. Paste raw data first.", "warning");
+                     return;
+                 }
+
+                // Use the new parsing function
+                 const alerts = parseNewRawData(rawText);
+
+                if (alerts === null) {
+                    // parseNewRawData already shows an error message
+                    return;
+                }
+                 console.log('Parsed Raw Alerts:', alerts.length);
+
+                 if (alerts.length === 0) {
+                     showMessage('No valid alerts found in the provided data after parsing.', 'warning');
+                     // Render empty charts/widgets
+                     renderSummaryWidgets({ // Provide empty data for widgets
+                        totalAlertCountOverall: 0,
+                        countByLevelOverall: {},
+                        countByMetricOverall: {}
+                     });
+                     renderAlertCountChart({ labels: [], datasets: [] }); // Provide empty data for charts
+                     renderTotalDurationChart({ labels: [], groupedData: {}, alertLevelsList: [] }); // Provide empty data for charts
+                     return;
+                 }
+
+                 // Process data - calculates weekly groups AND overall summaries
+                 currentProcessedData = processAlertDataForDurationAndCount(alerts);
+
+                 if (currentProcessedData) {
+                     // Render Widgets first
+                     renderSummaryWidgets(currentProcessedData);
+
+                     // Update Chart 1 title
+                     if (alertCountChartTitleElement) {
+                         alertCountChartTitleElement.textContent = `Timeline of ProM alerts (${currentProcessedData.totalAlertCountOverall}) for the selected period`;
+                     }
+
+                     // Render Charts
+                     alertCountChartInstance = renderAlertCountChart(currentProcessedData);
+                     // renderTotalDurationChart now uses data grouped by Level from currentProcessedData
+                     totalDurationChartInstance = renderTotalDurationChart(currentProcessedData);
+
+
+                     if(alertCountChartInstance || totalDurationChartInstance) {
+                        showMessage('Data visualized successfully!', 'success');
+                     } else {
+                        showMessage('Could not render charts. Check console for details.', 'warning'); // Changed to warning as widgets might have rendered
+                     }
+                 } else {
+                     showMessage('Error processing alert data for visualization. Check console.');
+                 }
+            }
+
+            // --- Function to process parsed alert data for duration and count (Weekly & Overall) ---
+            // MODIFIED: Calculates overall counts by Level and Metric, and list of unique Levels
+            function processAlertDataForDurationAndCount(alerts) {
+                 console.log('Processing Alerts for Duration & Count (Weekly & Overall):', alerts.length);
+                if (!alerts || alerts.length === 0) return null; // Or return empty structure {}? Returning null signals failure
+
+                const processedItems = [];
+                const uniqueMetrics = new Set();
+                const uniqueLevels = new Set(); // To collect all levels found
+
+                // --- Calculate Overall Counts and prepare processedItems ---
+                const overallCountsByLevel = {};
+                const overallCountsByMetric = {};
+                let totalCount = 0;
+
+                alerts.forEach(alert => {
+                     // Filter based on valid Date objects received from parser
+                    if (alert.startDate instanceof Date && !isNaN(alert.startDate.getTime()) &&
+                        alert.endDate instanceof Date && !isNaN(alert.endDate.getTime()) &&
+                        alert.endDate >= alert.startDate &&
+                        alert.alertName && alert.alertName.length > 0 &&
+                        alert.status && alert.status.length > 0 // Ensure level is present
+                       )
+                    {
+                        const durationMillis = alert.endDate.getTime() - alert.startDate.getTime();
+                        const durationHours = durationMillis / (1000 * 60 * 60);
+
+                        if (!isNaN(durationHours)) {
+                            processedItems.push({
+                                startDate: alert.startDate, // Use the Date object
+                                alertName: alert.alertName,
+                                durationHours: durationHours,
+                                status: alert.status // Keep status (Level)
+                            });
+
+                            // Update overall counts
+                            totalCount++;
+                            overallCountsByLevel[alert.status] = (overallCountsByLevel[alert.status] || 0) + 1;
+                            overallCountsByMetric[alert.alertName] = (overallCountsByMetric[alert.alertName] || 0) + 1;
+
+                            // Collect unique metrics and levels
+                            uniqueMetrics.add(alert.alertName);
+                             uniqueLevels.add(alert.status);
+
+                        } else {
+                            console.warn("Calculated duration is NaN for alert (after parsing):", alert);
+                        }
+                    } else {
+                        console.warn("Skipping alert due to missing required fields, invalid dates, or zero duration (after parsing):", alert);
+                    }
+                });
+
+                console.log("Overall Counts by Level:", overallCountsByLevel);
+                console.log("Overall Counts by Metric:", overallCountsByMetric);
+                console.log("Total Valid Alerts:", totalCount);
+
+
+                if (processedItems.length === 0) {
+                    console.log("No valid items for weekly grouping after initial processing.");
+                    // Return overall counts even if no items for weekly grouping, as widgets can still show 0
+                    return {
+                         labels: [],
+                         datasets: [],
+                         groupedData: {},
+                         groupedDataByLevel: {}, // Ensure this is included
+                         alertMetricsList: [],
+                         alertLevelsList: Object.keys(overallCountsByLevel), // List of levels found
+                         totalAlertCountOverall: totalCount,
+                         countByLevelOverall: overallCountsByLevel,
+                         countByMetricOverall: overallCountsByMetric
+                    };
+                }
+
+                // --- Prepare data for Weekly Grouping (Charts) ---
+                const alertMetricsList = [...uniqueMetrics]; // List of unique metrics for Chart 1
+                const alertLevelsList = [...uniqueLevels]; // List of unique levels for Chart 2 stacking
+
+                const startDates = processedItems.map(d => d.startDate); // Use Date objects
+                const weekStarts = getWeekStarts(startDates); // getWeekStarts works with Date objects
+
+                if (weekStarts.length === 0) {
+                     console.log('No weekly start dates generated.');
+                      // Return overall counts even if no weeks generated
+                     return {
+                        labels: [],
+                        datasets: [],
+                        groupedData: {},
+                        groupedDataByLevel: {}, // Ensure this is included
+                        alertMetricsList: alertMetricsList,
+                        alertLevelsList: alertLevelsList, // List of levels found
+                        totalAlertCountOverall: totalCount,
+                        countByLevelOverall: overallCountsByLevel,
+                        countByMetricOverall: overallCountsByMetric
+                     };
+                 }
+                const labels = weekStarts.map(formatDateRange); // formatDateRange expects the string format YYYY-MM-DD
+
+
+                 // Initialize groupedData structure for Chart 1 (Count by Metric per Week)
+                const groupedData = {}; // { weekLabel: { metricLabel: { totalDuration: X, count: Y } } }
+                 labels.forEach(label => {
+                    groupedData[label] = {};
+                    alertMetricsList.forEach(metric => {
+                        groupedData[label][metric] = { totalDuration: 0, count: 0 };
+                    });
+                 });
+
+                 // Initialize groupedData structure for Chart 2 (Duration by Level per Week) - NEW
+                 const groupedDataByLevel = {}; // { weekLabel: { level: { totalDuration: X, count: Y } } }
+                  labels.forEach(label => {
+                     groupedDataByLevel[label] = {};
+                     alertLevelsList.forEach(level => { // Use the list of unique levels found
+                         groupedDataByLevel[label][level] = { totalDuration: 0, count: 0 };
+                     });
+                  });
+
+
+                 // Group data by week, metric, AND level
+                 processedItems.forEach(item => {
+                    const { startDate, alertName, durationHours, status } = item; // Get status (Level)
+                    if (isNaN(durationHours)) return;
+
+                    // Find the correct week label for this startDate
+                    for (let i = 0; i < weekStarts.length; i++) {
+                        // Compare using Date objects parsed from YYYY-MM-DD strings (UTC midnight)
+                        const weekStart = new Date(weekStarts[i] + 'T00:00:00Z'); // Ensure UTC
+                        const weekEnd = new Date(weekStarts[i] + 'T00:00:00Z');
+                         weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
+                         weekEnd.setUTCHours(23, 59, 59, 999); // End of Sunday UTC
+
+                        // Compare item's startDate (may be local time zone depending on browser parse)
+                        // For robust grouping, converting item.startDate to UTC might be better:
+                        // const itemStartDateUTC = new Date(item.startDate.getTime()); // Copy
+                        // itemStartDateUTC.setMinutes(itemStartDateUTC.getMinutes() - itemStartDateUTC.getTimezoneOffset()); // Convert to UTC
+
+                        // Using direct comparison assumes consistent timezone handling or that local time comparison is sufficient for grouping
+                        if (startDate >= weekStart && startDate <= weekEnd) {
+
+                             // Group by Metric for Chart 1
+                            if (groupedData[labels[i]] && groupedData[labels[i]].hasOwnProperty(alertName)) {
+                                groupedData[labels[i]][alertName].totalDuration += durationHours;
+                                groupedData[labels[i]][alertName].count++;
+                            } else {
+                                console.warn(`Metric "${alertName}" not found for week "${labels[i]}" in groupedData initialization.`);
+                            }
+
+                             // Group by Level for Chart 2 (NEW)
+                             if (groupedDataByLevel[labels[i]] && groupedDataByLevel[labels[i]].hasOwnProperty(status)) {
+                                groupedDataByLevel[labels[i]][status].totalDuration += durationHours;
+                                groupedDataByLevel[labels[i]][status].count++;
+                             } else {
+                                 console.warn(`Level "${status}" not found for week "${labels[i]}" in groupedDataByLevel initialization.`);
+                             }
+
+
+                            break; // Found the week, move to the next item
+                        }
+                    }
+                 });
+
+
+                console.log('Grouped Data (Count by Metric per Week):', JSON.parse(JSON.stringify(groupedData)));
+                console.log('Grouped Data (Duration by Level per Week):', JSON.parse(JSON.stringify(groupedDataByLevel)));
+
+
+                 // Prepare datasets for the FIRST chart (COUNT by Metric)
+                const colorsMetrics = generateDistinctColors(alertMetricsList.length); // Generate colors based on number of unique metrics
+
+                const datasetsForFirstChart = alertMetricsList.map((metric, index) => {
+                    return {
+                        label: metric,
+                        data: labels.map(label => {
+                             // Get the count for this metric and week, default to 0 if not found
+                            const dataPoint = groupedData[label] && groupedData[label][metric] ? groupedData[label][metric].count : 0;
+                            return (dataPoint && !isNaN(dataPoint)) ? dataPoint : 0;
+                        }),
+                         backgroundColor: colorsMetrics[index % colorsMetrics.length] // Use generated colors
+                    };
+                });
+
+                console.log("Datasets for First Chart (Count by Metric):", JSON.stringify(datasetsForFirstChart, null, 2));
+                console.log('Datasets created for First Chart (Count by Metric):', datasetsForFirstChart.length);
+
+
+                 // Return all calculated data, including overall summaries and data grouped by level
+                return {
+                   labels: labels, // weekly labels
+                   datasets: datasetsForFirstChart, // count by metric per week
+                   groupedData: groupedData, // raw weekly data by metric (kept for debug/future)
+                   groupedDataByLevel: groupedDataByLevel, // NEW: raw weekly data by level
+                   alertMetricsList: alertMetricsList, // list of unique metrics
+                   alertLevelsList: alertLevelsList, // NEW: list of unique levels found
+
+                   // Overall Summary Data
+                   totalAlertCountOverall: totalCount,
+                   countByLevelOverall: overallCountsByLevel,
+                   countByMetricOverall: overallCountsByMetric
+                };
+             }
+
+            // --- NEW Function to render Summary Widgets ---
+            function renderSummaryWidgets(summaryData) {
+                 console.log("Rendering summary widgets with data:", summaryData);
+
+                 // Update Total Count
+                 totalAlertCountWidget.textContent = summaryData.totalAlertCountOverall || 0;
+
+                 // Render Level Breakdown
+                 levelBreakdownWidget.innerHTML = ''; // Clear previous content
+                 const countsByLevel = summaryData.countByLevelOverall || {};
+                 const total = summaryData.totalAlertCountOverall || 0;
+                 const levels = Object.keys(countsByLevel).sort((a, b) => countsByLevel[b] - countsByLevel[a]); // Sort levels by count descending
+
+                 levels.forEach(level => {
+                    const count = countsByLevel[level];
+                    const percentage = total > 0 ? (count / total) * 100 : 0;
+                    const listItem = document.createElement('li');
+
+                    listItem.innerHTML = `
+                        <span class="level-name">${level}</span>
+                        <div class="level-bar">
+                            <div class="level-bar-inner ${level.toLowerCase()}" style="width: ${percentage}%;"></div>
+                        </div>
+                        <span class="level-count">${count}</span>
+                    `;
+                     levelBreakdownWidget.appendChild(listItem);
+                 });
+
+                 // Render Top Metrics
+                 topMetricsListWidget.innerHTML = ''; // Clear previous content
+                 const countsByMetric = summaryData.countByMetricOverall || {};
+                 // Convert to array, sort, and take top 5
+                 const sortedMetrics = Object.keys(countsByMetric)
+                     .map(metric => ({ name: metric, count: countsByMetric[metric] }))
+                     .sort((a, b) => b.count - a.count) // Sort by count descending
+                     .slice(0, 5); // Take top 5
+
+                 if (sortedMetrics.length === 0) {
+                     const listItem = document.createElement('li');
+                     listItem.textContent = "No metrics found.";
+                     topMetricsListWidget.appendChild(listItem);
+                 } else {
+                     sortedMetrics.forEach(metric => {
+                         const listItem = document.createElement('li');
+                         listItem.innerHTML = `
+                            <span class="metric-name">${metric.name}</span>
+                            <span class="metric-count">${metric.count}</span>
+                         `;
+                         topMetricsListWidget.appendChild(listItem);
+                     });
+                 }
+            }
+
+
+            // --- Helper functions (Adjusted getWeekStarts to work with Date objects) ---
+            function getWeekStarts(dates) {
+                 /*
+                 Given an array of Date objects, find the Mondays for all weeks spanning
+                 the date range, from the Monday of the first date's week to the Monday
+                 of the last date's week. Returns dates in 'YYYY-MM-DD' string format (UTC).
+                 */
+                console.log("Calculating week starts from dates:", dates.length);
+                 if (!dates || dates.length === 0) {
+                     console.log("No dates provided for getWeekStarts.");
+                     return [];
+                 }
+                // Sort dates to find min and max
+                // Create copies to avoid modifying original date objects in the array
+                const sortedDates = [...dates].sort((a, b) => a.getTime() - b.getTime());
+
+                const minDate = sortedDates[0];
+                const maxDate = sortedDates[sortedDates.length - 1];
+
+                // Get the Monday of the week containing the minimum date (in UTC)
+                let currentMonday = getMonday(minDate);
+                 console.log("First Monday calculated (UTC):", currentMonday.toISOString());
+
+
+                const weekStarts = [];
+
+                // Loop until the current Monday is *after* the week of the maximum date
+                // Get the Monday of the week containing maxDate (in UTC)
+                const mondayAfterMaxDateWeek = getMonday(maxDate);
+                mondayAfterMaxDateWeek.setUTCDate(mondayAfterMaxDateWeek.getUTCDate() + 7); // Get the Monday *after* the max date's week
+
+                while (currentMonday < mondayAfterMaxDateWeek) {
+                     // Use toISOString().slice(0, 10) to get 'YYYY-MM-DD' representing UTC date
+                    weekStarts.push(currentMonday.toISOString().slice(0, 10));
+                    // Move to the next Monday (add 7 days in UTC)
+                    currentMonday.setUTCDate(currentMonday.getUTCDate() + 7);
+                }
+                 console.log("Calculated week starts (UTC YYYY-MM-DD):", weekStarts);
+                return weekStarts;
+             }
+
+            function getMonday(date) {
+                 /*
+                 Given a Date object, return a new Date object set to the start of the
+                 Monday of that date's week in UTC.
+                 */
+                 if (!(date instanceof Date) || isNaN(date.getTime())) {
+                     console.error("Invalid date provided to getMonday:", date);
+                     return new Date(NaN);
+                 }
+                 const d = new Date(date.getTime()); // Create a copy based on time value
+                 const day = d.getUTCDay(); // Get day of week in UTC (0 for Sunday, 1 for Monday, ..., 6 for Saturday)
+                 // Calculate the difference to the previous Monday in days.
+                 // If today is Monday (1), diff is 0. If today is Sunday (0), diff is -6. Otherwise, diff is 1 - day.
+                 const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+                 d.setUTCDate(diff); // Set the date to Monday of the week in UTC
+                 d.setUTCHours(0, 0, 0, 0); // Set time to midnight UTC
+                 return d;
+             }
+
+            function formatDateRange(startDateStr) {
+                 /*
+                 Given a 'YYYY-MM-DD' string (representing a Monday in UTC),
+                 format the week range as "DD/MM - DD/MM".
+                 */
+                 if (!startDateStr) return '';
+                 try {
+                    // Parse as UTC to match how getWeekStarts generates them
+                    const start = new Date(startDateStr + 'T00:00:00Z');
+                    const end = new Date(start);
+                    end.setUTCDate(end.getUTCDate() + 6); // Add 6 days to get to Sunday (in UTC)
+
+                    const startDay = String(start.getUTCDate()).padStart(2, '0');
+                    const startMonth = String(start.getUTCMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+                    const endDay = String(end.getUTCDate()).padStart(2, '0');
+                    const endMonth = String(end.getUTCMonth() + 1).padStart(2, '0');
+
+                    return `${startDay}/${startMonth} - ${endDay}/${endMonth}`;
+                 } catch (e) {
+                    console.error("Error formatting date range:", startDateStr, e);
+                    return 'Invalid Date';
+                 }
+             }
+
+            function generateDistinctColors(count) {
+                /*
+                Generates an array of aesthetically distinct HSLA colors.
+                */
+                 if (count <= 0) return ['rgba(54, 162, 235, 0.8)']; // Default color if no items
+                const colors = [];
+                const saturation = 0.7; // Moderate saturation
+                const lightness = 0.6; // Moderate lightness
+
+                for (let i = 0; i < count; i++) {
+                    // Distribute hues evenly across the color wheel
+                    const hue = (i * (360 / count) + 40) % 360; // Added offset for better starting color
+                    colors.push(`hsla(${hue}, ${saturation * 100}%, ${lightness * 100}%, 0.8)`);
+                }
+                 // Ensure at least one color if count was 0 but somehow requested
+                 if (colors.length === 0) colors.push('rgba(54, 162, 235, 0.8)');
+
+                return colors;
+            }
+
+             // Function to get specific colors for known levels for Chart 2 stacking
+             function getLevelColor(level) {
+                 const lowerLevel = level.toLowerCase();
+                 switch(lowerLevel) {
+                     case 'warning': return 'rgba(255, 193, 7, 0.8)'; // Bootstrap Warning Yellow
+                     case 'critical': return 'rgba(220, 53, 69, 0.8)'; // Bootstrap Danger Red
+                     case 'exhausted': return 'rgba(111, 66, 193, 0.8)'; // Bootstrap Purple
+                     case 'info': return 'rgba(23, 162, 184, 0.8)'; // Bootstrap Info Cyan
+                     // Add other levels if known
+                     default: return 'rgba(108, 117, 125, 0.8)'; // Bootstrap Secondary Gray for unknown levels
+                 }
+             }
+
+
+            // --- Function to render the FIRST chart (COUNT by Metric) --- //
+            // Unchanged - works with the datasets format provided by processAlertDataForDurationAndCount
+            function renderAlertCountChart(processedData) {
+                const { labels, datasets } = processedData;
+                 const hasData = datasets.some(ds => ds.data.some(value => value > 0));
+                 if (!hasData && labels.length > 0) { console.warn("No data with positive count found for the first chart."); }
+                 if (labels.length === 0) { console.log("No labels for chart 1, skipping render."); return null; }
+
+
+                const ctx = document.getElementById('alertCountChart').getContext('2d');
+                 // Destroy existing instance before creating a new one
+                 if (alertCountChartInstance) {
+                     alertCountChartInstance.destroy();
+                 }
+
+                try {
+                    const chart = new Chart(ctx, {
+                        type: 'bar',
+                        data: { labels, datasets },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            scales: {
+                                x: {
+                                    stacked: true,
+                                    title: { display: true, text: 'Week Alert Started (Monday - Sunday)' }
+                                },
+                                y: {
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    title: { display: true, text: 'Number of Alerts' },
+                                    ticks: { precision: 0, stepSize: 1 }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { usePointStyle: true, pointStyle: 'circle' }
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false,
+                                    callbacks: {
+                                        label: function (context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) { label += ': '; }
+                                            if (context.parsed.y !== null) {
+                                                label += context.parsed.y + ` alert${context.parsed.y === 1 ? '' : 's'}`;
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                },
+                                datalabels: {
+                                    display: function (context) {
+                                         // Display datalabel only if the value is positive and is the top value in the stack
+                                         const datasetIndex = context.datasetIndex;
+                                         const dataIndex = context.dataIndex;
+                                         const value = context.dataset.data[dataIndex];
+
+                                         if (value <= 0) return false;
+
+                                         // Check if this value is the top segment for this bar
+                                         let sum = 0;
+                                         for(let i=0; i <= datasetIndex; i++) {
+                                             sum += context.chart.data.datasets[i].data[dataIndex] || 0;
+                                         }
+                                         // Check if the sum up to this dataset matches the total for the bar
+                                         // This is a simplified check, might need adjustment based on Chart.js version/behavior
+                                         // A common pattern is to display labels only for large segments or the total label at the top.
+                                         // Let's just display for any value > 0 for simplicity first.
+                                         return true; // Display if value > 0
+
+                                    },
+                                    color: 'white', // Data label color
+                                    anchor: 'center', // Position inside the bar
+                                    align: 'center',
+                                    font: { weight: 'bold', size: 10 },
+                                    formatter: (value, context) => {
+                                        return value; // Display the count
+                                    },
+                                    textShadow: true, // Add text shadow for better visibility on dark bars
+                                    shadowColor: 'rgba(0,0,0,0.5)',
+                                    shadowBlur: 3
+                                }
+                            }
+                        }
+                    });
+                     // Store the instance
+                    alertCountChartInstance = chart;
+                    return chart;
+                } catch (error) {
+                    console.error('Error rendering alert count chart:', error);
+                    showMessage('Error rendering alert count chart. Check console.');
+                    return null;
+                }
+            }
+
+            // --- Function to render the SECOND chart (DURATION by Level) --- //
+            // MODIFIED: Uses groupedDataByLevel to stack bars by Level
+            function renderTotalDurationChart(processedData) {
+                 const { labels, groupedDataByLevel, alertLevelsList } = processedData;
+
+                 const hasData = alertLevelsList.some(level =>
+                     labels.some(label =>
+                         groupedDataByLevel[label] && groupedDataByLevel[label][level] && groupedDataByLevel[label][level].totalDuration > 0
+                     )
+                 );
+
+                 if (!hasData && labels.length > 0) { console.warn("No data with positive duration found for the second chart."); }
+                 if (labels.length === 0) { console.log("No labels for chart 2, skipping render."); return null; }
+
+
+                 const ctx = document.getElementById('totalDurationChart').getContext('2d');
+                 // Destroy existing instance before creating a new one
+                 if (totalDurationChartInstance) {
+                     totalDurationChartInstance.destroy();
+                 }
+
+                 // Prepare datasets for a STACKED bar chart (Duration by Level)
+                 // Sort levels for consistent stacking order (e.g., Critical, Warning, Info)
+                 const sortedLevels = ['Critical', 'Warning', 'Exhausted', 'Info'].filter(level => alertLevelsList.includes(level));
+                 // Add any other levels found but not in the preferred order
+                 alertLevelsList.forEach(level => {
+                     if (!sortedLevels.includes(level)) {
+                         sortedLevels.push(level);
+                     }
+                 });
+
+
+                 const datasetsForSecondChart = sortedLevels.map(level => {
+                     const levelColor = getLevelColor(level); // Get specific color for the level
+                     return {
+                         label: level,
+                         data: labels.map(label => {
+                              // Get the total duration for this level and week, default to 0 if not found
+                             const dataPoint = groupedDataByLevel[label] && groupedDataByLevel[label][level] ? groupedDataByLevel[label][level].totalDuration : 0;
+                             return (dataPoint && !isNaN(dataPoint)) ? dataPoint : 0;
+                         }),
+                         backgroundColor: levelColor,
+                         borderColor: levelColor.replace(', 0.8)', ', 1)'), // Use full opacity for border
+                         borderWidth: 1
+                     };
+                 });
+
+                 console.log("Datasets for Second Chart (Duration by Level):", JSON.stringify(datasetsForSecondChart, null, 2));
+                 console.log('Datasets created for Second Chart (Duration by Level):', datasetsForSecondChart.length);
+
+
+                 // Calculate max total duration for Y-axis scaling, add some padding
+                 const weeklyTotals = labels.map(label => {
+                     let total = 0;
+                      if (groupedDataByLevel && groupedDataByLevel[label]) {
+                         sortedLevels.forEach(level => { // Sum durations for all levels in the sorted order
+                             const duration = groupedDataByLevel[label][level]?.totalDuration || 0;
+                              if (!isNaN(duration)) total += duration;
+                         });
+                      }
+                     return total;
+                 });
+                 const maxValue = Math.max(...weeklyTotals);
+                 const yAxisMax = maxValue > 0 ? maxValue * 1.15 : 1;
+
+
+                 try {
+                     const chart = new Chart(ctx, {
+                         type: 'bar',
+                         data: { labels: labels, datasets: datasetsForSecondChart }, // Use the datasets created above
+                         options: {
+                             responsive: true,
+                             maintainAspectRatio: true,
+                             scales: {
+                                 x: {
+                                     stacked: true, // Stack bars on X axis
+                                     title: { display: true, text: 'Week Alert Started (Monday - Sunday)' }
+                                 },
+                                 y: {
+                                     stacked: true, // Stack bars on Y axis
+                                     beginAtZero: true,
+                                     max: yAxisMax, // Set dynamic max value
+                                     title: { display: true, text: 'Sum of Durations (hours)' },
+                                     ticks: { precision: 1 } // Show one decimal place for hours
+                                 }
+                             },
+                             plugins: {
+                                 legend: {
+                                     display: true, // Show legend for stacked bars
+                                     position: 'bottom',
+                                     labels: { usePointStyle: true, pointStyle: 'circle' }
+                                 },
+                                 tooltip: {
+                                     mode: 'index', // Show tooltip for the whole stack
+                                     intersect: false,
+                                     callbacks: {
+                                         label: function (context) {
+                                             let label = context.dataset.label || ''; // Level name
+                                             if (label) { label += ': '; }
+                                             if (context.parsed.y !== null) {
+                                                 // Display the duration for this segment
+                                                 label += context.parsed.y.toFixed(1) + ' hours';
+                                             }
+                                             return label;
+                                         },
+                                          // Optional: Add a footer to the tooltip to show the total for the week
+                                         footer: function(tooltipItems) {
+                                             let total = 0;
+                                             tooltipItems.forEach(function(tooltipItem) {
+                                                 total += tooltipItem.parsed.y;
+                                             });
+                                             return 'Total: ' + total.toFixed(1) + ' hours';
+                                         }
+                                     }
+                                 },
+                                 datalabels: {
+                                     display: function (context) {
+                                          // Display datalabel only if the value is positive
+                                         return context.dataset.data[context.dataIndex] > 0;
+                                     },
+                                     anchor: 'center', // Position inside the bar segment
+                                     align: 'center',
+                                     color: 'white', // Data label color (usually white for dark bars)
+                                     font: { weight: 'bold', size: 10 },
+                                     formatter: (value) => {
+                                         // Display duration with 1 decimal, hide if too small?
+                                          if (value < 0.5) return ''; // Hide very small labels
+                                         return value.toFixed(1);
+                                     },
+                                     textShadow: true, // Add text shadow for better visibility
+                                     shadowColor: 'rgba(0,0,0,0.5)',
+                                     shadowBlur: 3
+                                 }
+                             }
+                         }
+                     });
+                     // Store the instance
+                     totalDurationChartInstance = chart;
+                     return chart;
+                 } catch (error) {
+                     console.error('Error rendering total duration chart:', error);
+                     showMessage('Error rendering total duration chart. Check console.');
+                     return null;
+                 }
+             }
+
+        });
+    </script>
+</body>
+
+</html>
