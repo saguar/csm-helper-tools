@@ -39,7 +39,7 @@
             color: #4a5568; /* Slightly darker gray for labels */
             text-align: center; /* Center the labels */
         }
-        input[type="file"], input[type="text"] {
+        input[type="file"], input[type="text"], input[type="range"] { /* Added input[type="range"] */
             margin-bottom: 1.5rem; /* Increased margin below inputs */
             padding: 0.75rem; /* Increased padding */
             border: 1px solid #d1d5db; /* Lighter border */
@@ -51,10 +51,10 @@
          input[type="file"] {
              cursor: pointer;
          }
-         input[type="text"] {
-            display: block; /* Make search input a block element */
-            margin-left: auto; /* Center the search input */
-            margin-right: auto; /* Center the search input */
+         input[type="text"], input[type="range"] { /* Added input[type="range"] */
+            display: block; /* Make search input and range input block elements */
+            margin-left: auto; /* Center the input */
+            margin-right: auto; /* Center the input */
             width: 95%; /* Make it take most of the width */
             max-width: 600px; /* Limit maximum width */
         }
@@ -147,26 +147,98 @@
             margin-top: 2rem; /* Space above the footer */
         }
 
-        /* Updated grid layout for updates container */
+        /* Base grid layout (1 column by default) */
         #updatesContainer {
             display: grid;
-            grid-template-columns: repeat(1, minmax(0, 1fr)); /* 1 column by default */
+            grid-template-columns: repeat(1, minmax(0, 1fr));
             gap: 1rem; /* Gap between grid items */
         }
 
-        /* Medium screens and up: 4 columns */
-        @media (min-width: 768px) { /* Tailwind's 'md' breakpoint */
-            #updatesContainer {
-                grid-template-columns: repeat(4, minmax(0, 1fr));
+        /* Media queries for responsiveness (can be overridden by JS) */
+        @media (min-width: 640px) { /* Tailwind's 'sm' breakpoint */
+             #updatesContainer {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
 
-        /* Large screens and up: keep 4 columns */
+        @media (min-width: 768px) { /* Tailwind's 'md' breakpoint */
+            #updatesContainer {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
         @media (min-width: 1024px) { /* Tailwind's 'lg' breakpoint */
              #updatesContainer {
                 grid-template-columns: repeat(4, minmax(0, 1fr));
             }
         }
+
+         /* Style for the range input container */
+         .range-container {
+             text-align: center; /* Center contents */
+             margin-bottom: 1.5rem; /* Space below */
+         }
+
+         .range-container label {
+             display: inline-block; /* Display label and span inline */
+             margin-right: 0.5rem; /* Space between label and value */
+             text-align: center; /* Center the label text */
+         }
+
+         .range-container span {
+             font-weight: 600; /* Bold value */
+             color: #1f2937; /* Darker color */
+         }
+
+         .range-container input[type="range"] {
+             display: inline-block; /* Display range input inline */
+             vertical-align: middle; /* Align vertically with text */
+             width: 150px; /* Fixed width for the slider */
+             margin: 0 0.5rem; /* Space around the slider */
+             padding: 0; /* Remove padding */
+             border: none; /* Remove border */
+             background-color: transparent; /* Transparent background */
+             box-shadow: none; /* Remove shadow */
+         }
+
+         /* Style the range input thumb and track for better visibility */
+         input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px; /* Size of the thumb */
+            height: 16px; /* Size of the thumb */
+            background: #4f46e5; /* Indigo color */
+            cursor: pointer;
+            border-radius: 50%; /* Round thumb */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* Subtle shadow */
+            margin-top: -6px; /* Center thumb vertically on track */
+         }
+
+         input[type="range"]::-moz-range-thumb {
+            width: 16px; /* Size of the thumb */
+            height: 16px; /* Size of the thumb */
+            background: #4f46e5; /* Indigo color */
+            cursor: pointer;
+            border-radius: 50%; /* Round thumb */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* Subtle shadow */
+         }
+
+         input[type="range"]::-webkit-slider-track {
+            width: 100%;
+            height: 4px; /* Height of the track */
+            cursor: pointer;
+            background: #d1d5db; /* Light gray track color */
+            border-radius: 2px; /* Rounded track */
+         }
+
+         input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 4px; /* Height of the track */
+            cursor: pointer;
+            background: #d1d5db; /* Light gray track color */
+            border-radius: 2px; /* Rounded track */
+         }
+
 
     </style>
 </head>
@@ -183,7 +255,14 @@
             <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
         </div>
 
-        <input type="text" id="searchInput" placeholder="Search by Detail..."> <div id="updatesContainer">
+        <input type="text" id="searchInput" placeholder="Search by Detail...">
+
+        <div class="range-container">
+            <label for="columnCount">Cards per row:</label>
+            <input type="range" id="columnCount" min="2" max="5" value="3"> <span id="columnCountValue">3</span> </div>
+
+
+        <div id="updatesContainer">
             <p id="initialMessage" class="text-center text-gray-600 col-span-full">Please upload a CSV file to view the release updates.</p>
         </div>
 
@@ -203,9 +282,29 @@
         const searchInput = document.getElementById('searchInput'); // Get the search input element
         const instructionsToggle = document.getElementById('instructionsToggle'); // Get the instructions toggle element
         const instructionsContent = document.getElementById('instructionsContent'); // Get the instructions content element
+        const columnCountInput = document.getElementById('columnCount'); // Get the range input
+        const columnCountValueSpan = document.getElementById('columnCountValue'); // Get the span for the value
 
 
         let allUpdatesData = []; // Variable to store the original parsed data
+
+        // Function to update the grid columns based on the range input value
+        function updateGridColumns(count) {
+            updatesContainer.style.gridTemplateColumns = `repeat(${count}, minmax(0, 1fr))`;
+        }
+
+        // Initial grid setup based on the default range input value
+        updateGridColumns(columnCountInput.value);
+        columnCountValueSpan.textContent = columnCountInput.value; // Display initial value
+
+
+        // Add event listener for the range input
+        columnCountInput.addEventListener('input', (event) => {
+            const count = event.target.value;
+            columnCountValueSpan.textContent = count; // Update the displayed value
+            updateGridColumns(count); // Update the grid layout
+        });
+
 
         fileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
@@ -404,6 +503,8 @@
                 `;
                 updatesContainer.appendChild(card);
             });
+             // Ensure the grid columns are set based on the current range input value after displaying updates
+             updateGridColumns(columnCountInput.value);
         }
     </script>
 </body>
