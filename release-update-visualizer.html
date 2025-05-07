@@ -278,9 +278,23 @@
          #aiResponseArea p {
              color: #374151; /* Darker gray text */
              line-height: 1.6;
-             white-space: pre-wrap; /* Preserve whitespace and allow wrapping */
-             word-wrap: break-word; /* Break long words */
+             /* white-space: pre-wrap; /* Preserve whitespace and allow wrapping - Removed */
+             /* word-wrap: break-word; /* Break long words - Removed */
          }
+         /* Added style to render basic Markdown */
+         #aiResponseArea p strong {
+             font-weight: 700; /* Bold for strong tags */
+         }
+          #aiResponseArea p ul {
+              list-style: disc inside; /* Bullet points for lists */
+              margin-top: 0.5rem;
+              margin-bottom: 0.5rem;
+              padding-left: 1.5rem; /* Indent list items */
+          }
+          #aiResponseArea p li {
+              margin-bottom: 0.25rem; /* Space between list items */
+          }
+
 
          /* Style for loading indicator */
          .loading-indicator {
@@ -346,7 +360,22 @@
         function showAIResponse(response) {
             const aiResponseArea = document.getElementById('aiResponseArea');
             const aiResponseContent = document.getElementById('aiResponseContent');
-            aiResponseContent.textContent = response;
+
+            // Simple Markdown to HTML conversion
+            let htmlResponse = response;
+            // Convert bold (**text**) to <strong>text</strong>
+            htmlResponse = htmlResponse.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // Convert list items (* item or - item) to <li> within <ul> (basic)
+            // This is a very simple conversion and might not handle nested lists or complex markdown
+            htmlResponse = htmlResponse.replace(/^[\*\-]\s+(.*)$/gm, '<li>$1</li>');
+            if (htmlResponse.includes('<li>')) {
+                 htmlResponse = '<ul>' + htmlResponse + '</ul>';
+            }
+             // Convert newlines to <br> tags, but only if not already inside list items
+            htmlResponse = htmlResponse.replace(/\n(?!<\/li>)/g, '<br>');
+
+
+            aiResponseContent.innerHTML = htmlResponse; // Use innerHTML to render HTML tags
             aiResponseArea.style.display = 'block';
         }
 
@@ -355,7 +384,7 @@
             const aiResponseArea = document.getElementById('aiResponseArea');
             const aiResponseContent = document.getElementById('aiResponseContent');
             aiResponseArea.style.display = 'none';
-            aiResponseContent.textContent = ''; // Clear content when hidden
+            aiResponseContent.innerHTML = ''; // Clear content when hidden
         }
 
 
@@ -420,7 +449,7 @@
                 } catch (error) {
                     console.error("Error parsing or displaying CSV:", error); // Log the actual error to console
                     // Display a more specific message if available, otherwise a general one
-                    errorMessageDiv.textContent = `Errore processing file: ${error.message || 'An unknown error occurred during parsing.'} Please ensure it is a valid CSV and check the browser console for details.`;
+                    errorMessageDiv.textContent = `Error processing file: ${error.message || 'An unknown error occurred during parsing.'} Please ensure it is a valid CSV and check the browser console for details.`;
                     errorMessageDiv.classList.remove('hidden');
                     allUpdatesData = []; // Clear data on error
                      updatesContainer.innerHTML = ''; // Clear updates container on error
@@ -429,7 +458,7 @@
 
             reader.onerror = (e) => {
                 console.error("Error reading file:", e); // Log the actual error to console
-                errorMessageDiv.textContent = 'Errore reading file.';
+                errorMessageDiv.textContent = 'Error reading file.';
                 errorMessageDiv.classList.remove('hidden');
                  allUpdatesData = []; // Clear data on error
                  updatesContainer.innerHTML = ''; // Clear updates container on error
@@ -457,7 +486,7 @@
         // Function to call the backend for AI analysis
         async function analyzeWithGemini(updateData, buttonElement) {
              // Show loading indicator and disable button
-             buttonElement.textContent = 'Analisi in corso...';
+             buttonElement.textContent = 'Analyzing with AI...'; // Translated text
              buttonElement.disabled = true;
              buttonElement.style.backgroundColor = '#a78bfa'; // Tailwind violet-400 for loading state
              buttonElement.style.cursor = 'not-allowed';
@@ -475,31 +504,31 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(updateData) // Invia i dati dell'aggiornamento come JSON
+                    body: JSON.stringify(updateData) // Send update data as JSON
                 });
 
                 if (!response.ok) {
-                    // Gestisci errori HTTP (es. 400, 500)
+                    // Handle HTTP errors (e.g., 400, 500)
                     const errorBody = await response.json();
-                    throw new Error(`Errore backend: ${response.status} ${response.statusText} - ${errorBody.error || 'Errore sconosciuto'}`);
+                    throw new Error(`Backend Error: ${response.status} ${response.statusText} - ${errorBody.error || 'Unknown error'}`); // Translated text
                 }
 
                 const data = await response.json();
-                console.log('Risposta ricevuta dal backend:', data);
+                console.log('Response received from backend:', data);
 
                 if (data && data.analysis) {
-                    showAIResponse(data.analysis); // Mostra l'analisi ricevuta
+                    showAIResponse(data.analysis); // Display the received analysis
                 } else {
-                    showAIResponse("Risposta dall'AI non valida o vuota.");
+                    showAIResponse("Invalid or empty AI response."); // Translated text
                 }
 
             } catch (error) {
-                console.error("Errore nella chiamata al backend:", error);
-                // Modificato per mostrare un messaggio di errore più utile
-                showAIResponse(`Errore durante l'analisi AI: ${error.message || 'Si è verificato un errore di rete o un problema con il backend.'}`);
+                console.error("Error calling backend:", error); // Translated text
+                // Modified to show a more helpful error message
+                showAIResponse(`Error during AI analysis: ${error.message || 'A network error or backend issue occurred.'}`); // Translated text
             } finally {
                 // Reset button state
-                buttonElement.textContent = 'Analizza con AI';
+                buttonElement.textContent = 'Analyze with AI'; // Translated text
                 buttonElement.disabled = false;
                 buttonElement.style.backgroundColor = '#10b981'; // Reset to original green
                 buttonElement.style.cursor = 'pointer';
@@ -516,7 +545,7 @@
         function parseCSV(text) {
             const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== ''); // Split into lines, handle different line endings, remove empty lines
             if (lines.length === 0) {
-                 throw new Error("CSV file is empty.");
+                 throw new Error("CSV file is empty."); // Translated text
             }
 
             const headers = [];
@@ -551,7 +580,7 @@
             const requiredHeaders = ["Date", "OrganizationId", "Release Update Name", "Status", "Due by Date", "Badge", "Test Run Avail", "Detail", "Enforcement"];
              const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
              if (missingHeaders.length > 0) {
-                 throw new Error(`Missing required headers: ${missingHeaders.join(', ')}`);
+                 throw new Error(`Missing required headers: ${missingHeaders.join(', ')}`); // Translated text
              }
 
 
@@ -602,7 +631,7 @@
         // Function to format date from YYMMDD to dd/MM/YYYY
         function formatDate(yyyymmdd) {
             if (!yyyymmdd || typeof yyyymmdd !== 'string' || yyyymmdd.length !== 6) {
-                return 'Invalid Date'; // Handle invalid input
+                return 'Invalid Date'; // Translated text
             }
             const year = '20' + yyyymmdd.substring(0, 2); // Assuming 21st century
             const month = yyyymmdd.substring(2, 4);
@@ -610,7 +639,7 @@
 
             // Basic validation for month and day (optional but good practice)
             if (parseInt(month) > 12 || parseInt(day) > 31) {
-                 return 'Invalid Date';
+                 return 'Invalid Date'; // Translated text
             }
 
             return `${day}/${month}/${year}`;
@@ -623,7 +652,7 @@
 
 
             if (data.length === 0) {
-                updatesContainer.innerHTML = '<p class="text-center text-gray-600 col-span-full">No release updates found matching your criteria.</p>';
+                updatesContainer.innerHTML = '<p class="text-center text-gray-600 col-span-full">No release updates found matching your criteria.</p>'; // Translated text
                 return;
             }
 
@@ -638,8 +667,7 @@
 
 
                 card.innerHTML = `
-                    <h2 class="text-xl font-semibold mb-2">${update['Release Update Name'] || 'Unnamed Update'}</h2>
-                    <div class="flex flex-wrap items-center text-sm text-gray-700 mb-2">
+                    <h2 class="text-xl font-semibold mb-2">${update['Release Update Name'] || 'Unnamed Update'}</h2> <div class="flex flex-wrap items-center text-sm text-gray-700 mb-2">
                         <span class="mr-4"><strong>Status:</strong> ${update.Status || 'N/A'}</span>
                         <span><strong>Due by:</strong> ${formattedDueDate}</span>
                     </div>
@@ -649,9 +677,8 @@
                          <span><strong>Enforcement:</strong> ${update.Enforcement || 'N/A'}</span>
                     </div>
                     <div class="detail">
-                        <p>${update.Detail || 'No details provided.'}</p>
-                    </div>
-                     <button class="analyze-btn">Analizza con AI</button> `;
+                        <p>${update.Detail || 'No details provided.'}</p> </div>
+                     <button class="analyze-btn">Analyze with AI</button> `;
                 updatesContainer.appendChild(card);
 
                 // Add event listener to the newly created button
