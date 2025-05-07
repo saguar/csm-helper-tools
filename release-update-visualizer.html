@@ -183,9 +183,7 @@
             <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
         </div>
 
-        <input type="text" id="searchInput" placeholder="Search by Release Update Name...">
-
-        <div id="updatesContainer">
+        <input type="text" id="searchInput" placeholder="Search by Detail..."> <div id="updatesContainer">
             <p id="initialMessage" class="text-center text-gray-600 col-span-full">Please upload a CSV file to view the release updates.</p>
         </div>
 
@@ -254,8 +252,8 @@
         searchInput.addEventListener('input', (event) => {
             const searchTerm = event.target.value.toLowerCase();
             const filteredUpdates = allUpdatesData.filter(update => {
-                // Check if 'Release Update Name' exists and contains the search term (case-insensitive)
-                return update['Release Update Name'] && update['Release Update Name'].toLowerCase().includes(searchTerm);
+                // Change search field to 'Detail'
+                return update['Detail'] && update['Detail'].toLowerCase().includes(searchTerm);
             });
             displayUpdates(filteredUpdates); // Display filtered data
         });
