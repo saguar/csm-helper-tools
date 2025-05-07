@@ -146,6 +146,28 @@
             color: #6b7280; /* Gray text color */
             margin-top: 2rem; /* Space above the footer */
         }
+
+        /* Updated grid layout for updates container */
+        #updatesContainer {
+            display: grid;
+            grid-template-columns: repeat(1, minmax(0, 1fr)); /* 1 column by default */
+            gap: 1rem; /* Gap between grid items */
+        }
+
+        /* Medium screens and up: 4 columns */
+        @media (min-width: 768px) { /* Tailwind's 'md' breakpoint */
+            #updatesContainer {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+        }
+
+        /* Large screens and up: keep 4 columns */
+        @media (min-width: 1024px) { /* Tailwind's 'lg' breakpoint */
+             #updatesContainer {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -163,7 +185,7 @@
 
         <input type="text" id="searchInput" placeholder="Search by Release Update Name...">
 
-        <div id="updatesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div id="updatesContainer">
             <p id="initialMessage" class="text-center text-gray-600 col-span-full">Please upload a CSV file to view the release updates.</p>
         </div>
 
