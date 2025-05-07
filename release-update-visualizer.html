@@ -239,6 +239,67 @@
             border-radius: 2px; /* Rounded track */
          }
 
+         /* Style for the AI Analysis Button */
+         .analyze-btn {
+             display: inline-block; /* Make it inline-block */
+             background-color: #10b981; /* Tailwind green-500 */
+             color: white;
+             padding: 0.5rem 1rem; /* Padding */
+             border-radius: 0.375rem; /* Rounded corners */
+             cursor: pointer;
+             font-size: 0.9rem; /* Smaller font size */
+             font-weight: 600;
+             margin-top: 1rem; /* Space above the button */
+             transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+         }
+         .analyze-btn:hover {
+             background-color: #059669; /* Tailwind green-600 */
+             transform: translateY(-1px); /* Slight lift on hover */
+             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Stronger shadow on hover */
+         }
+
+         /* Style for the AI Response Area */
+         #aiResponseArea {
+             margin-top: 2rem; /* Space above the response area */
+             padding: 1.5rem; /* Padding */
+             border: 1px solid #a78bfa; /* Tailwind violet-400 border */
+             border-radius: 0.5rem; /* Rounded corners */
+             background-color: #f3e8ff; /* Tailwind violet-100 background */
+             display: none; /* Initially hidden */
+             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Shadow */
+         }
+         #aiResponseArea h3 {
+             color: #5b21b6; /* Tailwind violet-700 */
+             margin-bottom: 1rem;
+             font-size: 1.25rem;
+             font-weight: 700;
+         }
+         #aiResponseArea p {
+             color: #374151; /* Darker gray text */
+             line-height: 1.6;
+             white-space: pre-wrap; /* Preserve whitespace and allow wrapping */
+             word-wrap: break-word; /* Break long words */
+         }
+
+         /* Style for loading indicator */
+         .loading-indicator {
+             display: inline-block;
+             width: 16px;
+             height: 16px;
+             border: 2px solid rgba(255, 255, 255, 0.3);
+             border-radius: 50%;
+             border-top-color: #fff;
+             animation: spin 1s ease-in-out infinite;
+             margin-left: 0.5rem;
+             vertical-align: middle;
+         }
+
+         @keyframes spin {
+             0% { transform: rotate(0deg); }
+             100% { transform: rotate(360deg); }
+         }
+
 
     </style>
 </head>
@@ -266,6 +327,12 @@
             <p id="initialMessage" class="text-center text-gray-600 col-span-full">Please upload a CSV file to view the release updates.</p>
         </div>
 
+        <div id="aiResponseArea">
+            <h3>AI Analysis</h3>
+            <p id="aiResponseContent"></p>
+        </div>
+
+
         <div id="errorMessage" class="text-center text-red-600 mt-4 hidden col-span-full"></div>
 
     </div>
@@ -284,6 +351,11 @@
         const instructionsContent = document.getElementById('instructionsContent'); // Get the instructions content element
         const columnCountInput = document.getElementById('columnCount'); // Get the range input
         const columnCountValueSpan = document.getElementById('columnCountValue'); // Get the span for the value
+        const aiResponseArea = document.getElementById('aiResponseArea'); // Get the AI response area
+        const aiResponseContent = document.getElementById('aiResponseContent'); // Get the AI response content paragraph
+
+        // URL del tuo backend deployato
+        const BACKEND_URL = 'https://csm-ai-backend-43c415c64d97.herokuapp.com/analyze-release-update';
 
 
         let allUpdatesData = []; // Variable to store the original parsed data
@@ -318,6 +390,7 @@
             errorMessageDiv.textContent = '';
             updatesContainer.innerHTML = ''; // Clear previous content
             searchInput.value = ''; // Clear search input on new file load
+            hideAIResponse(); // Hide previous AI response
 
             const reader = new FileReader();
 
@@ -361,6 +434,63 @@
         instructionsToggle.addEventListener('click', () => {
             instructionsContent.style.display = instructionsContent.style.display === 'none' || instructionsContent.style.display === '' ? 'block' : 'none';
         });
+
+
+        // Function to call the backend for AI analysis
+        async function analyzeWithGemini(updateData, buttonElement) {
+             // Show loading indicator and disable button
+             buttonElement.textContent = 'Analisi in corso...';
+             buttonElement.disabled = true;
+             buttonElement.style.backgroundColor = '#a78bfa'; // Tailwind violet-400 for loading state
+             buttonElement.style.cursor = 'not-allowed';
+             // Optional: Add a simple loading spinner next to the text
+             const loadingSpinner = document.createElement('span');
+             loadingSpinner.classList.add('loading-indicator');
+             buttonElement.appendChild(loadingSpinner);
+
+
+             hideAIResponse(); // Hide previous response before fetching new one
+
+            try {
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData) // Invia i dati dell'aggiornamento come JSON
+                });
+
+                if (!response.ok) {
+                    // Gestisci errori HTTP (es. 400, 500)
+                    const errorBody = await response.json();
+                    throw new Error(`Errore backend: ${response.status} ${response.statusText} - ${errorBody.error || 'Errore sconosciuto'}`);
+                }
+
+                const data = await response.json();
+                console.log('Risposta ricevuta dal backend:', data);
+
+                if (data && data.analysis) {
+                    showAIResponse(data.analysis); // Mostra l'analisi ricevuta
+                } else {
+                    showAIResponse("Risposta dall'AI non valida o vuota.");
+                }
+
+            } catch (error) {
+                console.error("Errore nella chiamata al backend:", error);
+                showAIResponse(`Errore durante l'analisi AI: ${error.message || 'Errore di rete'}`);
+            } finally {
+                // Reset button state
+                buttonElement.textContent = 'Analizza con AI';
+                buttonElement.disabled = false;
+                buttonElement.style.backgroundColor = '#10b981'; // Reset to original green
+                buttonElement.style.cursor = 'pointer';
+                 // Remove loading spinner if it was added
+                 const spinner = buttonElement.querySelector('.loading-indicator');
+                 if (spinner) {
+                     spinner.remove();
+                 }
+            }
+        }
 
 
         // More robust CSV parsing function to handle quoted fields
@@ -470,6 +600,8 @@
 
         function displayUpdates(data) {
             updatesContainer.innerHTML = ''; // Clear previous content before displaying
+             hideAIResponse(); // Hide AI response area when displaying new data
+
 
             if (data.length === 0) {
                 updatesContainer.innerHTML = '<p class="text-center text-gray-600 col-span-full">No release updates found matching your criteria.</p>';
@@ -500,8 +632,15 @@
                     <div class="detail">
                         <p>${update.Detail || 'No details provided.'}</p>
                     </div>
-                `;
+                     <button class="analyze-btn">Analizza con AI</button> `;
                 updatesContainer.appendChild(card);
+
+                // Add event listener to the newly created button
+                const analyzeButton = card.querySelector('.analyze-btn');
+                analyzeButton.addEventListener('click', () => {
+                    // Pass the specific update data and the button element to the analysis function
+                    analyzeWithGemini(update, analyzeButton);
+                });
             });
              // Ensure the grid columns are set based on the current range input value after displaying updates
              updateGridColumns(columnCountInput.value);
