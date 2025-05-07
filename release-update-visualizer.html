@@ -342,6 +342,23 @@
     </footer>
 
     <script>
+        // Function to show the AI response area
+        function showAIResponse(response) {
+            const aiResponseArea = document.getElementById('aiResponseArea');
+            const aiResponseContent = document.getElementById('aiResponseContent');
+            aiResponseContent.textContent = response;
+            aiResponseArea.style.display = 'block';
+        }
+
+        // Function to hide the AI response area
+        function hideAIResponse() {
+            const aiResponseArea = document.getElementById('aiResponseArea');
+            const aiResponseContent = document.getElementById('aiResponseContent');
+            aiResponseArea.style.display = 'none';
+            aiResponseContent.textContent = ''; // Clear content when hidden
+        }
+
+
         const fileInput = document.getElementById('csvFile');
         const updatesContainer = document.getElementById('updatesContainer');
         const errorMessageDiv = document.getElementById('errorMessage');
@@ -351,8 +368,9 @@
         const instructionsContent = document.getElementById('instructionsContent'); // Get the instructions content element
         const columnCountInput = document.getElementById('columnCount'); // Get the range input
         const columnCountValueSpan = document.getElementById('columnCountValue'); // Get the span for the value
-        const aiResponseArea = document.getElementById('aiResponseArea'); // Get the AI response area
-        const aiResponseContent = document.getElementById('aiResponseContent'); // Get the AI response content paragraph
+        // const aiResponseArea = document.getElementById('aiResponseArea'); // Removed this line
+        // const aiResponseContent = document.getElementById('aiResponseContent'); // Removed this line
+
 
         // URL del tuo backend deployato
         const BACKEND_URL = 'https://csm-ai-backend-43c415c64d97.herokuapp.com/analyze-release-update';
@@ -402,7 +420,7 @@
                 } catch (error) {
                     console.error("Error parsing or displaying CSV:", error); // Log the actual error to console
                     // Display a more specific message if available, otherwise a general one
-                    errorMessageDiv.textContent = `Error processing file: ${error.message || 'An unknown error occurred during parsing.'} Please ensure it is a valid CSV and check the browser console for details.`;
+                    errorMessageDiv.textContent = `Errore processing file: ${error.message || 'An unknown error occurred during parsing.'} Please ensure it is a valid CSV and check the browser console for details.`;
                     errorMessageDiv.classList.remove('hidden');
                     allUpdatesData = []; // Clear data on error
                      updatesContainer.innerHTML = ''; // Clear updates container on error
@@ -411,7 +429,7 @@
 
             reader.onerror = (e) => {
                 console.error("Error reading file:", e); // Log the actual error to console
-                errorMessageDiv.textContent = 'Error reading file.';
+                errorMessageDiv.textContent = 'Errore reading file.';
                 errorMessageDiv.classList.remove('hidden');
                  allUpdatesData = []; // Clear data on error
                  updatesContainer.innerHTML = ''; // Clear updates container on error
@@ -477,7 +495,8 @@
 
             } catch (error) {
                 console.error("Errore nella chiamata al backend:", error);
-                showAIResponse(`Errore durante l'analisi AI: ${error.message || 'Errore di rete'}`);
+                // Modificato per mostrare un messaggio di errore più utile
+                showAIResponse(`Errore durante l'analisi AI: ${error.message || 'Si è verificato un errore di rete o un problema con il backend.'}`);
             } finally {
                 // Reset button state
                 buttonElement.textContent = 'Analizza con AI';
