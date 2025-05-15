@@ -24,7 +24,7 @@
             padding: 2rem; /* Increase padding */
             box-sizing: border-box; /* Include padding in element's total width and height */
         }
-         /* Specific styles for form elements to match the new look */
+        /* Specific styles for form elements to match the new look */
         .form-group {
             margin-bottom: 1.5rem; /* Increased space below form groups */
         }
@@ -44,8 +44,8 @@
         }
         /* Style for the file input specifically */
         input[type="file"] {
-             background-color: #ffffff; /* Ensure white background */
-             cursor: pointer;
+            background-color: #ffffff; /* Ensure white background */
+            cursor: pointer;
         }
 
         .button-group {
@@ -55,145 +55,164 @@
             flex-wrap: wrap;
             margin-top: 2rem; /* More space above buttons */
         }
+        
+        /* Default button style (light blue) - will be overridden by .analyze-btn for specific buttons */
         button {
-            /* Updated default button style */
-            background-color: #dbeafe; /* Very light blue background (Tailwind blue-100) */
-            color: #1e3a8a; /* Dark blue text color (Tailwind blue-900) */
+            background-color: #dbeafe; 
+            color: #1e3a8a; 
             border: none;
-            padding: 0.75rem 1.5rem; /* Padding around text */
-            border-radius: 0.375rem; /* Rounded corners */
+            padding: 0.75rem 1.5rem; 
+            border-radius: 0.375rem; 
             cursor: pointer;
-            font-size: 1rem; /* Standard font size */
-            font-weight: 600; /* Semi-bold text */
-            transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Add box-shadow to transition */
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle initial shadow */
+            font-size: 1rem; 
+            font-weight: 600; 
+            transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
         }
         button:hover {
-            /* Updated hover style */
-            background-color: #93c5fd; /* Slightly darker light blue on hover (Tailwind blue-300) */
-            transform: translateY(-2px); /* Slight lift on hover */
+            background-color: #93c5fd; 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Style for the AI Analysis Button (green) */
+        .analyze-btn {
+            display: inline-block; /* Make it inline-block */
+            background-color: #10b981; /* Tailwind green-500 */
+            color: white;
+            padding: 0.5rem 1rem; /* Padding */
+            border-radius: 0.375rem; /* Rounded corners */
+            cursor: pointer;
+            font-size: 0.9rem; /* Smaller font size */
+            font-weight: 600;
+            /* margin-top: 1rem; /* Kept your margin-top from example, adjust if needed */
+            transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Ensured box-shadow is in transition */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+        }
+        .analyze-btn:hover {
+            background-color: #059669; /* Tailwind green-600 */
+            transform: translateY(-1px); /* Slight lift on hover */
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Stronger shadow on hover */
         }
-         /* Specific style for the edit button */
+
+        /* Specific style for the edit button (amber) */
         .edit-btn {
-            background-color: #f59e0b; /* Amber color for edit */
-            margin-left: 0.5rem; /* Space to the left */
-            padding: 0.3rem 0.75rem; /* Smaller padding */
-            font-size: 0.875rem; /* Smaller font size */
-            font-weight: 400; /* Normal font weight */
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); /* Subtle shadow for edit button */
+            background-color: #f59e0b; 
+            color: white; /* Added for better contrast on amber */
+            margin-left: 0.5rem; 
+            padding: 0.3rem 0.75rem; 
+            font-size: 0.875rem; 
+            font-weight: 400; 
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); 
         }
         .edit-btn:hover {
-             background-color: #d97706; /* Darker amber on hover */
-             transform: translateY(-1px); /* Smaller lift on hover */
-             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12); /* Stronger shadow on hover */
+            background-color: #d97706; 
+            transform: translateY(-1px); 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12); 
         }
 
         h1, h2, h3 {
-            color: #1a202c; /* Darker heading color */
-            margin-bottom: 1rem; /* Space below headings */
-            font-weight: 700; /* Bold headings */
+            color: #1a202c; 
+            margin-bottom: 1rem; 
+            font-weight: 700; 
         }
-         h1 {
-             text-align: center; /* Center the main title */
-             margin-bottom: 2rem; /* More space below the main title */
-             font-size: 2.25rem; /* Larger font size for main title */
-         }
-         h2, h3 {
-             margin-top: 0; /* Remove default top margin */
-         }
-
+        h1 {
+            text-align: center; 
+            margin-bottom: 2rem; 
+            font-size: 2.25rem; 
+        }
+        h2, h3 {
+            margin-top: 0; 
+        }
 
         #licenseList ul {
             list-style-type: none;
             padding-left: 0;
         }
         #licenseList li {
-            background-color: #eef2ff; /* Light blue background for list items */
-            border: 1px solid #c7d2fe; /* Lighter blue border */
-            padding: 1rem; /* Padding inside list items */
-            margin-bottom: 0.75rem; /* Space between list items */
-            border-radius: 0.375rem; /* Rounded corners */
-            display: flex; /* Use flexbox for layout */
-            justify-content: space-between; /* Space out content and button */
-            align-items: center; /* Vertically align content */
-            flex-wrap: wrap; /* Allow wrapping on small screens */
+            background-color: #eef2ff; 
+            border: 1px solid #c7d2fe; 
+            padding: 1rem; 
+            margin-bottom: 0.75rem; 
+            border-radius: 0.375rem; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            flex-wrap: wrap; 
         }
-         #licenseList li strong {
-             color: #374151; /* Darker gray for strong text */
-         }
-         #licenseList li button {
-             flex-shrink: 0; /* Prevent button from shrinking */
-             margin-top: 0.5rem; /* Add margin top on smaller screens if wraps */
-         }
-
+        #licenseList li strong {
+            color: #374151; 
+        }
+        #licenseList li button { /* This targets the edit button within the list item */
+            flex-shrink: 0; 
+            margin-top: 0.5rem; 
+        }
 
         footer {
             text-align: center;
-            padding: 1.5rem; /* Increased padding */
-            font-size: 0.875rem; /* Smaller text size */
-            color: #6b7280; /* Gray text color */
-            margin-top: 2rem; /* Space above the footer */
+            padding: 1.5rem; 
+            font-size: 0.875rem; 
+            color: #6b7280; 
+            margin-top: 2rem; 
         }
 
-        /* Dynamic grid for charts */
         .chart-grid {
             display: grid;
-            gap: 2rem; /* Increased gap */
-            margin-top: 2rem; /* Increased top margin */
+            gap: 2rem; 
+            margin-top: 2rem; 
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         }
         .chart-block {
-            background: #fafafa; /* Light background for chart blocks */
-            padding: 1.5rem; /* Increased padding */
-            border-radius: 0.5rem; /* Rounded corners */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+            background: #fafafa; 
+            padding: 1.5rem; 
+            border-radius: 0.5rem; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); 
         }
         .chart-header-banner {
-            font-weight: 700; /* Bold font */
+            font-weight: 700; 
             text-align: center;
-            background-color: #e5e7eb; /* Light gray background */
-            color: #374151; /* Darker gray text */
-            padding: 1rem; /* Increased padding */
-            border-radius: 0.375rem; /* Rounded corners */
-            margin-bottom: 2rem; /* Increased bottom margin */
-            font-size: 1.125rem; /* Slightly larger font size */
+            background-color: #e5e7eb; 
+            color: #374151; 
+            padding: 1rem; 
+            border-radius: 0.375rem; 
+            margin-bottom: 2rem; 
+            font-size: 1.125rem; 
         }
         .stats-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 1rem; /* Increased gap */
-            margin-top: 1.5rem; /* Increased top margin */
+            gap: 1rem; 
+            margin-top: 1.5rem; 
             justify-content: center;
         }
         .stat-box {
             flex: 0 0 auto;
-            background-color: #e5e7eb; /* Light gray background */
-            border-radius: 0.5rem; /* Rounded corners */
-            padding: 1rem; /* Increased padding */
+            background-color: #e5e7eb; 
+            border-radius: 0.5rem; 
+            padding: 1rem; 
             text-align: center;
-            min-width: 120px; /* Slightly wider minimum width */
-            max-width: 150px; /* Slightly wider maximum width */
+            min-width: 120px; 
+            max-width: 150px; 
         }
         .stat-box p {
-            margin: 0 0 0.5rem; /* Space below paragraph */
-            font-size: 0.9rem; /* Slightly larger font size */
-            color: #4b5563; /* Darker gray color */
+            margin: 0 0 0.5rem; 
+            font-size: 0.9rem; 
+            color: #4b5563; 
         }
         .stat-box h2 {
             margin: 0;
-            font-size: 1.25rem; /* Larger font size for the number */
-            font-weight: 700; /* Bold font weight */
-            color: #1f2937; /* Even darker gray color */
+            font-size: 1.25rem; 
+            font-weight: 700; 
+            color: #1f2937; 
         }
-         .stat-box h2 span {
-             font-size: 0.9rem; /* Smaller size for the arrow */
-             margin-left: 0.25rem; /* Space from the number */
-             color: #10b981; /* Green color for the arrow */
-         }
+        .stat-box h2 span {
+            font-size: 0.9rem; 
+            margin-left: 0.25rem; 
+            color: #10b981; 
+        }
         canvas {
             max-width: 100%;
-            height: auto; /* Maintain aspect ratio */
+            height: auto; 
         }
         .hidden {
             display: none;
@@ -276,8 +295,8 @@
         </div>
 
         <div class="button-group">
-            <button id="saveLicenseBtn">Add License</button>
-            <button id="generateChartBtn">Generate Chart</button>
+            <button id="saveLicenseBtn" class="analyze-btn">Add License</button>
+            <button id="generateChartBtn" class="analyze-btn">Generate Chart</button>
         </div>
     </div>
 
@@ -293,11 +312,9 @@
     </footer>
 
     <script>
-        // Array per memorizzare le licenze
         let licensesData = [];
-        let editIndex = -1; // -1 indica modalità "add", altrimenti indice in licensesData
+        let editIndex = -1; 
 
-        // Riferimenti DOM
         const referenceMonthSelect = document.getElementById('referenceMonth');
         const licenseTypeSelect = document.getElementById('licenseType');
         const licenseNameInput = document.getElementById('licenseName');
@@ -308,59 +325,42 @@
         const allowanceInput = document.getElementById('allowance');
         const usageInput = document.getElementById('usage');
         const csvUploadInput = document.getElementById('csvUpload');
-
         const activationFields = document.querySelector('.activation-fields');
         const consumptionFields = document.querySelector('.consumption-fields');
-
         const saveLicenseBtn = document.getElementById('saveLicenseBtn');
         const generateChartBtn = document.getElementById('generateChartBtn');
         const licenseList = document.getElementById('licenseList');
         const chartRoot = document.getElementById('chartRoot');
 
-        // Alterna visualizzazione campi in base al tipo di licenza
         licenseTypeSelect.addEventListener('change', () => {
             const selectedType = licenseTypeSelect.value;
-            if (selectedType === 'activation') {
-                activationFields.classList.remove('hidden');
-                consumptionFields.classList.add('hidden');
-            } else if (selectedType === 'consumption') {
-                consumptionFields.classList.remove('hidden');
-                activationFields.classList.add('hidden');
-            }
+            activationFields.classList.toggle('hidden', selectedType !== 'activation');
+            consumptionFields.classList.toggle('hidden', selectedType !== 'consumption');
         });
 
-        // Gestione del caricamento CSV
         csvUploadInput.addEventListener('change', handleCSVUpload);
         function handleCSVUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(event) {
-                const text = event.target.result;
-                parseCSV(text);
-                // Aggiorna lista e grafici automaticamente
+                parseCSV(event.target.result);
                 updateLicenseList();
-                renderCharts();
+                renderCharts(); 
             };
             reader.readAsText(file);
         }
 
-        // Funzione semplice di parsing CSV (assume separatore virgola, intestazione nella prima riga)
         function parseCSV(text) {
-            licensesData = []; // Sovrascrivi eventuali dati esistenti
+            licensesData = []; 
             const lines = text.trim().split('\n');
-            if (lines.length < 2) return; // Nessun dato
+            if (lines.length < 2) return; 
             const header = lines[0].split(',').map(h => h.trim().toLowerCase());
-            // Atteso: licenseType, licenseName, provisioned, activated, mau, dau, allowance, usage
             for (let i = 1; i < lines.length; i++) {
                 const row = lines[i].split(',').map(cell => cell.trim());
-                if (row.length < header.length) continue; // Salta righe incomplete
+                if (row.length < header.length) continue; 
                 const record = {};
-                for (let j = 0; j < header.length; j++) {
-                    record[header[j]] = row[j];
-                }
-                // Crea oggetto license, convertendo i valori numerici (se presenti)
+                header.forEach((colName, j) => record[colName] = row[j]);
                 licensesData.push({
                     licenseType: record['licensetype'] || '',
                     licenseName: record['licensename'] || '',
@@ -373,340 +373,135 @@
                 });
             }
         }
-
         function parseIfNotEmpty(value) {
             if (!value || value === '') return null;
             const n = parseInt(value);
             return isNaN(n) ? null : n;
         }
 
-        // Gestione salvataggio (Add oppure Update)
         saveLicenseBtn.addEventListener('click', () => {
-            if (editIndex === -1) {
-                addLicense();
-            } else {
-                updateLicense();
-            }
+            if (editIndex === -1) addLicense(); else updateLicense();
         });
 
         function addLicense() {
-            const licenseType = licenseTypeSelect.value;
-            const licenseName = licenseNameInput.value.trim();
-            if (!licenseType) {
-                alert('Please select a License Type.');
-                return;
+            const type = licenseTypeSelect.value, name = licenseNameInput.value.trim();
+            if (!type) { alert('Select License Type.'); return; }
+            if (!name) { alert('Enter License Name.'); return; }
+            let data = { licenseType: type, licenseName: name };
+            if (type === 'activation') {
+                data.provisioned = parseIfNotEmpty(provisionedInput.value);
+                data.activated = parseIfNotEmpty(activatedInput.value);
+                data.mau = parseIfNotEmpty(mauInput.value);
+                data.dau = parseIfNotEmpty(dauInput.value);
+                if (data.provisioned === null || data.activated === null) { alert('Fill Provisioned & Activated.'); return; }
+            } else {
+                data.allowance = parseIfNotEmpty(allowanceInput.value);
+                data.usage = parseIfNotEmpty(usageInput.value);
+                if (data.allowance === null || data.usage === null) { alert('Fill Allowance & Usage.'); return; }
             }
-            if (!licenseName) {
-                alert('Please enter a License Name.');
-                return;
-            }
-            let provisioned = null, activated = null, mau = null, dau = null;
-            let allowance = null, usage = null;
-            if (licenseType === 'activation') {
-                provisioned = parseIfNotEmpty(provisionedInput.value);
-                activated = parseIfNotEmpty(activatedInput.value);
-                mau = parseIfNotEmpty(mauInput.value);
-                dau = parseIfNotEmpty(dauInput.value);
-                if (provisioned === null || activated === null) {
-                    alert('Please fill in at least Provisioned and Activated for Activation Based licenses.');
-                    return;
-                }
-            } else if (licenseType === 'consumption') {
-                allowance = parseIfNotEmpty(allowanceInput.value);
-                usage = parseIfNotEmpty(usageInput.value);
-                if (allowance === null || usage === null) {
-                    alert('Please fill in both Allowance and Usage for Consumption Based licenses.');
-                    return;
-                }
-            }
-            licensesData.push({
-                licenseType,
-                licenseName,
-                provisioned,
-                activated,
-                mau,
-                dau,
-                allowance,
-                usage
-            });
-            resetForm();
-            updateLicenseList();
+            licensesData.push(data); resetForm(); updateLicenseList();
         }
 
         function updateLicense() {
-            const lic = licensesData[editIndex];
-            const licenseType = licenseTypeSelect.value;
-            const licenseName = licenseNameInput.value.trim();
-            if (!licenseType) {
-                alert('Please select a License Type.');
-                return;
-            }
-            if (!licenseName) {
-                alert('Please enter a License Name.');
-                return;
-            }
-            lic.licenseType = licenseType;
-            lic.licenseName = licenseName;
-            if (licenseType === 'activation') {
-                lic.provisioned = parseIfNotEmpty(provisionedInput.value);
+            const lic = licensesData[editIndex], type = licenseTypeSelect.value, name = licenseNameInput.value.trim();
+            if (!type) { alert('Select License Type.'); return; }
+            if (!name) { alert('Enter License Name.'); return; }
+            lic.licenseType = type; lic.licenseName = name;
+            if (type === 'activation') {
+                lic.provisioned = parseIfNotEmpty(provisionedInput.value); 
                 lic.activated = parseIfNotEmpty(activatedInput.value);
-                lic.mau = parseIfNotEmpty(mauInput.value);
-                lic.dau = parseIfNotEmpty(dauInput.value);
-                if (lic.provisioned === null || lic.activated === null) {
-                    alert('Please fill in at least Provisioned and Activated for Activation Based licenses.');
-                    return;
-                }
-                lic.allowance = null;
-                lic.usage = null;
-            } else if (licenseType === 'consumption') {
-                lic.allowance = parseIfNotEmpty(allowanceInput.value);
+                lic.mau = parseIfNotEmpty(mauInput.value); lic.dau = parseIfNotEmpty(dauInput.value);
+                if (lic.provisioned === null || lic.activated === null) { alert('Fill Provisioned & Activated.'); return; }
+                [lic.allowance, lic.usage] = [null, null];
+            } else {
+                lic.allowance = parseIfNotEmpty(allowanceInput.value); 
                 lic.usage = parseIfNotEmpty(usageInput.value);
-                if (lic.allowance === null || lic.usage === null) {
-                    alert('Please fill in both Allowance and Usage for Consumption Based licenses.');
-                    return;
-                }
-                lic.provisioned = null;
-                lic.activated = null;
-                lic.mau = null;
-                lic.dau = null;
+                if (lic.allowance === null || lic.usage === null) { alert('Fill Allowance & Usage.'); return; }
+                [lic.provisioned, lic.activated, lic.mau, lic.dau] = [null, null, null, null];
             }
-            resetForm();
-            updateLicenseList();
-            renderCharts(); // Refresh automatico dei grafici
+            resetForm(); updateLicenseList(); renderCharts();
         }
 
         function resetForm() {
-            editIndex = -1;
-            saveLicenseBtn.textContent = 'Add License';
-            licenseTypeSelect.value = '';
-            licenseNameInput.value = '';
-            provisionedInput.value = '';
-            activatedInput.value = '';
-            mauInput.value = '';
-            dauInput.value = '';
-            allowanceInput.value = '';
-            usageInput.value = '';
-            activationFields.classList.add('hidden');
-            consumptionFields.classList.add('hidden');
+            editIndex = -1; saveLicenseBtn.textContent = 'Add License';
+            licenseTypeSelect.value = ''; licenseNameInput.value = '';
+            provisionedInput.value = ''; activatedInput.value = ''; mauInput.value = ''; dauInput.value = '';
+            allowanceInput.value = ''; usageInput.value = '';
+            activationFields.classList.add('hidden'); consumptionFields.classList.add('hidden');
         }
 
-        // Riepilogo licenze con pulsanti Edit
         function updateLicenseList() {
-            licenseList.innerHTML = '';
-            if (licensesData.length === 0) {
-                licenseList.innerHTML = '<p class="text-gray-600">No licenses added so far.</p>'; /* Styled empty message */
-                return;
-            }
-            let html = '<ul>';
-            licensesData.forEach((lic, idx) => {
-                if (lic.licenseType === 'activation') {
-                    html += `
-                        <li>
-                            <div>
-                                <strong>${idx + 1}. ${lic.licenseName} (Activation Based)</strong><br>
-                                Provisioned: ${lic.provisioned} – Activated: ${lic.activated}
-                                ${lic.mau !== null ? ' – MAU: ' + lic.mau : ''}
-                                ${lic.dau !== null ? ' – DAU: ' + lic.dau : ''}
-                            </div>
-                            <button class="edit-btn" onclick="startEditLicense(${idx})">Edit</button>
-                        </li>
-                    `;
-                } else {
-                    html += `
-                        <li>
-                            <div>
-                                <strong>${idx + 1}. ${lic.licenseName} (Consumption Based)</strong><br>
-                                Allowance: ${lic.allowance} – Usage: ${lic.usage}
-                            </div>
-                            <button class="edit-btn" onclick="startEditLicense(${idx})">Edit</button>
-                        </li>
-                    `;
-                }
-            });
-            html += '</ul>';
-            licenseList.innerHTML = html;
+            licenseList.innerHTML = licensesData.length === 0 ? '<p class="text-gray-600">No licenses added.</p>' : '<ul>' +
+                licensesData.map((lic, idx) => `<li><div><strong>${idx + 1}. ${lic.licenseName} (${lic.licenseType === 'activation' ? 'Activation' : 'Consumption'})</strong><br>` +
+                    (lic.licenseType === 'activation' ? `Prov: ${lic.provisioned} – Act: ${lic.activated}${lic.mau !== null ? ' – MAU: ' + lic.mau : ''}${lic.dau !== null ? ' – DAU: ' + lic.dau : ''}`
+                                                      : `Allow: ${lic.allowance} – Usage: ${lic.usage}`) +
+                    `</div><button class="edit-btn" onclick="startEditLicense(${idx})">Edit</button></li>`).join('') + '</ul>';
         }
 
         window.startEditLicense = function(index) {
-            editIndex = index;
-            const lic = licensesData[index];
-            licenseTypeSelect.value = lic.licenseType;
-            licenseNameInput.value = lic.licenseName;
-            if (lic.licenseType === 'activation') {
-                activationFields.classList.remove('hidden');
-                consumptionFields.classList.add('hidden');
-                provisionedInput.value = lic.provisioned ?? '';
-                activatedInput.value = lic.activated ?? '';
-                mauInput.value = lic.mau ?? '';
-                dauInput.value = lic.dau ?? '';
-                allowanceInput.value = '';
-                usageInput.value = '';
+            editIndex = index; const lic = licensesData[index];
+            licenseTypeSelect.value = lic.licenseType; licenseNameInput.value = lic.licenseName;
+            const isActivation = lic.licenseType === 'activation';
+            activationFields.classList.toggle('hidden', !isActivation);
+            consumptionFields.classList.toggle('hidden', isActivation);
+            if (isActivation) {
+                provisionedInput.value = lic.provisioned ?? ''; activatedInput.value = lic.activated ?? '';
+                mauInput.value = lic.mau ?? ''; dauInput.value = lic.dau ?? '';
+                [allowanceInput.value, usageInput.value] = ['', ''];
             } else {
-                consumptionFields.classList.remove('hidden');
-                activationFields.classList.add('hidden');
-                allowanceInput.value = lic.allowance ?? '';
-                usageInput.value = lic.usage ?? '';
-                provisionedInput.value = '';
-                activatedInput.value = '';
-                mauInput.value = '';
-                dauInput.value = '';
+                allowanceInput.value = lic.allowance ?? ''; usageInput.value = lic.usage ?? '';
+                [provisionedInput.value, activatedInput.value, mauInput.value, dauInput.value] = ['', '', '', ''];
             }
             saveLicenseBtn.textContent = 'Update License';
         };
 
-        // Renderizza i grafici
         generateChartBtn.addEventListener('click', renderCharts);
         function renderCharts() {
             chartRoot.innerHTML = '';
-            if (licensesData.length === 0) {
-                alert('No licenses have been entered!');
-                return;
-            }
-            const selectedMonth = referenceMonthSelect.value;
-            if (!selectedMonth) {
-                alert('Please select a Reference Month (Global).');
-                return;
-            }
-            const bannerDiv = document.createElement('div');
-            bannerDiv.classList.add('chart-header-banner');
-            const currentYear = new Date().getFullYear();
-            bannerDiv.textContent = `Adoption status at ${selectedMonth} ${currentYear}`;
-            chartRoot.appendChild(bannerDiv);
-            const chartGridDiv = document.createElement('div');
-            chartGridDiv.classList.add('chart-grid');
+            if (licensesData.length === 0) { alert('No licenses entered!'); return; }
+            const month = referenceMonthSelect.value;
+            if (!month) { alert('Select Reference Month.'); return; }
+            const banner = document.createElement('div'); banner.className = 'chart-header-banner';
+            banner.textContent = `Adoption status at ${month} ${new Date().getFullYear()}`; chartRoot.appendChild(banner);
+            const grid = document.createElement('div'); grid.className = 'chart-grid'; chartRoot.appendChild(grid);
+
             licensesData.forEach((lic, index) => {
-                const blockDiv = document.createElement('div');
-                blockDiv.classList.add('chart-block');
-                let labels = [];
-                let dataArray = [];
-                let colors = [];
+                const block = document.createElement('div'); block.className = 'chart-block';
+                let labels=[], dataArray=[], colors=[];
                 if (lic.licenseType === 'activation') {
-                    labels = ["Provisioned", "Activated"];
-                    dataArray = [lic.provisioned, lic.activated];
-                    colors = ["#3b82f6", "#60a5fa"]; // Blue shades
-                    if (lic.mau !== null) {
-                        labels.push("Monthly Active");
-                        dataArray.push(lic.mau);
-                        colors.push("#fcd34d"); // Yellow shade
-                    }
-                    if (lic.dau !== null) {
-                        labels.push("Daily Active");
-                        dataArray.push(lic.dau);
-                        colors.push("#a78bfa"); // Violet shade
-                    }
+                    labels = ["Provisioned", "Activated"]; dataArray = [lic.provisioned, lic.activated]; colors = ["#3b82f6", "#60a5fa"];
+                    if (lic.mau !== null) { labels.push("Monthly Active"); dataArray.push(lic.mau); colors.push("#fcd34d"); }
+                    if (lic.dau !== null) { labels.push("Daily Active"); dataArray.push(lic.dau); colors.push("#a78bfa"); }
                 } else {
-                    labels = ["Allowance", "Usage"];
-                    dataArray = [lic.allowance, lic.usage];
-                    colors = ["#3b82f6", "#60a5fa"]; // Blue shades
+                    labels = ["Allowance", "Usage"]; dataArray = [lic.allowance, lic.usage]; colors = ["#3b82f6", "#60a5fa"];
                 }
-                const chartData = {
-                    labels: labels,
-                    datasets: [{
-                        data: dataArray,
-                        backgroundColor: colors,
-                        borderWidth: 1
-                    }]
-                };
-                const config = {
-                    type: 'bar',
-                    data: chartData,
-                    options: {
-                        indexAxis: 'y',
-                        elements: {
-                            bar: {
-                                borderRadius: 6,
-                                barPercentage: 0.6,
-                                categoryPercentage: 0.8
-                            }
-                        },
-                        scales: {
-                            x: {
-                                beginAtZero: true
-                            },
-                            y: {
-                                offset: true,
-                                ticks: {
-                                    autoSkip: false,
-                                    maxRotation: 0,
-                                    minRotation: 0,
-                                    padding: 5,
-                                    // Multiline label: testo + a capo + valore
-                                    callback: function(value, idx) {
-                                        const chart = this.chart;
-                                        const lbl = chart.data.labels[idx] || "";
-                                        const val = chart.data.datasets[0].data[idx] || 0;
-                                        return [lbl, val.toLocaleString()];
-                                    }
-                                }
-                            }
-                        },
-                        plugins: {
-                            legend: { display: false },
-                            title: {
-                                display: true,
-                                text: lic.licenseName
-                            }
-                        }
-                    }
-                };
-                // Ensure the old chart instance is destroyed before creating a new one
-                if (lic.chartInstance) {
-                    lic.chartInstance.destroy();
-                }
-                const canvas = document.createElement('canvas');
-                canvas.id = 'chart_' + index;
-                blockDiv.appendChild(canvas);
-                // Store the new chart instance on the license object
+                const chartData = { labels, datasets: [{ data: dataArray, backgroundColor: colors, borderWidth: 1 }] };
+                const config = { type: 'bar', data: chartData, options: {
+                    indexAxis: 'y', elements: { bar: { borderRadius: 6, barPercentage: 0.6, categoryPercentage: 0.8 }},
+                    scales: { x: { beginAtZero: true }, y: { offset: true, ticks: { autoSkip: false, maxRotation: 0, minRotation: 0, padding: 5,
+                        callback: function(v,i){const c=this.chart;return[c.data.labels[i]||"",(c.data.datasets[0].data[i]||0).toLocaleString()];}}}},
+                    plugins: { legend: { display: false }, title: { display: true, text: lic.licenseName }}
+                }};
+                if (lic.chartInstance) lic.chartInstance.destroy();
+                const canvas = document.createElement('canvas'); canvas.id = 'chart_' + index; block.appendChild(canvas);
                 lic.chartInstance = new Chart(canvas, config);
 
-                // Stats
-                const statsDiv = document.createElement('div');
-                statsDiv.classList.add('stats-container');
+                const statsDiv = document.createElement('div'); statsDiv.className = 'stats-container';
                 if (lic.licenseType === 'activation') {
-                    let adoptionPct = (lic.provisioned && lic.provisioned > 0)
-                        ? ((lic.activated / lic.provisioned) * 100).toFixed(1)
-                        : "N/A";
-                    const statBoxAdoption = document.createElement('div');
-                    statBoxAdoption.classList.add('stat-box');
-                    statBoxAdoption.innerHTML = `
-                        <p>Adoption Rate</p>
-                        <h2>${adoptionPct !== "N/A" ? adoptionPct + '%' : adoptionPct} <span class="text-green-500">▲</span></h2> `;
-                    statsDiv.appendChild(statBoxAdoption);
-                    if (lic.mau !== null && lic.activated && lic.activated > 0) {
-                        let utilizedPct = ((lic.mau / lic.activated) * 100).toFixed(1);
-                        const statBoxUtilized = document.createElement('div');
-                        statBoxUtilized.classList.add('stat-box');
-                        statBoxUtilized.innerHTML = `
-                            <p>Utilization Rate</p>
-                            <h2>${utilizedPct}% <span class="text-green-500">▲</span></h2> `;
-                        statsDiv.appendChild(statBoxUtilized);
+                    let adoptPct = (lic.provisioned>0)?((lic.activated/lic.provisioned)*100).toFixed(1):"N/A";
+                    statsDiv.innerHTML += `<div class="stat-box"><p>Adoption Rate</p><h2>${adoptPct!=="N/A"?adoptPct+'%':adoptPct} <span class="text-green-500">▲</span></h2></div>`;
+                    if (lic.mau!==null && lic.activated>0) {
+                        let utilPct = ((lic.mau/lic.activated)*100).toFixed(1);
+                        statsDiv.innerHTML += `<div class="stat-box"><p>Utilization Rate</p><h2>${utilPct}% <span class="text-green-500">▲</span></h2></div>`;
                     }
                 } else {
-                    let usageRate = (lic.allowance && lic.allowance > 0)
-                        ? ((lic.usage / lic.allowance) * 100).toFixed(1)
-                        : "N/A";
-                    const statBoxUsage = document.createElement('div');
-                    statBoxUsage.classList.add('stat-box');
-                    statBoxUsage.innerHTML = `
-                        <p>Utilization Rate</p>
-                        <h2>${usageRate !== "N/A" ? usageRate + '%' : usageRate} <span class="text-green-500">▲</span></h2> `;
-                    statsDiv.appendChild(statBoxUsage);
+                    let usagePct = (lic.allowance>0)?((lic.usage/lic.allowance)*100).toFixed(1):"N/A";
+                    statsDiv.innerHTML += `<div class="stat-box"><p>Utilization Rate</p><h2>${usagePct!=="N/A"?usagePct+'%':usagePct} <span class="text-green-500">▲</span></h2></div>`;
                 }
-                blockDiv.appendChild(statsDiv);
-                chartGridDiv.appendChild(blockDiv);
+                block.appendChild(statsDiv); grid.appendChild(block);
             });
-            chartRoot.appendChild(chartGridDiv);
         }
-
-        // Ensure charts are destroyed when the page is unloaded or before re-rendering
-        window.addEventListener('beforeunload', () => {
-            licensesData.forEach(lic => {
-                if (lic.chartInstance) {
-                    lic.chartInstance.destroy();
-                }
-            });
-        });
-
+        window.addEventListener('beforeunload', () => { licensesData.forEach(lic => { if (lic.chartInstance) lic.chartInstance.destroy(); }); });
     </script>
 </body>
 </html>
