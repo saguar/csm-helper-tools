@@ -470,7 +470,7 @@
                 return (lines.length <=1 && parsedAlerts.length === 0) ? null : parsedAlerts;
             }
 
-            // --- PARSING FUNCTION FOR GADGET-UI PORTAL ---
+           // --- PARSING FUNCTION FOR GADGET-UI PORTAL ---
             function parseGadgetUIData(rawText) {
                 console.log("Starting Gadget-UI Portal data parsing...");
                 const parsedAlerts = [];
@@ -488,42 +488,57 @@
                     return null;
                 }
 
-                // 1. Pulizia Intestazione
-                const rawHeaders = lines[0].split('\t');
-                const cleanedHeaders = rawHeaders.map(h =>
-                    h.replace(/sort this column/gi, '')
-                     .replace(/\(https:\/\/.*?\)/g, '')
-                     .replace(/\s\s+/g, ' ')
-                     .trim()
-                );
-                console.log("Cleaned Gadget-UI Headers:", cleanedHeaders);
-
+                const rawHeaderCells = lines[0].split('\t');
+                
+                // Definiamo gli header che ci aspettiamo di trovare e inizializziamo la mappa
                 const headerMap = {
-                    'Alert Name': cleanedHeaders.indexOf('Alert Name'),
-                    'Start Time(UTC)': cleanedHeaders.indexOf('Start Time(UTC)'),
-                    'End Time(UTC)': cleanedHeaders.indexOf('End Time(UTC)'),
-                    'Status': cleanedHeaders.indexOf('Status'),
-                    'Alert Age (hrs)': cleanedHeaders.indexOf('Alert Age (hrs)')
+                    'Alert Name': -1,
+                    'Organization ID': -1, // Opzionale, per completezza
+                    'Instance': -1,        // Opzionale
+                    'Customer Name': -1,   // Opzionale
+                    'Start Time(UTC)': -1,
+                    'End Time(UTC)': -1,
+                    'Status': -1,
+                    'Alert Age (hrs)': -1
                 };
 
-                const requiredGadgetHeaders = ['Alert Name', 'Start Time(UTC)', /* 'End Time(UTC)' is optional if Alert Age is present */ 'Status'];
-                const missingHeaders = requiredGadgetHeaders.filter(h => headerMap[h] === -1);
+                // Ordiniamo i nomi degli header conosciuti per lunghezza decrescente
+                // Questo aiuta a mappare correttamente nomi più specifici prima di sottostringhe
+                // Esempio: "Start Time(UTC)" prima di "Status" se una cella contenesse entrambi
+                const knownColumnNamesSorted = Object.keys(headerMap).sort((a, b) => b.length - a.length);
 
-                if (missingHeaders.length > 0) {
-                    showMessage(`Gadget-UI: Missing required headers after cleaning: ${missingHeaders.join(', ')}. Check format.`, "error");
-                    console.error("Gadget-UI Missing headers from map:", missingHeaders, "Original:", rawHeaders, "Cleaned:", cleanedHeaders);
+                rawHeaderCells.forEach((rawCell, index) => {
+                    for (const knownName of knownColumnNamesSorted) {
+                        // Se la cella grezza contiene il nome conosciuto E non l'abbiamo ancora mappato
+                        if (rawCell.includes(knownName) && headerMap[knownName] === -1) {
+                            headerMap[knownName] = index;
+                            break; // Trovato il match più specifico per questa cella, passiamo alla cella successiva
+                        }
+                    }
+                });
+
+                console.log("Gadget-UI Header Map:", headerMap);
+
+                // Verifica degli header essenziali
+                const requiredGadgetHeaders = ['Alert Name', 'Start Time(UTC)', 'Status'];
+                // End Time(UTC) e Alert Age (hrs) sono co-dipendenti per la durata. Almeno uno dei due (o entrambi) deve essere presente.
+                const missingRequired = requiredGadgetHeaders.filter(h => headerMap[h] === -1);
+
+                if (missingRequired.length > 0) {
+                    showMessage(`Gadget-UI: Missing essential headers: ${missingRequired.join(', ')}. Check input.`, "error");
+                    console.error("Gadget-UI - Essential headers missing from map:", missingRequired, "Full map:", headerMap);
                     return null;
                 }
-                 // End Time and Alert Age are somewhat co-dependent for calculating duration if one is missing
                 if (headerMap['End Time(UTC)'] === -1 && headerMap['Alert Age (hrs)'] === -1) {
                     showMessage(`Gadget-UI: Missing both 'End Time(UTC)' and 'Alert Age (hrs)'. Cannot determine duration.`, "error");
+                    console.error("Gadget-UI - Duration headers missing. Full map:", headerMap);
                     return null;
                 }
 
 
                 for (let i = 1; i < lines.length; i++) {
                     const values = lines[i].split('\t').map(value => value.trim());
-                    const maxNeededIndex = Math.max(...Object.values(headerMap).filter(idx => idx !== -1)); // Get max index of *found* headers
+                    const maxNeededIndex = Math.max(...Object.values(headerMap).filter(idx => idx !== -1));
 
                     if (values.length <= maxNeededIndex) {
                         console.warn(`Gadget-UI: Skipping line ${i + 1}: Insufficient columns. Expected at least ${maxNeededIndex + 1}, found ${values.length}. Line: "${lines[i]}"`);
@@ -557,31 +572,34 @@
 
                     let endTimeStr = headerMap['End Time(UTC)'] !== -1 ? values[headerMap['End Time(UTC)']] : '';
                     let endDate = new Date(NaN);
-                    if (endTimeStr) {
+                    if (endTimeStr) { // Solo se la colonna End Time è mappata e ha un valore
                         const endDateParts = endTimeStr.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s(\d{1,2}):(\d{2}):(\d{2})/);
                         if (endDateParts) {
                             endDate = new Date(Date.UTC(
                                 parseInt(endDateParts[3]), parseInt(endDateParts[1]) - 1, parseInt(endDateParts[2]),
                                 parseInt(endDateParts[4]), parseInt(endDateParts[5]), parseInt(endDateParts[6])
                             ));
-                        } else if (endTimeStr) { // Non-empty but didn't match
-                             console.warn(`Gadget-UI: Could not parse End Time(UTC) on line ${i + 1}: "${endTimeStr}".`);
+                        } else if (endTimeStr) { // Non-empty ma non ha fatto match
+                             console.warn(`Gadget-UI: Could not parse End Time(UTC) on line ${i + 1}: "${endTimeStr}". Will rely on Alert Age if available.`);
                         }
                     }
-                     if (endTimeStr && isNaN(endDate.getTime())) { // If there was an end time string but it was invalid
-                         console.warn(`Gadget-UI: Invalid End Date after parsing on line ${i + 1}: "${endTimeStr}"`);
-                         // We might still proceed if Alert Age is available
+                     if (endTimeStr && isNaN(endDate.getTime())) {
+                         console.warn(`Gadget-UI: Invalid End Date string on line ${i + 1}: "${endTimeStr}". Will rely on Alert Age if available.`);
                     }
 
+
                     let durationMillis = 0;
-                    const alertAgeHrsStr = headerMap['Alert Age (hrs)'] !== -1 ? values[headerMap['Alert Age (hrs)']] : '';
-                    if (alertAgeHrsStr) {
-                        const alertAgeHrs = parseFloat(alertAgeHrsStr);
-                        if (!isNaN(alertAgeHrs) && alertAgeHrs > 0) {
-                            durationMillis = alertAgeHrs * 60 * 60 * 1000;
+                    if (headerMap['Alert Age (hrs)'] !== -1) {
+                        const alertAgeHrsStr = values[headerMap['Alert Age (hrs)']];
+                        if (alertAgeHrsStr) {
+                            const alertAgeHrs = parseFloat(alertAgeHrsStr);
+                            if (!isNaN(alertAgeHrs) && alertAgeHrs > 0) {
+                                durationMillis = alertAgeHrs * 60 * 60 * 1000;
+                            }
                         }
                     }
                     
+                    // Se la durata da "Alert Age" non è valida/disponibile, E abbiamo date di inizio/fine valide, calcolala
                     if (durationMillis <= 0 && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && endDate.getTime() > startDate.getTime()) {
                         durationMillis = endDate.getTime() - startDate.getTime();
                     }
@@ -592,19 +610,20 @@
                         continue;
                     }
 
-                    // If endDate is still invalid but we got a duration (likely from Alert Age), and status is Cleared, reconstruct endDate
+                    // Se endDate è ancora invalida MA abbiamo una durata (da Alert Age), ricostruisci endDate.
+                    // Questo è importante se End Time(UTC) era mancante o malformattata.
                     if (isNaN(endDate.getTime()) && durationMillis > 0) {
                         endDate = new Date(startDate.getTime() + durationMillis);
-                        console.log(`Gadget-UI: Reconstructed endDate for line ${i+1} using startDate and duration (${alertAgeHrsStr} hrs). Status: ${status}`);
+                        console.log(`Gadget-UI: Reconstructed endDate for line ${i+1} using startDate and duration from Alert Age (${(durationMillis/(60*60*1000)).toFixed(1)} hrs).`);
                     }
 
-                    // Final check for duration and valid date range
                     if (durationMillis <= 0) {
-                        console.warn(`Gadget-UI: Skipping line ${i + 1}: Final duration is zero or negative. Start: "${startTimeStr}", End: "${endTimeStr}", Age: "${alertAgeHrsStr}"`);
+                        console.warn(`Gadget-UI: Skipping line ${i + 1}: Final duration is zero or negative. Start: "${startTimeStr}", End: "${endTimeStr}", Parsed Age: ${headerMap['Alert Age (hrs)'] !== -1 ? values[headerMap['Alert Age (hrs)']] : 'N/A'}`);
                         continue;
                     }
-                    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || endDate.getTime() <= startDate.getTime()) { // endDate must be strictly after startDate for positive duration
-                        console.warn(`Gadget-UI: Skipping line ${i + 1}: Invalid date range or non-positive duration. Start: ${startDate.toISOString()}, End: ${endDate.toISOString()}, Duration Millis: ${durationMillis}`);
+                    // Verifica finale che endDate sia valida e successiva a startDate
+                    if (isNaN(endDate.getTime()) || endDate.getTime() <= startDate.getTime()) {
+                        console.warn(`Gadget-UI: Skipping line ${i + 1}: Invalid date range or non-positive duration after all calculations. Start: ${startDate.toISOString()}, End: ${endDate.toISOString()}, Duration Millis: ${durationMillis}`);
                         continue;
                     }
 
@@ -620,9 +639,8 @@
                 if (parsedAlerts.length === 0 && lines.length > 1) {
                      showMessage("No valid alerts found in the Gadget-UI data after parsing.", "warning");
                 }
-                return (lines.length <=1 && parsedAlerts.length === 0) ? null : parsedAlerts;
+                return (lines.length <=1 && parsedAlerts.length === 0 && !rawText.trim()) ? null : parsedAlerts;
             }
-
 
             function parseDurationString(durationStr) {
                 if (!durationStr) return 0;
