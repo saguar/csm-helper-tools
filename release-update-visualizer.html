@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="it"> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Salesforce Release Updates Visualizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f4f7f6; /* Light gray background */
@@ -48,10 +47,10 @@
             box-sizing: border-box; /* Include padding in element's total width and height */
             font-size: 1rem; /* Standard font size */
         }
-         input[type="file"] {
-             cursor: pointer;
-         }
-         input[type="text"], input[type="range"] { /* Added input[type="range"] */
+        input[type="file"] {
+            cursor: pointer;
+        }
+        input[type="text"], input[type="range"] { /* Added input[type="range"] */
             display: block; /* Make search input and range input block elements */
             margin-left: auto; /* Center the input */
             margin-right: auto; /* Center the input */
@@ -108,6 +107,14 @@
         .status-overdue {
             border-left: 8px solid #ef4444; /* Tailwind red-500 */
         }
+        /* Aggiungi altri stati se necessario, es: */
+        .status-completed, .status-completato {
+             border-left: 8px solid #10b981; /* Tailwind green-500 */
+        }
+        .status-upcoming, .status-imminente {
+             border-left: 8px solid #f59e0b; /* Tailwind amber-500 */
+        }
+
 
         /* Styling for badges */
         .badge {
@@ -133,8 +140,8 @@
 
         /* Styling for the initial message and empty state */
         #initialMessage, .col-span-full.text-center.text-gray-600 {
-             margin-top: 2rem; /* Add some space above these messages */
-             font-size: 1.125rem; /* Slightly larger font size */
+            margin-top: 2rem; /* Add some space above these messages */
+            font-size: 1.125rem; /* Slightly larger font size */
         }
 
 
@@ -156,7 +163,7 @@
 
         /* Media queries for responsiveness (can be overridden by JS) */
         @media (min-width: 640px) { /* Tailwind's 'sm' breakpoint */
-             #updatesContainer {
+            #updatesContainer {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
@@ -168,41 +175,41 @@
         }
 
         @media (min-width: 1024px) { /* Tailwind's 'lg' breakpoint */
-             #updatesContainer {
+            #updatesContainer {
                 grid-template-columns: repeat(4, minmax(0, 1fr));
             }
         }
 
-         /* Style for the range input container */
-         .range-container {
-             text-align: center; /* Center contents */
-             margin-bottom: 1.5rem; /* Space below */
-         }
+        /* Style for the range input container */
+        .range-container {
+            text-align: center; /* Center contents */
+            margin-bottom: 1.5rem; /* Space below */
+        }
 
-         .range-container label {
-             display: inline-block; /* Display label and span inline */
-             margin-right: 0.5rem; /* Space between label and value */
-             text-align: center; /* Center the label text */
-         }
+        .range-container label {
+            display: inline-block; /* Display label and span inline */
+            margin-right: 0.5rem; /* Space between label and value */
+            text-align: center; /* Center the label text */
+        }
 
-         .range-container span {
-             font-weight: 600; /* Bold value */
-             color: #1f2937; /* Darker color */
-         }
+        .range-container span {
+            font-weight: 600; /* Bold value */
+            color: #1f2937; /* Darker color */
+        }
 
-         .range-container input[type="range"] {
-             display: inline-block; /* Display range input inline */
-             vertical-align: middle; /* Align vertically with text */
-             width: 150px; /* Fixed width for the slider */
-             margin: 0 0.5rem; /* Space around the slider */
-             padding: 0; /* Remove padding */
-             border: none; /* Remove border */
-             background-color: transparent; /* Transparent background */
-             box-shadow: none; /* Remove shadow */
-         }
+        .range-container input[type="range"] {
+            display: inline-block; /* Display range input inline */
+            vertical-align: middle; /* Align vertically with text */
+            width: 150px; /* Fixed width for the slider */
+            margin: 0 0.5rem; /* Space around the slider */
+            padding: 0; /* Remove padding */
+            border: none; /* Remove border */
+            background-color: transparent; /* Transparent background */
+            box-shadow: none; /* Remove shadow */
+        }
 
-         /* Style the range input thumb and track for better visibility */
-         input[type="range"]::-webkit-slider-thumb {
+        /* Style the range input thumb and track for better visibility */
+        input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
             width: 16px; /* Size of the thumb */
@@ -212,179 +219,185 @@
             border-radius: 50%; /* Round thumb */
             box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* Subtle shadow */
             margin-top: -6px; /* Center thumb vertically on track */
-         }
+        }
 
-         input[type="range"]::-moz-range-thumb {
+        input[type="range"]::-moz-range-thumb {
             width: 16px; /* Size of the thumb */
             height: 16px; /* Size of the thumb */
             background: #4f46e5; /* Indigo color */
             cursor: pointer;
             border-radius: 50%; /* Round thumb */
             box-shadow: 0 1px 3px rgba(0,0,0,0.2); /* Subtle shadow */
-         }
+        }
 
-         input[type="range"]::-webkit-slider-track {
+        input[type="range"]::-webkit-slider-track {
             width: 100%;
             height: 4px; /* Height of the track */
             cursor: pointer;
             background: #d1d5db; /* Light gray track color */
             border-radius: 2px; /* Rounded track */
-         }
+        }
 
-         input[type="range"]::-moz-range-track {
+        input[type="range"]::-moz-range-track {
             width: 100%;
             height: 4px; /* Height of the track */
             cursor: pointer;
             background: #d1d5db; /* Light gray track color */
             border-radius: 2px; /* Rounded track */
-         }
+        }
 
-         /* Style for the AI Analysis Button */
-         .analyze-btn {
-             display: inline-block; /* Make it inline-block */
-             background-color: #10b981; /* Tailwind green-500 */
-             color: white;
-             padding: 0.5rem 1rem; /* Padding */
-             border-radius: 0.375rem; /* Rounded corners */
-             cursor: pointer;
-             font-size: 0.9rem; /* Smaller font size */
-             font-weight: 600;
-             margin-top: 1rem; /* Space above the button */
-             transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
-             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-         }
-         .analyze-btn:hover {
-             background-color: #059669; /* Tailwind green-600 */
-             transform: translateY(-1px); /* Slight lift on hover */
-             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Stronger shadow on hover */
-         }
+        /* Style for the AI Analysis Button */
+        .analyze-btn {
+            display: inline-block; /* Make it inline-block */
+            background-color: #10b981; /* Tailwind green-500 */
+            color: white;
+            padding: 0.5rem 1rem; /* Padding */
+            border-radius: 0.375rem; /* Rounded corners */
+            cursor: pointer;
+            font-size: 0.9rem; /* Smaller font size */
+            font-weight: 600;
+            margin-top: 1rem; /* Space above the button */
+            transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+        }
+        .analyze-btn:hover {
+            background-color: #059669; /* Tailwind green-600 */
+            transform: translateY(-1px); /* Slight lift on hover */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Stronger shadow on hover */
+        }
 
-         /* Style for the AI Response Area */
-         #aiResponseArea {
-             margin-top: 2rem; /* Space above the response area */
-             padding: 1.5rem; /* Padding */
-             border: 1px solid #a78bfa; /* Tailwind violet-400 border */
-             border-radius: 0.5rem; /* Rounded corners */
-             background-color: #f3e8ff; /* Tailwind violet-100 background */
-             display: none; /* Initially hidden */
-             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Shadow */
-         }
-         #aiResponseArea h3 {
-             color: #5b21b6; /* Tailwind violet-700 */
-             margin-bottom: 1rem;
-             font-size: 1.25rem;
-             font-weight: 700;
-         }
-         #aiResponseArea p {
-             color: #374151; /* Darker gray text */
-             line-height: 1.6;
-             /* white-space: pre-wrap; /* Preserve whitespace and allow wrapping - Removed */
-             /* word-wrap: break-word; /* Break long words - Removed */
-         }
-         /* Added style to render basic Markdown */
-         #aiResponseArea p strong {
-             font-weight: 700; /* Bold for strong tags */
-         }
-          #aiResponseArea p ul {
-              list-style: disc inside; /* Bullet points for lists */
-              margin-top: 0.5rem;
-              margin-bottom: 0.5rem;
-              padding-left: 1.5rem; /* Indent list items */
-          }
-          #aiResponseArea p li {
-              margin-bottom: 0.25rem; /* Space between list items */
-          }
-
-
-         /* Style for loading indicator */
-         .loading-indicator {
-             display: inline-block;
-             width: 16px;
-             height: 16px;
-             border: 2px solid rgba(255, 255, 255, 0.3);
-             border-radius: 50%;
-             border-top-color: #fff;
-             animation: spin 1s ease-in-out infinite;
-             margin-left: 0.5rem;
-             vertical-align: middle;
-         }
-
-         @keyframes spin {
-             0% { transform: rotate(0deg); }
-             100% { transform: rotate(360deg); }
-         }
+        /* Style for the AI Response Area */
+        #aiResponseArea {
+            margin-top: 2rem; /* Space above the response area */
+            padding: 1.5rem; /* Padding */
+            border: 1px solid #a78bfa; /* Tailwind violet-400 border */
+            border-radius: 0.5rem; /* Rounded corners */
+            background-color: #f3e8ff; /* Tailwind violet-100 background */
+            display: none; /* Initially hidden */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Shadow */
+        }
+        #aiResponseArea h3 {
+            color: #5b21b6; /* Tailwind violet-700 */
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        #aiResponseArea p, #aiResponseArea ul, #aiResponseArea li, #aiResponseArea strong, #aiResponseArea em, #aiResponseArea code, #aiResponseArea pre { /* Stili più generici per contenuto Markdown */
+            color: #374151; /* Darker gray text */
+            line-height: 1.6;
+        }
+        #aiResponseArea ul {
+            list-style: disc inside;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+        }
+        #aiResponseArea li {
+            margin-bottom: 0.25rem;
+        }
+        #aiResponseArea pre {
+            background-color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            overflow-x: auto;
+        }
+        #aiResponseArea code {
+            font-family: monospace;
+            background-color: #e5e7eb;
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.125rem;
+        }
 
 
+        /* Style for loading indicator */
+        .loading-indicator {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Salesforce Release Updates Visualizer</h1> <label for="csvFile" class="block text-center text-gray-700 font-semibold mb-2">Upload here the CSV file exported from Blacktab</label> <div class="flex justify-center mb-6">
-             <input type="file" id="csvFile" accept=".csv" class="block w-full md:w-auto">
+        <h1>Salesforce Release Updates Visualizer</h1>
+        <label for="csvFile" class="block text-center text-gray-700 font-semibold mb-2">Carica qui il file CSV esportato da Blacktab</label>
+        <div class="flex justify-center mb-6">
+            <input type="file" id="csvFile" accept=".csv" class="block w-full md:w-auto">
         </div>
 
         <div class="flex justify-center">
-             <span id="instructionsToggle" class="collapsible-header">Don't you know how to retrieve the CSV file? Click here for the instructions</span>
+            <span id="instructionsToggle" class="collapsible-header" role="button" tabindex="0" aria-expanded="false" aria-controls="instructionsContent">
+                Non sai come recuperare il file CSV? Clicca qui per le istruzioni
+            </span>
         </div>
         <div id="instructionsContent" class="collapsible-content">
+            <p><em>(Qui andranno inserite le istruzioni effettive su come ottenere il file CSV da Blacktab. Sostituisci questo testo.)</em></p>
             <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
         </div>
 
-        <input type="text" id="searchInput" placeholder="Search by Detail...">
+        <input type="text" id="searchInput" placeholder="Cerca per Dettaglio...">
 
-        <div id="aiResponseArea">
-            <h3>AI Analysis</h3>
-            <p id="aiResponseContent"></p>
-        </div>
+        <div id="aiResponseArea" aria-live="polite">
+            <h3>Analisi AI</h3>
+            <div id="aiResponseContent"></div> </div>
 
         <div class="range-container">
-            <label for="columnCount">Cards per row:</label>
-            <input type="range" id="columnCount" min="2" max="5" value="3"> <span id="columnCountValue">3</span>
+            <label for="columnCount">Card per riga:</label>
+            <input type="range" id="columnCount" min="1" max="5" value="3"> <span id="columnCountValue">3</span>
         </div>
 
 
         <div id="updatesContainer">
-            <p id="initialMessage" class="text-center text-gray-600 col-span-full">Please upload a CSV file to view the release updates.</p>
+            <p id="initialMessage" class="text-center text-gray-600 col-span-full">Carica un file CSV per visualizzare gli aggiornamenti della release.</p>
         </div>
 
-        <div id="errorMessage" class="text-center text-red-600 mt-4 hidden col-span-full"></div>
+        <div id="errorMessage" class="text-center text-red-600 mt-4 hidden col-span-full" aria-live="polite"></div>
 
     </div>
 
     <footer>
-        These tools are not official or Salesforce authorized. They have been developed for personal purpose by Saverio Guardato with the aim of improving CSM tasks.
+        Questi strumenti non sono ufficiali o autorizzati da Salesforce. Sono stati sviluppati per uso personale da Saverio Guardato con lo scopo di migliorare le attività dei CSM.
     </footer>
 
     <script>
-        // Function to show the AI response area
+        // Funzione per mostrare l'area della risposta AI
         function showAIResponse(response) {
             const aiResponseArea = document.getElementById('aiResponseArea');
             const aiResponseContent = document.getElementById('aiResponseContent');
 
-            // Simple Markdown to HTML conversion
-            let htmlResponse = response;
-            // Convert bold (**text**) to <strong>text</strong>
-            htmlResponse = htmlResponse.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            // Convert list items (* item or - item) to <li> within <ul> (basic)
-            // This is a very simple conversion and might not handle nested lists or complex markdown
-            htmlResponse = htmlResponse.replace(/^[\*\-]\s+(.*)$/gm, '<li>$1</li>');
-            if (htmlResponse.includes('<li>')) {
-                 htmlResponse = '<ul>' + htmlResponse + '</ul>';
+            // Usa marked.js per convertire Markdown in HTML
+            // NOTA DI SICUREZZA: Se 'response' proviene da una fonte non fidata e può contenere HTML/script malevoli,
+            // dovresti sanitizzare l'output di marked.parse() usando una libreria come DOMPurify.
+            // Esempio: const sanitizedHtml = DOMPurify.sanitize(marked.parse(response));
+            // aiResponseContent.innerHTML = sanitizedHtml;
+            // Per questo esempio, assumiamo che il Markdown dell'AI sia "safe".
+            if (window.marked) {
+                aiResponseContent.innerHTML = marked.parse(response);
+            } else {
+                // Fallback a conversione semplice se marked.js non è caricato
+                aiResponseContent.textContent = response; // Mostra come testo semplice per sicurezza
+                console.warn("Libreria marked.js non trovata. Mostrando risposta AI come testo semplice.");
             }
-             // Convert newlines to <br> tags, but only if not already inside list items
-            htmlResponse = htmlResponse.replace(/\n(?!<\/li>)/g, '<br>');
-
-
-            aiResponseContent.innerHTML = htmlResponse; // Use innerHTML to render HTML tags
             aiResponseArea.style.display = 'block';
         }
 
-        // Function to hide the AI response area
+        // Funzione per nascondere l'area della risposta AI
         function hideAIResponse() {
             const aiResponseArea = document.getElementById('aiResponseArea');
             const aiResponseContent = document.getElementById('aiResponseContent');
             aiResponseArea.style.display = 'none';
-            aiResponseContent.innerHTML = ''; // Clear content when hidden
+            aiResponseContent.innerHTML = ''; // Pulisci contenuto quando nascosto
         }
 
 
@@ -392,111 +405,106 @@
         const updatesContainer = document.getElementById('updatesContainer');
         const errorMessageDiv = document.getElementById('errorMessage');
         const initialMessage = document.getElementById('initialMessage');
-        const searchInput = document.getElementById('searchInput'); // Get the search input element
-        const instructionsToggle = document.getElementById('instructionsToggle'); // Get the instructions toggle element
-        const instructionsContent = document.getElementById('instructionsContent'); // Get the instructions content element
-        const columnCountInput = document.getElementById('columnCount'); // Get the range input
-        const columnCountValueSpan = document.getElementById('columnCountValue'); // Get the span for the value
-        // const aiResponseArea = document.getElementById('aiResponseArea'); // Removed this line
-        // const aiResponseContent = document.getElementById('aiResponseContent'); // Removed this line
+        const searchInput = document.getElementById('searchInput');
+        const instructionsToggle = document.getElementById('instructionsToggle');
+        const instructionsContent = document.getElementById('instructionsContent');
+        const columnCountInput = document.getElementById('columnCount');
+        const columnCountValueSpan = document.getElementById('columnCountValue');
 
-
-        // URL del tuo backend deployato
         const BACKEND_URL = 'https://csm-ai-backend-43c415c64d97.herokuapp.com/analyze-release-update';
+        let allUpdatesData = [];
 
-
-        let allUpdatesData = []; // Variable to store the original parsed data
-
-        // Function to update the grid columns based on the range input value
         function updateGridColumns(count) {
             updatesContainer.style.gridTemplateColumns = `repeat(${count}, minmax(0, 1fr))`;
         }
 
-        // Initial grid setup based on the default range input value
         updateGridColumns(columnCountInput.value);
-        columnCountValueSpan.textContent = columnCountInput.value; // Display initial value
+        columnCountValueSpan.textContent = columnCountInput.value;
 
-
-        // Add event listener for the range input
         columnCountInput.addEventListener('input', (event) => {
             const count = event.target.value;
-            columnCountValueSpan.textContent = count; // Update the displayed value
-            updateGridColumns(count); // Update the grid layout
+            columnCountValueSpan.textContent = count;
+            updateGridColumns(count);
         });
 
 
         fileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) {
-                return; // No file selected
+                fileInput.value = null; // Resetta l'input se la selezione viene annullata
+                return;
             }
 
-            // Hide initial message and previous errors
             initialMessage.classList.add('hidden');
             errorMessageDiv.classList.add('hidden');
             errorMessageDiv.textContent = '';
-            updatesContainer.innerHTML = ''; // Clear previous content
-            searchInput.value = ''; // Clear search input on new file load
-            hideAIResponse(); // Hide previous AI response
+            updatesContainer.innerHTML = '';
+            searchInput.value = '';
+            hideAIResponse();
 
             const reader = new FileReader();
 
             reader.onload = (e) => {
                 const text = e.target.result;
                 try {
-                    allUpdatesData = parseCSV(text); // Store the parsed data
-                    displayUpdates(allUpdatesData); // Display all data initially
+                    allUpdatesData = parseCSV(text);
+                    displayUpdates(allUpdatesData);
                 } catch (error) {
-                    console.error("Error parsing or displaying CSV:", error); // Log the actual error to console
-                    // Display a more specific message if available, otherwise a general one
-                    errorMessageDiv.textContent = `Error processing file: ${error.message || 'An unknown error occurred during parsing.'} Please ensure it is a valid CSV and check the browser console for details.`;
+                    console.error("Errore durante il parsing o la visualizzazione del CSV:", error);
+                    errorMessageDiv.textContent = `Errore nell'elaborazione del file: ${error.message || 'Si è verificato un errore sconosciuto durante il parsing.'} Assicurati che sia un CSV valido e controlla la console del browser per i dettagli.`;
                     errorMessageDiv.classList.remove('hidden');
-                    allUpdatesData = []; // Clear data on error
-                     updatesContainer.innerHTML = ''; // Clear updates container on error
+                    allUpdatesData = [];
+                    updatesContainer.innerHTML = '';
+                } finally {
+                    fileInput.value = null; // Resetta l'input file dopo l'elaborazione
                 }
             };
 
             reader.onerror = (e) => {
-                console.error("Error reading file:", e); // Log the actual error to console
-                errorMessageDiv.textContent = 'Error reading file.';
+                console.error("Errore durante la lettura del file:", e);
+                errorMessageDiv.textContent = 'Errore durante la lettura del file.';
                 errorMessageDiv.classList.remove('hidden');
-                 allUpdatesData = []; // Clear data on error
-                 updatesContainer.innerHTML = ''; // Clear updates container on error
+                allUpdatesData = [];
+                updatesContainer.innerHTML = '';
+                fileInput.value = null; // Resetta l'input file in caso di errore di lettura
             };
 
             reader.readAsText(file);
         });
 
-        // Add event listener for the search input
         searchInput.addEventListener('input', (event) => {
             const searchTerm = event.target.value.toLowerCase();
             const filteredUpdates = allUpdatesData.filter(update => {
-                // Change search field to 'Detail'
                 return update['Detail'] && update['Detail'].toLowerCase().includes(searchTerm);
             });
-            displayUpdates(filteredUpdates); // Display filtered data
+            displayUpdates(filteredUpdates);
         });
 
-         // Add event listener for the instructions toggle
-        instructionsToggle.addEventListener('click', () => {
-            instructionsContent.style.display = instructionsContent.style.display === 'none' || instructionsContent.style.display === '' ? 'block' : 'none';
+        function toggleInstructions() {
+            const isHidden = instructionsContent.style.display === 'none' || instructionsContent.style.display === '';
+            instructionsContent.style.display = isHidden ? 'block' : 'none';
+            instructionsToggle.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+        }
+
+        instructionsToggle.addEventListener('click', toggleInstructions);
+        instructionsToggle.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault(); // Previene lo scroll della pagina per la barra spaziatrice
+                toggleInstructions();
+            }
         });
 
 
-        // Function to call the backend for AI analysis
         async function analyzeWithGemini(updateData, buttonElement) {
-             // Show loading indicator and disable button
-             buttonElement.textContent = 'Analyzing with AI...'; // Translated text
-             buttonElement.disabled = true;
-             buttonElement.style.backgroundColor = '#a78bfa'; // Tailwind violet-400 for loading state
-             buttonElement.style.cursor = 'not-allowed';
-             // Optional: Add a simple loading spinner next to the text
-             const loadingSpinner = document.createElement('span');
-             loadingSpinner.classList.add('loading-indicator');
-             buttonElement.appendChild(loadingSpinner);
+            buttonElement.textContent = 'Analisi in corso...';
+            buttonElement.disabled = true;
+            buttonElement.style.backgroundColor = '#a78bfa';
+            buttonElement.style.cursor = 'not-allowed';
+            const loadingSpinner = document.createElement('span');
+            loadingSpinner.classList.add('loading-indicator');
+            buttonElement.appendChild(loadingSpinner);
 
-
-             hideAIResponse(); // Hide previous response before fetching new one
+            hideAIResponse();
 
             try {
                 const response = await fetch(BACKEND_URL, {
@@ -504,48 +512,50 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(updateData) // Send update data as JSON
+                    body: JSON.stringify(updateData)
                 });
 
                 if (!response.ok) {
-                    // Handle HTTP errors (e.g., 400, 500)
-                    const errorBody = await response.json();
-                    throw new Error(`Backend Error: ${response.status} ${response.statusText} - ${errorBody.error || 'Unknown error'}`); // Translated text
+                    let errorMsg = 'Errore sconosciuto dal backend.';
+                    try {
+                        const errorBody = await response.json();
+                        errorMsg = errorBody.error || errorMsg;
+                    } catch (e) {
+                        // Non è riuscito a parsare il JSON, usa il testo di stato
+                        errorMsg = response.statusText;
+                    }
+                    throw new Error(`Errore dal Backend: ${response.status} ${errorMsg}`);
                 }
 
                 const data = await response.json();
-                console.log('Response received from backend:', data);
+                console.log('Risposta ricevuta dal backend:', data);
 
                 if (data && data.analysis) {
-                    showAIResponse(data.analysis); // Display the received analysis
+                    showAIResponse(data.analysis);
                 } else {
-                    showAIResponse("Invalid or empty AI response."); // Translated text
+                    showAIResponse("Risposta AI non valida o vuota.");
                 }
 
             } catch (error) {
-                console.error("Error calling backend:", error); // Translated text
-                // Modified to show a more helpful error message
-                showAIResponse(`Error during AI analysis: ${error.message || 'A network error or backend issue occurred.'}`); // Translated text
+                console.error("Errore durante la chiamata al backend:", error);
+                showAIResponse(`Errore durante l'analisi AI: ${error.message || 'Si è verificato un problema di rete o del backend.'}`);
             } finally {
-                // Reset button state
-                buttonElement.textContent = 'Analyze with AI'; // Translated text
+                buttonElement.textContent = 'Analizza con AI';
                 buttonElement.disabled = false;
-                buttonElement.style.backgroundColor = '#10b981'; // Reset to original green
+                buttonElement.style.backgroundColor = '#10b981';
                 buttonElement.style.cursor = 'pointer';
-                 // Remove loading spinner if it was added
-                 const spinner = buttonElement.querySelector('.loading-indicator');
-                 if (spinner) {
-                     spinner.remove();
-                 }
+                const spinner = buttonElement.querySelector('.loading-indicator');
+                if (spinner) {
+                    spinner.remove();
+                }
             }
         }
 
 
-        // More robust CSV parsing function to handle quoted fields
         function parseCSV(text) {
-            const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== ''); // Split into lines, handle different line endings, remove empty lines
+            const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
             if (lines.length === 0) {
-                 throw new Error("CSV file is empty."); // Translated text
+                throw new Error("Il file CSV è vuoto.");
             }
 
             const headers = [];
@@ -553,16 +563,15 @@
             const delimiter = ',';
             const quote = '"';
 
-            // Parse headers (first line)
             let headerLine = lines[0];
             let inQuote = false;
             let field = '';
             for (let i = 0; i < headerLine.length; i++) {
                 const char = headerLine[i];
                 if (char === quote) {
-                    if (inQuote && headerLine[i + 1] === quote) { // Handle escaped quotes ""
+                    if (inQuote && headerLine[i + 1] === quote) {
                         field += quote;
-                        i++; // Skip the next quote
+                        i++;
                     } else {
                         inQuote = !inQuote;
                     }
@@ -573,123 +582,109 @@
                     field += char;
                 }
             }
-            headers.push(field.trim()); // Add the last header
+            headers.push(field.trim());
 
-
-            // Basic validation: check if expected headers are present
             const requiredHeaders = ["Date", "OrganizationId", "Release Update Name", "Status", "Due by Date", "Badge", "Test Run Avail", "Detail", "Enforcement"];
-             const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
-             if (missingHeaders.length > 0) {
-                 throw new Error(`Missing required headers: ${missingHeaders.join(', ')}`); // Translated text
-             }
+            const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+            if (missingHeaders.length > 0) {
+                throw new Error(`Header richiesti mancanti: ${missingHeaders.join(', ')}`);
+            }
 
-
-            // Parse data rows
             for (let i = 1; i < lines.length; i++) {
                 const dataLine = lines[i];
                 const rowObject = {};
                 let currentField = '';
                 let currentFieldIndex = 0;
-                inQuote = false; // Reset for each row
+                inQuote = false;
 
-                 for (let j = 0; j < dataLine.length; j++) {
+                for (let j = 0; j < dataLine.length; j++) {
                     const char = dataLine[j];
-                     if (char === quote) {
-                        if (inQuote && dataLine[j + 1] === quote) { // Handle escaped quotes ""
+                    if (char === quote) {
+                        if (inQuote && dataLine[j + 1] === quote) {
                             currentField += quote;
-                            j++; // Skip the next quote
+                            j++;
                         } else {
                             inQuote = !inQuote;
                         }
                     } else if (char === delimiter && !inQuote) {
-                        rowObject[headers[currentFieldIndex]] = currentField.trim();
+                         if (headers[currentFieldIndex]) { // Aggiunto controllo per evitare undefined
+                            rowObject[headers[currentFieldIndex]] = currentField.trim();
+                        }
                         currentField = '';
                         currentFieldIndex++;
                     } else {
                         currentField += char;
                     }
                 }
-                // Add the last field of the row
-                if (headers[currentFieldIndex] !== undefined) {
-                     rowObject[headers[currentFieldIndex]] = currentField.trim();
+                if (headers[currentFieldIndex]) { // Aggiunto controllo per evitare undefined
+                   rowObject[headers[currentFieldIndex]] = currentField.trim();
                 }
-
-
-                // Ensure all headers have a corresponding value, even if empty
+                
                 headers.forEach(header => {
                     if (rowObject[header] === undefined) {
                         rowObject[header] = '';
                     }
                 });
-
                 data.push(rowObject);
             }
-
             return data;
         }
 
-        // Function to format date from YYMMDD to dd/MM/YYYY
         function formatDate(yyyymmdd) {
             if (!yyyymmdd || typeof yyyymmdd !== 'string' || yyyymmdd.length !== 6) {
-                return 'Invalid Date'; // Translated text
+                return 'Data non valida';
             }
-            const year = '20' + yyyymmdd.substring(0, 2); // Assuming 21st century
+            const year = '20' + yyyymmdd.substring(0, 2);
             const month = yyyymmdd.substring(2, 4);
             const day = yyyymmdd.substring(4, 6);
 
-            // Basic validation for month and day (optional but good practice)
-            if (parseInt(month) > 12 || parseInt(day) > 31) {
-                 return 'Invalid Date'; // Translated text
+            if (parseInt(month, 10) > 12 || parseInt(month, 10) < 1 || parseInt(day, 10) > 31 || parseInt(day, 10) < 1) {
+                return 'Data non valida';
             }
-
             return `${day}/${month}/${year}`;
         }
 
 
         function displayUpdates(data) {
-            updatesContainer.innerHTML = ''; // Clear previous content before displaying
-             hideAIResponse(); // Hide AI response area when displaying new data
-
+            updatesContainer.innerHTML = '';
+            hideAIResponse();
 
             if (data.length === 0) {
-                updatesContainer.innerHTML = '<p class="text-center text-gray-600 col-span-full">No release updates found matching your criteria.</p>'; // Translated text
+                updatesContainer.innerHTML = '<p class="text-center text-gray-600 col-span-full">Nessun aggiornamento della release trovato per i criteri specificati.</p>';
                 return;
             }
 
             data.forEach(update => {
                 const card = document.createElement('div');
-                // Add status-specific class for styling
-                const statusClass = update.Status ? update.Status.toLowerCase().replace(/\s+/g, '') : ''; // Handle potential empty status
-                card.classList.add('card', `status-${statusClass}`, 'flex', 'flex-col'); // Use flexbox for layout within card
+                const statusClass = update.Status ? update.Status.toLowerCase().replace(/\s+/g, '').replace(/[^\w-]/g, '') : 'sconosciuto';
+                card.classList.add('card', `status-${statusClass}`, 'flex', 'flex-col');
 
-                // Format the Due by Date
                 const formattedDueDate = formatDate(update['Due by Date']);
 
-
                 card.innerHTML = `
-                    <h2 class="text-xl font-semibold mb-2">${update['Release Update Name'] || 'Unnamed Update'}</h2> <div class="flex flex-wrap items-center text-sm text-gray-700 mb-2">
-                        <span class="mr-4"><strong>Status:</strong> ${update.Status || 'N/A'}</span>
-                        <span><strong>Due by:</strong> ${formattedDueDate}</span>
+                    <h2 class="text-xl font-semibold mb-2">${update['Release Update Name'] || 'Aggiornamento Senza Nome'}</h2>
+                    <div class="flex flex-wrap items-center text-sm text-gray-700 mb-2">
+                        <span class="mr-4"><strong>Stato:</strong> ${update.Status || 'N/D'}</span>
+                        <span><strong>Scadenza:</strong> ${formattedDueDate}</span>
                     </div>
                     <div class="flex flex-wrap items-center text-sm text-gray-700 mb-2">
-                         ${update.Badge ? `<span class="badge">${update.Badge}</span>` : ''}
-                         <span class="mr-4"><strong>Test Run Available:</strong> ${update['Test Run Avail'] || 'N/A'}</span>
-                         <span><strong>Enforcement:</strong> ${update.Enforcement || 'N/A'}</span>
+                        ${update.Badge ? `<span class="badge">${update.Badge}</span>` : ''}
+                        <span class="mr-4"><strong>Test Run Disp.:</strong> ${update['Test Run Avail'] || 'N/D'}</span>
+                        <span><strong>Applicazione Forzata:</strong> ${update.Enforcement || 'N/D'}</span>
                     </div>
                     <div class="detail">
-                        <p>${update.Detail || 'No details provided.'}</p> </div>
-                     <button class="analyze-btn">Analyze with AI</button> `;
+                        <p>${update.Detail || 'Nessun dettaglio fornito.'}</p>
+                    </div>
+                    <button class="analyze-btn">Analizza con AI</button>
+                `;
                 updatesContainer.appendChild(card);
 
-                // Add event listener to the newly created button
                 const analyzeButton = card.querySelector('.analyze-btn');
                 analyzeButton.addEventListener('click', () => {
-                    // Pass the specific update data and the button element to the analysis function
                     analyzeWithGemini(update, analyzeButton);
                 });
             });
-             // Ensure the grid columns are set based on the current range input value after displaying updates
-             updateGridColumns(columnCountInput.value);
+            updateGridColumns(columnCountInput.value);
         }
     </script>
 </body>
