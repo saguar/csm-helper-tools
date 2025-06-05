@@ -106,6 +106,72 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
 
+        /* Style for the AI Response Area */
+        #aiResponseArea {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border: 1px solid #a78bfa;
+            border-radius: 0.5rem;
+            background-color: #f3e8ff;
+            display: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #aiResponseArea h3 {
+            color: #5b21b6;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        #aiResponseArea p,
+        #aiResponseArea ul,
+        #aiResponseArea li,
+        #aiResponseArea strong,
+        #aiResponseArea em,
+        #aiResponseArea code,
+        #aiResponseArea pre {
+            color: #374151;
+            line-height: 1.6;
+        }
+        #aiResponseArea ul {
+            list-style: disc inside;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+        }
+        #aiResponseArea li {
+            margin-bottom: 0.25rem;
+        }
+        #aiResponseArea pre {
+            background-color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            overflow-x: auto;
+        }
+        #aiResponseArea code {
+            font-family: monospace;
+            background-color: #e5e7eb;
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.125rem;
+        }
+
+        /* Style for loading indicator */
+        .loading-indicator {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .summary-widgets-container {
             display: flex;
             gap: 2rem;
@@ -218,7 +284,14 @@
             placeholder="Paste RAW data copied from the alert source here..."></textarea>
 
         <div class="button-group">
-            <button id="visualizeButton" class="analyze-btn">Visualize Data</button> </div>
+            <button id="visualizeButton" class="analyze-btn">Visualize Data</button>
+            <button id="aiAnalyzeButton" class="analyze-btn">Analyze with AI</button>
+        </div>
+
+        <div id="aiResponseArea" aria-live="polite">
+            <h3>AI Analysis</h3>
+            <div id="aiResponseContent"></div>
+        </div>
 
         <div class="summary-widgets-container">
             <div class="widget-card">
@@ -257,10 +330,15 @@
             const totalAlertCountWidget = document.getElementById('totalAlertCountWidget');
             const levelBreakdownWidget = document.getElementById('levelBreakdownWidget');
             const topMetricsListWidget = document.getElementById('topMetricsListWidget');
+            const aiAnalyzeButton = document.getElementById('aiAnalyzeButton');
+            const aiResponseArea = document.getElementById('aiResponseArea');
+            const BACKEND_URL = 'https://csm-ai-backend-43c415c64d97.herokuapp.com/analyze-prom-alerts';
             let alertCountChartInstance = null;
             let totalDurationChartInstance = null;
+            let currentAlerts = [];
 
             visualizeButton.addEventListener('click', visualizeData);
+            aiAnalyzeButton.addEventListener('click', () => analyzeWithGemini(currentAlerts, aiAnalyzeButton));
 
             function showMessage(message, type = 'error') {
                 messageBox.textContent = message;
@@ -269,6 +347,85 @@
                 setTimeout(hideMessage, type === 'success' ? 3000 : 6000);
             }
             function hideMessage() { messageBox.style.display = 'none'; }
+
+            function showAIResponse(response) {
+                if (!aiResponseArea) return;
+                const content = document.getElementById('aiResponseContent');
+                if (window.marked) {
+                    content.innerHTML = marked.parse(response);
+                } else {
+                    content.textContent = response;
+                    console.warn('marked.js not found. Showing AI response as plain text.');
+                }
+                aiResponseArea.style.display = 'block';
+            }
+
+            function hideAIResponse() {
+                if (!aiResponseArea) return;
+                const content = document.getElementById('aiResponseContent');
+                aiResponseArea.style.display = 'none';
+                content.innerHTML = '';
+            }
+
+            async function analyzeWithGemini(alerts, buttonElement) {
+                if (!alerts || alerts.length === 0) {
+                    showAIResponse('No alert data to analyze.');
+                    return;
+                }
+
+                buttonElement.textContent = 'Analyzing...';
+                buttonElement.disabled = true;
+                buttonElement.style.backgroundColor = '#a78bfa';
+                buttonElement.style.cursor = 'not-allowed';
+                const loadingSpinner = document.createElement('span');
+                loadingSpinner.classList.add('loading-indicator');
+                buttonElement.appendChild(loadingSpinner);
+
+                hideAIResponse();
+
+                try {
+                    const response = await fetch(BACKEND_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ alerts })
+                    });
+
+                    if (!response.ok) {
+                        let errorMsg = 'Unknown backend error.';
+                        try {
+                            const errorBody = await response.json();
+                            errorMsg = errorBody.error || errorMsg;
+                        } catch (e) {
+                            errorMsg = response.statusText;
+                        }
+                        throw new Error(`Backend Error: ${response.status} ${errorMsg}`);
+                    }
+
+                    const data = await response.json();
+                    console.log('Response from backend:', data);
+
+                    if (data && data.analysis) {
+                        showAIResponse(data.analysis);
+                    } else {
+                        showAIResponse('Invalid or empty AI response.');
+                    }
+
+                } catch (error) {
+                    console.error('Error during backend call:', error);
+                    showAIResponse(`AI analysis error: ${error.message || 'Network or backend issue.'}`);
+                } finally {
+                    buttonElement.textContent = 'Analyze with AI';
+                    buttonElement.disabled = false;
+                    buttonElement.style.backgroundColor = '#10b981';
+                    buttonElement.style.cursor = 'pointer';
+                    const spinner = buttonElement.querySelector('.loading-indicator');
+                    if (spinner) {
+                        spinner.remove();
+                    }
+                }
+            }
 
             function parseNewRawData(rawText) {
                 console.log("Starting Proactive Monitoring Internal Portal data parsing...");
@@ -372,6 +529,7 @@
 
             function visualizeData() {
                 hideMessage();
+                hideAIResponse();
                 if (alertCountChartInstance) { alertCountChartInstance.destroy(); alertCountChartInstance = null; }
                 if (totalDurationChartInstance) { totalDurationChartInstance.destroy(); totalDurationChartInstance = null; }
                 totalAlertCountWidget.textContent = '0'; levelBreakdownWidget.innerHTML = ''; topMetricsListWidget.innerHTML = '';
@@ -379,6 +537,7 @@
                 const rawText = alertDataTextarea.value.trim(); if (!rawText) { showMessage("Textarea empty.", "warning"); return; }
                 const srcType = document.querySelector('input[name="dataSourceType"]:checked').value;
                 let alerts = (srcType === 'proactiveMonitoring') ? parseNewRawData(rawText) : parseGadgetUIData(rawText);
+                currentAlerts = alerts || [];
                 if (alerts === null) { /* Parser decided no data or fatal error, message shown by parser */
                     renderSummaryWidgets({ totalAlertCountOverall:0, countByLevelOverall:{}, countByMetricOverall:{} });
                     renderAlertCountChart({ labels:[], datasets:[] });
