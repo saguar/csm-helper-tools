@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -352,12 +351,7 @@
             function showAIResponse(response) {
                 if (!aiResponseArea) return;
                 const content = document.getElementById('aiResponseContent');
-                if (window.marked) {
-                    content.innerHTML = marked.parse(response);
-                } else {
-                    content.textContent = response;
-                    console.warn('marked.js not found. Showing AI response as plain text.');
-                }
+                content.innerHTML = response;
                 aiResponseArea.style.display = 'block';
             }
 
