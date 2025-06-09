@@ -127,17 +127,85 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
         }
 
+        /* Style for the AI Response Area */
+        #aiResponseArea {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border: 1px solid #a78bfa;
+            border-radius: 0.5rem;
+            background-color: #f3e8ff;
+            display: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #aiResponseArea h3 {
+            color: #5b21b6;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        #aiResponseArea p,
+        #aiResponseArea ul,
+        #aiResponseArea li,
+        #aiResponseArea strong,
+        #aiResponseArea em,
+        #aiResponseArea code,
+        #aiResponseArea pre {
+            color: #374151;
+            line-height: 1.6;
+        }
+        #aiResponseArea ul {
+            list-style: disc inside;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+        }
+        #aiResponseArea li {
+            margin-bottom: 0.25rem;
+        }
+        #aiResponseArea pre {
+            background-color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            overflow-x: auto;
+        }
+        #aiResponseArea code {
+            font-family: monospace;
+            background-color: #e5e7eb;
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.125rem;
+        }
+
+        /* Style for loading indicator */
+        .loading-indicator {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         h1, h2, h3 {
-            color: #1a202c; 
-            margin-bottom: 1rem; 
-            font-weight: 700; 
+            color: #1a202c;
+            margin-bottom: 1rem;
+            font-weight: 700;
         }
         h1 {
-            text-align: center; 
-            margin-bottom: 2rem; 
-            font-size: 2.25rem; 
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2.25rem;
         }
         h2, h3 {
+            margin-top: 0;
+        }
             margin-top: 0; 
         }
 
@@ -313,6 +381,12 @@
         <div class="button-group">
             <button id="saveLicenseBtn" class="analyze-btn">Add License</button>
             <button id="generateChartBtn" class="analyze-btn">Generate Chart</button>
+            <button id="aiAnalyzeBtn" class="analyze-btn">Analyze with AI</button>
+        </div>
+
+        <div id="aiResponseArea" aria-live="polite">
+            <h3>AI Analysis</h3>
+            <div id="aiResponseContent"></div>
         </div>
     </div>
 
@@ -345,6 +419,9 @@
         const consumptionFields = document.querySelector('.consumption-fields');
         const saveLicenseBtn = document.getElementById('saveLicenseBtn');
         const generateChartBtn = document.getElementById('generateChartBtn');
+        const aiAnalyzeBtn = document.getElementById('aiAnalyzeBtn');
+        const aiResponseArea = document.getElementById('aiResponseArea');
+        const BACKEND_URL = 'https://csm-ai-backend-43c415c64d97.herokuapp.com/analyze-license-adoption';
         const licenseList = document.getElementById('licenseList');
         const chartRoot = document.getElementById('chartRoot');
 
@@ -499,6 +576,87 @@
             updateLicenseList();
             renderCharts();
         };
+
+        aiAnalyzeBtn.addEventListener('click', () => analyzeWithGemini(licensesData, aiAnalyzeBtn));
+
+        function showAIResponse(response) {
+            if (!aiResponseArea) return;
+            const content = document.getElementById('aiResponseContent');
+            if (window.marked) {
+                content.innerHTML = marked.parse(response);
+            } else {
+                content.textContent = response;
+                console.warn('marked.js not found. Showing AI response as plain text.');
+            }
+            aiResponseArea.style.display = 'block';
+        }
+
+        function hideAIResponse() {
+            if (!aiResponseArea) return;
+            const content = document.getElementById('aiResponseContent');
+            aiResponseArea.style.display = 'none';
+            content.innerHTML = '';
+        }
+
+        async function analyzeWithGemini(licenses, buttonElement) {
+            if (!licenses || licenses.length === 0) {
+                showAIResponse('No license data to analyze.');
+                return;
+            }
+
+            buttonElement.textContent = 'Analyzing...';
+            buttonElement.disabled = true;
+            buttonElement.style.backgroundColor = '#a78bfa';
+            buttonElement.style.cursor = 'not-allowed';
+            const loadingSpinner = document.createElement('span');
+            loadingSpinner.classList.add('loading-indicator');
+            buttonElement.appendChild(loadingSpinner);
+
+            hideAIResponse();
+
+            try {
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ licenses })
+                });
+
+                if (!response.ok) {
+                    let errorMsg = 'Unknown backend error.';
+                    try {
+                        const errorBody = await response.json();
+                        errorMsg = errorBody.error || errorMsg;
+                    } catch (e) {
+                        errorMsg = response.statusText;
+                    }
+                    throw new Error(`Backend Error: ${response.status} ${errorMsg}`);
+                }
+
+                const data = await response.json();
+                console.log('Response from backend:', data);
+
+                if (data && data.analysis) {
+                    showAIResponse(data.analysis);
+                } else {
+                    showAIResponse('Invalid or empty AI response.');
+                }
+
+            } catch (error) {
+                console.error('Error during backend call:', error);
+                showAIResponse(`AI analysis error: ${error.message || 'Network or backend issue.'}`);
+            } finally {
+                buttonElement.textContent = 'Analyze with AI';
+                buttonElement.disabled = false;
+                buttonElement.style.backgroundColor = '#10b981';
+                buttonElement.style.cursor = 'pointer';
+                const spinner = buttonElement.querySelector('.loading-indicator');
+                if (spinner) {
+                    spinner.remove();
+                }
+            }
+        }
 
         generateChartBtn.addEventListener('click', renderCharts);
         function renderCharts() {
