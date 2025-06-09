@@ -613,12 +613,15 @@
             hideAIResponse();
 
             try {
+                // Chart.js instances contain circular references and cannot be
+                // serialized to JSON, so remove them before sending data.
+                const sanitized = licenses.map(({ chartInstance, ...rest }) => rest);
                 const response = await fetch(BACKEND_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ licenses })
+                    body: JSON.stringify({ licenses: sanitized })
                 });
 
                 if (!response.ok) {
