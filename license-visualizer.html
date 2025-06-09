@@ -106,9 +106,91 @@
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); 
         }
         .edit-btn:hover {
-            background-color: #d97706; 
-            transform: translateY(-1px); 
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12); 
+            background-color: #d97706;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Style for the delete button (red) */
+        .delete-btn {
+            background-color: #ef4444;
+            color: white;
+            margin-left: 0.5rem;
+            padding: 0.3rem 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 400;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        }
+        .delete-btn:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Style for the AI Response Area */
+        #aiResponseArea {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border: 1px solid #a78bfa;
+            border-radius: 0.5rem;
+            background-color: #f3e8ff;
+            display: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #aiResponseArea h3 {
+            color: #5b21b6;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        #aiResponseArea p,
+        #aiResponseArea ul,
+        #aiResponseArea li,
+        #aiResponseArea strong,
+        #aiResponseArea em,
+        #aiResponseArea code,
+        #aiResponseArea pre {
+            color: #374151;
+            line-height: 1.6;
+        }
+        #aiResponseArea ul {
+            list-style: disc inside;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+        }
+        #aiResponseArea li {
+            margin-bottom: 0.25rem;
+        }
+        #aiResponseArea pre {
+            background-color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            overflow-x: auto;
+        }
+        #aiResponseArea code {
+            font-family: monospace;
+            background-color: #e5e7eb;
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.125rem;
+        }
+
+        /* Style for loading indicator */
+        .loading-indicator {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         h1, h2, h3 {
@@ -220,7 +302,7 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="inputForm">
         <h1>License Adoption Visualizer</h1>
 
         <h2>Add or Update License</h2>
@@ -297,6 +379,12 @@
         <div class="button-group">
             <button id="saveLicenseBtn" class="analyze-btn">Add License</button>
             <button id="generateChartBtn" class="analyze-btn">Generate Chart</button>
+            <button id="aiAnalyzeBtn" class="analyze-btn">Analyze with AI</button>
+        </div>
+
+        <div id="aiResponseArea" aria-live="polite">
+            <h3>AI Analysis</h3>
+            <div id="aiResponseContent"></div>
         </div>
     </div>
 
@@ -329,6 +417,9 @@
         const consumptionFields = document.querySelector('.consumption-fields');
         const saveLicenseBtn = document.getElementById('saveLicenseBtn');
         const generateChartBtn = document.getElementById('generateChartBtn');
+        const aiAnalyzeBtn = document.getElementById('aiAnalyzeBtn');
+        const aiResponseArea = document.getElementById('aiResponseArea');
+        const BACKEND_URL = 'https://csm-ai-backend-43c415c64d97.herokuapp.com/analyze-license-adoption';
         const licenseList = document.getElementById('licenseList');
         const chartRoot = document.getElementById('chartRoot');
 
@@ -352,25 +443,44 @@
         }
 
         function parseCSV(text) {
-            licensesData = []; 
-            const lines = text.trim().split('\n');
-            if (lines.length < 2) return; 
+            licensesData = [];
+            const lines = text.trim().split(/\r?\n/);
+            if (lines.length < 2) return;
             const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const isNewFormat = header.includes('product') && header.includes('licenses provisioned');
+
             for (let i = 1; i < lines.length; i++) {
-                const row = lines[i].split(',').map(cell => cell.trim());
-                if (row.length < header.length) continue; 
+                if (!lines[i].trim()) continue;
+                let row = lines[i].split(',');
+                if (row.length > header.length) row = row.slice(0, header.length);
+                while (row.length < header.length) row.push('');
+                row = row.map(cell => cell.trim());
                 const record = {};
                 header.forEach((colName, j) => record[colName] = row[j]);
-                licensesData.push({
-                    licenseType: record['licensetype'] || '',
-                    licenseName: record['licensename'] || '',
-                    provisioned: parseIfNotEmpty(record['provisioned']),
-                    activated: parseIfNotEmpty(record['activated']),
-                    mau: parseIfNotEmpty(record['mau']),
-                    dau: parseIfNotEmpty(record['dau']),
-                    allowance: parseIfNotEmpty(record['allowance']),
-                    usage: parseIfNotEmpty(record['usage'])
-                });
+
+                if (isNewFormat) {
+                    licensesData.push({
+                        licenseType: 'activation',
+                        licenseName: record['product'] || '',
+                        provisioned: parseIfNotEmpty(record['licenses provisioned']),
+                        activated: parseIfNotEmpty(record['licenses activated']),
+                        mau: parseIfNotEmpty(record['monthly active users']),
+                        dau: null,
+                        allowance: null,
+                        usage: null
+                    });
+                } else {
+                    licensesData.push({
+                        licenseType: record['licensetype'] || '',
+                        licenseName: record['licensename'] || '',
+                        provisioned: parseIfNotEmpty(record['provisioned']),
+                        activated: parseIfNotEmpty(record['activated']),
+                        mau: parseIfNotEmpty(record['mau']),
+                        dau: parseIfNotEmpty(record['dau']),
+                        allowance: parseIfNotEmpty(record['allowance']),
+                        usage: parseIfNotEmpty(record['usage'])
+                    });
+                }
             }
         }
         function parseIfNotEmpty(value) {
@@ -435,7 +545,7 @@
                 licensesData.map((lic, idx) => `<li><div><strong>${idx + 1}. ${lic.licenseName} (${lic.licenseType === 'activation' ? 'Activation' : 'Consumption'})</strong><br>` +
                     (lic.licenseType === 'activation' ? `Prov: ${lic.provisioned} – Act: ${lic.activated}${lic.mau !== null ? ' – MAU: ' + lic.mau : ''}${lic.dau !== null ? ' – DAU: ' + lic.dau : ''}`
                                                       : `Allow: ${lic.allowance} – Usage: ${lic.usage}`) +
-                    `</div><button class="edit-btn" onclick="startEditLicense(${idx})">Edit</button></li>`).join('') + '</ul>';
+                    `</div><div><button class="edit-btn" onclick="startEditLicense(${idx})">Edit</button><button class="delete-btn" onclick="deleteLicense(${idx})">Delete</button></div></li>`).join('') + '</ul>';
         }
 
         window.startEditLicense = function(index) {
@@ -453,7 +563,98 @@
                 [provisionedInput.value, activatedInput.value, mauInput.value, dauInput.value] = ['', '', '', ''];
             }
             saveLicenseBtn.textContent = 'Update License';
+            document.getElementById('inputForm').scrollIntoView({behavior: 'smooth'});
         };
+
+        window.deleteLicense = function(index) {
+            if (licensesData[index].chartInstance) {
+                licensesData[index].chartInstance.destroy();
+            }
+            licensesData.splice(index, 1);
+            updateLicenseList();
+            renderCharts();
+        };
+
+        aiAnalyzeBtn.addEventListener('click', () => analyzeWithGemini(licensesData, aiAnalyzeBtn));
+
+        function showAIResponse(response) {
+            if (!aiResponseArea) return;
+            const content = document.getElementById('aiResponseContent');
+            if (window.marked) {
+                content.innerHTML = marked.parse(response);
+            } else {
+                content.textContent = response;
+                console.warn('marked.js not found. Showing AI response as plain text.');
+            }
+            aiResponseArea.style.display = 'block';
+        }
+
+        function hideAIResponse() {
+            if (!aiResponseArea) return;
+            const content = document.getElementById('aiResponseContent');
+            aiResponseArea.style.display = 'none';
+            content.innerHTML = '';
+        }
+
+        async function analyzeWithGemini(licenses, buttonElement) {
+            if (!licenses || licenses.length === 0) {
+                showAIResponse('No license data to analyze.');
+                return;
+            }
+
+            buttonElement.textContent = 'Analyzing...';
+            buttonElement.disabled = true;
+            buttonElement.style.backgroundColor = '#a78bfa';
+            buttonElement.style.cursor = 'not-allowed';
+            const loadingSpinner = document.createElement('span');
+            loadingSpinner.classList.add('loading-indicator');
+            buttonElement.appendChild(loadingSpinner);
+
+            hideAIResponse();
+
+            try {
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ licenses })
+                });
+
+                if (!response.ok) {
+                    let errorMsg = 'Unknown backend error.';
+                    try {
+                        const errorBody = await response.json();
+                        errorMsg = errorBody.error || errorMsg;
+                    } catch (e) {
+                        errorMsg = response.statusText;
+                    }
+                    throw new Error(`Backend Error: ${response.status} ${errorMsg}`);
+                }
+
+                const data = await response.json();
+                console.log('Response from backend:', data);
+
+                if (data && data.analysis) {
+                    showAIResponse(data.analysis);
+                } else {
+                    showAIResponse('Invalid or empty AI response.');
+                }
+
+            } catch (error) {
+                console.error('Error during backend call:', error);
+                showAIResponse(`AI analysis error: ${error.message || 'Network or backend issue.'}`);
+            } finally {
+                buttonElement.textContent = 'Analyze with AI';
+                buttonElement.disabled = false;
+                buttonElement.style.backgroundColor = '#10b981';
+                buttonElement.style.cursor = 'pointer';
+                const spinner = buttonElement.querySelector('.loading-indicator');
+                if (spinner) {
+                    spinner.remove();
+                }
+            }
+        }
 
         generateChartBtn.addEventListener('click', renderCharts);
         function renderCharts() {
