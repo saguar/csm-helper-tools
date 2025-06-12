@@ -10,6 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="js/ai-endpoints.js"></script>
+    <script src="js/AIUtils.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -249,7 +251,7 @@
             const topMetricsListWidget = document.getElementById('topMetricsListWidget');
             const aiAnalyzeButton = document.getElementById('aiAnalyzeButton');
             const aiResponseArea = document.getElementById('aiResponseArea');
-            const BACKEND_URL = 'https://csm-ai-backend-43c415c64d97.herokuapp.com/analyze-prom-alerts';
+            const BACKEND_URL = window.AI_ENDPOINTS.promVisualizer;
             let alertCountChartInstance = null;
             let totalDurationChartInstance = null;
             let currentAlerts = [];
@@ -301,26 +303,7 @@
                 hideAIResponse();
 
                 try {
-                    const response = await fetch(BACKEND_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ alerts })
-                    });
-
-                    if (!response.ok) {
-                        let errorMsg = 'Unknown backend error.';
-                        try {
-                            const errorBody = await response.json();
-                            errorMsg = errorBody.error || errorMsg;
-                        } catch (e) {
-                            errorMsg = response.statusText;
-                        }
-                        throw new Error(`Backend Error: ${response.status} ${errorMsg}`);
-                    }
-
-                    const data = await response.json();
+                    const data = await AIUtils.analyzeWithAI(BACKEND_URL, { alerts });
                     console.log('Response from backend:', data);
 
                     if (data && data.analysis) {
