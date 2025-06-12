@@ -6,6 +6,7 @@
     <title>License Adoption Visualizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/ai-utils.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Load marked.js so AI analysis output can be rendered as HTML -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -78,27 +79,6 @@
             transform: translateY(-2px); 
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
-
-        /* Style for the AI Analysis Button (green) */
-        .analyze-btn {
-            display: inline-block; /* Make it inline-block */
-            background-color: #10b981; /* Tailwind green-500 */
-            color: white;
-            padding: 0.5rem 1rem; /* Padding */
-            border-radius: 0.375rem; /* Rounded corners */
-            cursor: pointer;
-            font-size: 0.9rem; /* Smaller font size */
-            font-weight: 600;
-            /* margin-top: 1rem; /* Kept your margin-top from example, adjust if needed */
-            transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Ensured box-shadow is in transition */
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-        }
-        .analyze-btn:hover {
-            background-color: #059669; /* Tailwind green-600 */
-            transform: translateY(-1px); /* Slight lift on hover */
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Stronger shadow on hover */
-        }
-
         /* Specific style for the edit button (amber) */
         .edit-btn {
             background-color: #f59e0b; 
@@ -131,71 +111,6 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
         }
 
-        /* Style for the AI Response Area */
-        #aiResponseArea {
-            margin-top: 2rem;
-            padding: 1.5rem;
-            border: 1px solid #a78bfa;
-            border-radius: 0.5rem;
-            background-color: #f3e8ff;
-            display: none;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        #aiResponseArea h3 {
-            color: #5b21b6;
-            margin-bottom: 1rem;
-            font-size: 1.25rem;
-            font-weight: 700;
-        }
-        #aiResponseArea p,
-        #aiResponseArea ul,
-        #aiResponseArea li,
-        #aiResponseArea strong,
-        #aiResponseArea em,
-        #aiResponseArea code,
-        #aiResponseArea pre {
-            color: #374151;
-            line-height: 1.6;
-        }
-        #aiResponseArea ul {
-            list-style: disc inside;
-            margin-top: 0.5rem;
-            margin-bottom: 0.5rem;
-            padding-left: 1.5rem;
-        }
-        #aiResponseArea li {
-            margin-bottom: 0.25rem;
-        }
-        #aiResponseArea pre {
-            background-color: #e5e7eb;
-            padding: 1rem;
-            border-radius: 0.25rem;
-            overflow-x: auto;
-        }
-        #aiResponseArea code {
-            font-family: monospace;
-            background-color: #e5e7eb;
-            padding: 0.125rem 0.25rem;
-            border-radius: 0.125rem;
-        }
-
-        /* Style for loading indicator */
-        .loading-indicator {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-            margin-left: 0.5rem;
-            vertical-align: middle;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
 
         h1, h2, h3 {
             color: #1a202c;
