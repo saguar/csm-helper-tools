@@ -10,8 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Load marked.js so AI analysis output can be rendered as HTML -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="js/ai-endpoints.js"></script>
-    <script src="js/AIUtils.js"></script>
+    <script src="js/ai-utils.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -494,70 +493,19 @@
             renderCharts();
         };
 
-        aiAnalyzeBtn.addEventListener('click', () => analyzeWithGemini(licensesData, aiAnalyzeBtn));
-
-        function showAIResponse(response) {
-            if (!aiResponseArea) return;
-            const content = document.getElementById('aiResponseContent');
-            if (window.marked) {
-                content.innerHTML = marked.parse(response);
-            } else {
-                content.textContent = response;
-                console.warn('marked.js not found. Showing AI response as plain text.');
-            }
-            aiResponseArea.style.display = 'block';
-        }
-
-        function hideAIResponse() {
-            if (!aiResponseArea) return;
-            const content = document.getElementById('aiResponseContent');
-            aiResponseArea.style.display = 'none';
-            content.innerHTML = '';
-        }
-
-        async function analyzeWithGemini(licenses, buttonElement) {
-            if (!licenses || licenses.length === 0) {
-                showAIResponse('No license data to analyze.');
+        aiAnalyzeBtn.addEventListener('click', () => {
+            if (!licensesData || licensesData.length === 0) {
+                AIUtils.showAIResponse("aiResponseArea", "No license data to analyze.");
                 return;
             }
-
-            buttonElement.textContent = 'Analyzing...';
-            buttonElement.disabled = true;
-            buttonElement.style.backgroundColor = '#a78bfa';
-            buttonElement.style.cursor = 'not-allowed';
-            const loadingSpinner = document.createElement('span');
-            loadingSpinner.classList.add('loading-indicator');
-            buttonElement.appendChild(loadingSpinner);
-
-            hideAIResponse();
-
-            try {
-                // Chart.js instances contain circular references and cannot be
-                // serialized to JSON, so remove them before sending data.
-                const sanitized = licenses.map(({ chartInstance, ...rest }) => rest);
-                const data = await AIUtils.analyzeWithAI(BACKEND_URL, { licenses: sanitized });
-                console.log('Response from backend:', data);
-
-                if (data && data.analysis) {
-                    showAIResponse(data.analysis);
-                } else {
-                    showAIResponse('Invalid or empty AI response.');
-                }
-
-            } catch (error) {
-                console.error('Error during backend call:', error);
-                showAIResponse(`AI analysis error: ${error.message || 'Network or backend issue.'}`);
-            } finally {
-                buttonElement.textContent = 'Analyze with AI';
-                buttonElement.disabled = false;
-                buttonElement.style.backgroundColor = '#10b981';
-                buttonElement.style.cursor = 'pointer';
-                const spinner = buttonElement.querySelector('.loading-indicator');
-                if (spinner) {
-                    spinner.remove();
-                }
-            }
-        }
+            const sanitized = licensesData.map(({ chartInstance, ...rest }) => rest);
+            AIUtils.analyzeWithAI({
+                endpoint: BACKEND_URL,
+                payload: { licenses: sanitized },
+                buttonId: "aiAnalyzeBtn",
+                responseContainerId: "aiResponseArea"
+            });
+        });
 
         generateChartBtn.addEventListener('click', renderCharts);
         function renderCharts() {
