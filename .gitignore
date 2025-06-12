@@ -1,0 +1,18 @@
+# macOS / Linux
+.DS_Store
+*~
+
+# Node and package managers
+node_modules/
+# log files
+*.log
+# environment files
+.env
+# PHP vendor directory
+vendor/
+# Build artifacts
+/dist/
+/build/
+# IDE directories
+.vscode/
+.idea/
