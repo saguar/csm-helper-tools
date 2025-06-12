@@ -5,7 +5,9 @@
     <title>Salesforce Release Updates Visualizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> <style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="js/ai-endpoints.js"></script>
+    <script src="js/AIUtils.js"></script> <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f4f7f6; /* Light gray background */
@@ -411,7 +413,7 @@
         const columnCountInput = document.getElementById('columnCount');
         const columnCountValueSpan = document.getElementById('columnCountValue');
 
-        const BACKEND_URL = 'https://csm-ai-backend-43c415c64d97.herokuapp.com/analyze-release-update';
+        const BACKEND_URL = window.AI_ENDPOINTS.releaseUpdateVisualizer;
         let allUpdatesData = [];
 
         function updateGridColumns(count) {
@@ -507,27 +509,7 @@
             hideAIResponse();
 
             try {
-                const response = await fetch(BACKEND_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(updateData)
-                });
-
-                if (!response.ok) {
-                    let errorMsg = 'Errore sconosciuto dal backend.';
-                    try {
-                        const errorBody = await response.json();
-                        errorMsg = errorBody.error || errorMsg;
-                    } catch (e) {
-                        // Non è riuscito a parsare il JSON, usa il testo di stato
-                        errorMsg = response.statusText;
-                    }
-                    throw new Error(`Errore dal Backend: ${response.status} ${errorMsg}`);
-                }
-
-                const data = await response.json();
+                const data = await AIUtils.analyzeWithAI(BACKEND_URL, updateData);
                 console.log('Risposta ricevuta dal backend:', data);
 
                 if (data && data.analysis) {

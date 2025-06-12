@@ -9,6 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Load marked.js so AI analysis output can be rendered as HTML -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="js/ai-endpoints.js"></script>
+    <script src="js/AIUtils.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -421,7 +423,7 @@
         const generateChartBtn = document.getElementById('generateChartBtn');
         const aiAnalyzeBtn = document.getElementById('aiAnalyzeBtn');
         const aiResponseArea = document.getElementById('aiResponseArea');
-        const BACKEND_URL = 'https://csm-ai-backend-43c415c64d97.herokuapp.com/analyze-license-adoption';
+        const BACKEND_URL = window.AI_ENDPOINTS.licenseVisualizer;
         const licenseList = document.getElementById('licenseList');
         const chartRoot = document.getElementById('chartRoot');
 
@@ -618,26 +620,7 @@
                 // Chart.js instances contain circular references and cannot be
                 // serialized to JSON, so remove them before sending data.
                 const sanitized = licenses.map(({ chartInstance, ...rest }) => rest);
-                const response = await fetch(BACKEND_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ licenses: sanitized })
-                });
-
-                if (!response.ok) {
-                    let errorMsg = 'Unknown backend error.';
-                    try {
-                        const errorBody = await response.json();
-                        errorMsg = errorBody.error || errorMsg;
-                    } catch (e) {
-                        errorMsg = response.statusText;
-                    }
-                    throw new Error(`Backend Error: ${response.status} ${errorMsg}`);
-                }
-
-                const data = await response.json();
+                const data = await AIUtils.analyzeWithAI(BACKEND_URL, { licenses: sanitized });
                 console.log('Response from backend:', data);
 
                 if (data && data.analysis) {
