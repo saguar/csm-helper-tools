@@ -1,0 +1,82 @@
+.analyze-btn {
+    display: inline-block;
+    background-color: #10b981;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.analyze-btn:hover {
+    background-color: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+#aiResponseArea {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    border: 1px solid #a78bfa;
+    border-radius: 0.5rem;
+    background-color: #f3e8ff;
+    display: none;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+#aiResponseArea h3 {
+    color: #5b21b6;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+#aiResponseArea p,
+#aiResponseArea ul,
+#aiResponseArea li,
+#aiResponseArea strong,
+#aiResponseArea em,
+#aiResponseArea code,
+#aiResponseArea pre {
+    color: #374151;
+    line-height: 1.6;
+}
+#aiResponseArea ul {
+    list-style: disc inside;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding-left: 1.5rem;
+}
+#aiResponseArea li {
+    margin-bottom: 0.25rem;
+}
+#aiResponseArea pre {
+    background-color: #e5e7eb;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    overflow-x: auto;
+}
+#aiResponseArea code {
+    font-family: monospace;
+    background-color: #e5e7eb;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.125rem;
+}
+
+.loading-indicator {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
