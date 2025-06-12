@@ -5,7 +5,9 @@
     <title>Salesforce Release Updates Visualizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> <style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="js/ai-utils.js"></script>
+    <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f4f7f6; /* Light gray background */
@@ -372,33 +374,6 @@
 
     <script>
         // Funzione per mostrare l'area della risposta AI
-        function showAIResponse(response) {
-            const aiResponseArea = document.getElementById('aiResponseArea');
-            const aiResponseContent = document.getElementById('aiResponseContent');
-
-            // Usa marked.js per convertire Markdown in HTML
-            // NOTA DI SICUREZZA: Se 'response' proviene da una fonte non fidata e può contenere HTML/script malevoli,
-            // dovresti sanitizzare l'output di marked.parse() usando una libreria come DOMPurify.
-            // Esempio: const sanitizedHtml = DOMPurify.sanitize(marked.parse(response));
-            // aiResponseContent.innerHTML = sanitizedHtml;
-            // Per questo esempio, assumiamo che il Markdown dell'AI sia "safe".
-            if (window.marked) {
-                aiResponseContent.innerHTML = marked.parse(response);
-            } else {
-                // Fallback a conversione semplice se marked.js non è caricato
-                aiResponseContent.textContent = response; // Mostra come testo semplice per sicurezza
-                console.warn("Libreria marked.js non trovata. Mostrando risposta AI come testo semplice.");
-            }
-            aiResponseArea.style.display = 'block';
-        }
-
-        // Funzione per nascondere l'area della risposta AI
-        function hideAIResponse() {
-            const aiResponseArea = document.getElementById('aiResponseArea');
-            const aiResponseContent = document.getElementById('aiResponseContent');
-            aiResponseArea.style.display = 'none';
-            aiResponseContent.innerHTML = ''; // Pulisci contenuto quando nascosto
-        }
 
 
         const fileInput = document.getElementById('csvFile');
@@ -440,7 +415,7 @@
             errorMessageDiv.textContent = '';
             updatesContainer.innerHTML = '';
             searchInput.value = '';
-            hideAIResponse();
+            AIUtils.hideAIResponse("aiResponseArea");
 
             const reader = new FileReader();
 
@@ -495,61 +470,6 @@
         });
 
 
-        async function analyzeWithGemini(updateData, buttonElement) {
-            buttonElement.textContent = 'Analisi in corso...';
-            buttonElement.disabled = true;
-            buttonElement.style.backgroundColor = '#a78bfa';
-            buttonElement.style.cursor = 'not-allowed';
-            const loadingSpinner = document.createElement('span');
-            loadingSpinner.classList.add('loading-indicator');
-            buttonElement.appendChild(loadingSpinner);
-
-            hideAIResponse();
-
-            try {
-                const response = await fetch(BACKEND_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(updateData)
-                });
-
-                if (!response.ok) {
-                    let errorMsg = 'Errore sconosciuto dal backend.';
-                    try {
-                        const errorBody = await response.json();
-                        errorMsg = errorBody.error || errorMsg;
-                    } catch (e) {
-                        // Non è riuscito a parsare il JSON, usa il testo di stato
-                        errorMsg = response.statusText;
-                    }
-                    throw new Error(`Errore dal Backend: ${response.status} ${errorMsg}`);
-                }
-
-                const data = await response.json();
-                console.log('Risposta ricevuta dal backend:', data);
-
-                if (data && data.analysis) {
-                    showAIResponse(data.analysis);
-                } else {
-                    showAIResponse("Risposta AI non valida o vuota.");
-                }
-
-            } catch (error) {
-                console.error("Errore durante la chiamata al backend:", error);
-                showAIResponse(`Errore durante l'analisi AI: ${error.message || 'Si è verificato un problema di rete o del backend.'}`);
-            } finally {
-                buttonElement.textContent = 'Analizza con AI';
-                buttonElement.disabled = false;
-                buttonElement.style.backgroundColor = '#10b981';
-                buttonElement.style.cursor = 'pointer';
-                const spinner = buttonElement.querySelector('.loading-indicator');
-                if (spinner) {
-                    spinner.remove();
-                }
-            }
-        }
 
 
         function parseCSV(text) {
@@ -647,14 +567,14 @@
 
         function displayUpdates(data) {
             updatesContainer.innerHTML = '';
-            hideAIResponse();
+            AIUtils.hideAIResponse("aiResponseArea");
 
             if (data.length === 0) {
                 updatesContainer.innerHTML = '<p class="text-center text-gray-600 col-span-full">Nessun aggiornamento della release trovato per i criteri specificati.</p>';
                 return;
             }
 
-            data.forEach(update => {
+            data.forEach((update, index) => {
                 const card = document.createElement('div');
                 const statusClass = update.Status ? update.Status.toLowerCase().replace(/\s+/g, '').replace(/[^\w-]/g, '') : 'sconosciuto';
                 card.classList.add('card', `status-${statusClass}`, 'flex', 'flex-col');
@@ -679,9 +599,16 @@
                 `;
                 updatesContainer.appendChild(card);
 
-                const analyzeButton = card.querySelector('.analyze-btn');
-                analyzeButton.addEventListener('click', () => {
-                    analyzeWithGemini(update, analyzeButton);
+                const analyzeButton = card.querySelector(".analyze-btn");
+                const analyzeId = `analyze-${index}`;
+                analyzeButton.id = analyzeId;
+                analyzeButton.addEventListener("click", () => {
+                    AIUtils.analyzeWithAI({
+                        endpoint: BACKEND_URL,
+                        payload: update,
+                        buttonId: analyzeId,
+                        responseContainerId: "aiResponseArea"
+                    });
                 });
             });
             updateGridColumns(columnCountInput.value);

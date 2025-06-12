@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="js/ai-utils.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -340,7 +341,18 @@
             let currentAlerts = [];
 
             visualizeButton.addEventListener('click', visualizeData);
-            aiAnalyzeButton.addEventListener('click', () => analyzeWithGemini(currentAlerts, aiAnalyzeButton));
+              aiAnalyzeButton.addEventListener("click", () => {
+                if (!currentAlerts || currentAlerts.length === 0) {
+                    AIUtils.showAIResponse("aiResponseArea", "No alert data to analyze.");
+                    return;
+                }
+                AIUtils.analyzeWithAI({
+                    endpoint: BACKEND_URL,
+                    payload: { alerts: currentAlerts },
+                    buttonId: "aiAnalyzeButton",
+                    responseContainerId: "aiResponseArea"
+                });
+              });
 
             function showMessage(message, type = 'error') {
                 messageBox.textContent = message;
@@ -350,84 +362,6 @@
             }
             function hideMessage() { messageBox.style.display = 'none'; }
 
-            function showAIResponse(response) {
-                if (!aiResponseArea) return;
-                const content = document.getElementById('aiResponseContent');
-                if (window.marked) {
-                    content.innerHTML = marked.parse(response);
-                } else {
-                    content.textContent = response;
-                    console.warn('marked.js not found. Showing AI response as plain text.');
-                }
-                aiResponseArea.style.display = 'block';
-            }
-
-            function hideAIResponse() {
-                if (!aiResponseArea) return;
-                const content = document.getElementById('aiResponseContent');
-                aiResponseArea.style.display = 'none';
-                content.innerHTML = '';
-            }
-
-            async function analyzeWithGemini(alerts, buttonElement) {
-                if (!alerts || alerts.length === 0) {
-                    showAIResponse('No alert data to analyze.');
-                    return;
-                }
-
-                buttonElement.textContent = 'Analyzing...';
-                buttonElement.disabled = true;
-                buttonElement.style.backgroundColor = '#a78bfa';
-                buttonElement.style.cursor = 'not-allowed';
-                const loadingSpinner = document.createElement('span');
-                loadingSpinner.classList.add('loading-indicator');
-                buttonElement.appendChild(loadingSpinner);
-
-                hideAIResponse();
-
-                try {
-                    const response = await fetch(BACKEND_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ alerts })
-                    });
-
-                    if (!response.ok) {
-                        let errorMsg = 'Unknown backend error.';
-                        try {
-                            const errorBody = await response.json();
-                            errorMsg = errorBody.error || errorMsg;
-                        } catch (e) {
-                            errorMsg = response.statusText;
-                        }
-                        throw new Error(`Backend Error: ${response.status} ${errorMsg}`);
-                    }
-
-                    const data = await response.json();
-                    console.log('Response from backend:', data);
-
-                    if (data && data.analysis) {
-                        showAIResponse(data.analysis);
-                    } else {
-                        showAIResponse('Invalid or empty AI response.');
-                    }
-
-                } catch (error) {
-                    console.error('Error during backend call:', error);
-                    showAIResponse(`AI analysis error: ${error.message || 'Network or backend issue.'}`);
-                } finally {
-                    buttonElement.textContent = 'Analyze with AI';
-                    buttonElement.disabled = false;
-                    buttonElement.style.backgroundColor = '#10b981';
-                    buttonElement.style.cursor = 'pointer';
-                    const spinner = buttonElement.querySelector('.loading-indicator');
-                    if (spinner) {
-                        spinner.remove();
-                    }
-                }
-            }
 
             function parseNewRawData(rawText) {
                 console.log("Starting Proactive Monitoring Internal Portal data parsing...");
@@ -531,7 +465,7 @@
 
             function visualizeData() {
                 hideMessage();
-                hideAIResponse();
+                AIUtils.hideAIResponse("aiResponseArea");
                 if (alertCountChartInstance) { alertCountChartInstance.destroy(); alertCountChartInstance = null; }
                 if (totalDurationChartInstance) { totalDurationChartInstance.destroy(); totalDurationChartInstance = null; }
                 totalAlertCountWidget.textContent = '0'; levelBreakdownWidget.innerHTML = ''; topMetricsListWidget.innerHTML = '';
