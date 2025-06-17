@@ -254,9 +254,10 @@ canvas {
     margin-bottom: 0.5rem;
 }
 .source-selector-options label {
+    display: inline-block;
+    margin: 0 0 0 0.25rem;
     color: #4b5563;
     cursor: pointer;
-    margin-left: 0.25rem;
 }
 .source-selector-options input[type="radio"] {
     accent-color: #4f46e5;
