@@ -51,6 +51,10 @@
 #aiResponseArea li {
     margin-bottom: 0.25rem;
 }
+#aiResponseArea li p {
+    margin-top: 0;
+    margin-bottom: 0;
+}
 #aiResponseArea pre {
     background-color: #e5e7eb;
     padding: 1rem;
