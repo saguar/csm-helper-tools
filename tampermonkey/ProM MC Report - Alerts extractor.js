@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name         Salesforce Report - Data extractor
+// @name         ProM MC Report - Alerts extractor
 // @namespace    http://tampermonkey.net/
 // @version      1.0
 // @description  Extracts table data from a Salesforce Lightning report, downloads CSV, copies TSV to the clipboard, and opens the helper tool.
 // @author       Saverio Guardato
-// @match        https://orgcs.lightning.force.com/lightning/r/Report/00OHx000001AmPNMA0
+// @match        https://orgcs.lightning.force.com/lightning/r/Report/00OHx000001AmPNMA0/view?queryScope=userFolders
 // @grant        GM_addStyle
 // @grant        GM_setClipboard
 // @run-at       document-end
