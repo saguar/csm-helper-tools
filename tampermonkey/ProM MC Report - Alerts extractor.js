@@ -126,10 +126,10 @@
         btn.id = BUTTON_ID;
         btn.textContent = 'Analyze Report';
         btn.style.position = 'fixed';
-        btn.style.top = '20px';
-        btn.style.right = '20px';
-        btn.style.zIndex = '20000';
-        btn.style.padding = '10px 15px';
+        btn.style.top = '5px';
+        btn.style.left = '260px';
+        btn.style.zIndex = '3';
+        btn.style.padding = '10px 20px';
         btn.style.backgroundColor = '#0070d2';
         btn.style.color = 'white';
         btn.style.border = 'none';
