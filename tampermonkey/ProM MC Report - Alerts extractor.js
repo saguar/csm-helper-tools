@@ -14,6 +14,7 @@
     'use strict';
     const BUTTON_ID = 'extractSFReportButton_v10';
     const NOTIF_ID = 'sfReportNotif';
+    const TABLE_SELECTOR = 'table.data-grid-table.data-grid-full-table';
 
     function sanitizeFilename(name) {
         return name.replace(/[\\/:*?"<>|]+/g, '_');
@@ -79,20 +80,26 @@
     }
 
     function extractTableData() {
-        const table = document.querySelector('table.data-grid-table.data-grid-full-table');
+        const table = document.querySelector(TABLE_SELECTOR);
         if (!table) {
             console.warn('Report table not found.');
             showNotification('Report table not found');
             return;
         }
         const headers = [];
-        table.querySelectorAll('thead th').forEach(th => {
-            const label = th.getAttribute('aria-label') || th.textContent;
-            const text = label.replace(/\s+/g, ' ').trim();
-            if (text) headers.push(text);
-        });
+        const headerRow = table.querySelector('tbody tr.data-grid-header-row');
+        if (headerRow) {
+            headerRow.querySelectorAll('th').forEach((th, idx) => {
+                let label = th.getAttribute('aria-label') || th.textContent;
+                let text = label.replace(/\s+/g, ' ').trim();
+                if (idx === 0 && text === '') return; // skip row number column
+                if (text) headers.push(text);
+            });
+        }
         const rowsData = [];
         table.querySelectorAll('tbody tr').forEach(tr => {
+            if (tr.classList.contains('data-grid-header-row')) return;
+            if (tr.querySelector('.lightning-table-grand-total-cell')) return;
             const cells = tr.querySelectorAll('td');
             const obj = {};
             headers.forEach((h, idx) => {
@@ -144,7 +151,11 @@
         }
     }
 
-    window.addEventListener('load', () => {
-        addButton();
+    const observer = new MutationObserver((mutations, obs) => {
+        if (document.querySelector(TABLE_SELECTOR)) {
+            addButton();
+            obs.disconnect();
+        }
     });
+    observer.observe(document, { childList: true, subtree: true });
 })();
