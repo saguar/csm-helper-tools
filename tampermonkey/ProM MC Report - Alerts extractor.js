@@ -151,11 +151,7 @@
         }
     }
 
-    const observer = new MutationObserver((mutations, obs) => {
-        if (document.querySelector(TABLE_SELECTOR)) {
-            addButton();
-            obs.disconnect();
-        }
+    window.addEventListener('load', () => {
+        addButton();
     });
-    observer.observe(document, { childList: true, subtree: true });
 })();
