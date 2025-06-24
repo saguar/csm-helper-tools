@@ -126,7 +126,7 @@
         btn.id = BUTTON_ID;
         btn.textContent = 'Analyze Report';
         btn.style.position = 'fixed';
-        btn.style.bottom = '20px';
+        btn.style.top = '20px';
         btn.style.right = '20px';
         btn.style.zIndex = '20000';
         btn.style.padding = '10px 15px';
@@ -144,24 +144,7 @@
         }
     }
 
-    function start() {
-        const startTime = Date.now();
-        const intervalId = setInterval(() => {
-            if (document.getElementById(BUTTON_ID)) {
-                clearInterval(intervalId);
-                return;
-            }
-            if (document.querySelector('table.data-grid-table.data-grid-full-table')) {
-                addButton();
-                clearInterval(intervalId);
-            } else if (Date.now() - startTime >= 60000) {
-                clearInterval(intervalId);
-                console.warn('Timeout waiting for report table');
-            }
-        }, 500);
-    }
-
     window.addEventListener('load', () => {
-        setTimeout(start, 5000);
+        addButton();
     });
 })();
