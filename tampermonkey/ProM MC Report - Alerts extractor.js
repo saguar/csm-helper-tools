@@ -144,18 +144,24 @@
         }
     }
 
-    const startTime = Date.now();
-    const intervalId = setInterval(() => {
-        if (document.getElementById(BUTTON_ID)) {
-            clearInterval(intervalId);
-            return;
-        }
-        if (document.querySelector('table.data-grid-table.data-grid-full-table')) {
-            addButton();
-            clearInterval(intervalId);
-        } else if (Date.now() - startTime >= 60000) {
-            clearInterval(intervalId);
-            console.warn('Timeout waiting for report table');
-        }
-    }, 500);
+    function start() {
+        const startTime = Date.now();
+        const intervalId = setInterval(() => {
+            if (document.getElementById(BUTTON_ID)) {
+                clearInterval(intervalId);
+                return;
+            }
+            if (document.querySelector('table.data-grid-table.data-grid-full-table')) {
+                addButton();
+                clearInterval(intervalId);
+            } else if (Date.now() - startTime >= 60000) {
+                clearInterval(intervalId);
+                console.warn('Timeout waiting for report table');
+            }
+        }, 500);
+    }
+
+    window.addEventListener('load', () => {
+        setTimeout(start, 5000);
+    });
 })();
