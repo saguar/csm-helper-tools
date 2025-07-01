@@ -86,7 +86,7 @@
         <div class="form-group">
             <label for="csvUpload">Upload CSV File:</label>
             <input type="file" id="csvUpload" accept=".csv" />
-            <p class="text-sm italic text-gray-600 mt-1">Upload a CSV file to import license data automatically.</p>
+            <p class="text-sm italic text-gray-600 mt-1">Upload a CSV with columns <em>Name</em>, <em>Total Licenses</em>, <em>Used Licenses</em> and <em>Remaining Licenses</em> to import data automatically.</p>
         </div>
 
         <div class="button-group">
@@ -157,21 +157,36 @@
 
         function parseCSV(text) {
             licensesData = [];
-            const lines = text.trim().split(/\r?\n/);
+            if (!text) return;
+            text = text.trim().replace(/^\[/, '').replace(/\]$/, '');
+            const lines = text.split(/\r?\n/);
             if (lines.length < 2) return;
-            const header = lines[0].split(',').map(h => h.trim().toLowerCase());
-            const isNewFormat = header.includes('product') && header.includes('licenses provisioned');
+            const header = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+            const isActivationFormat = header.includes('product') && header.includes('licenses provisioned');
+            const isLegacyFormat = header.includes('licensetype') && header.includes('licensename');
+            const isSfReportFormat = header.includes('name') && header.includes('total licenses');
 
             for (let i = 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
-                let row = lines[i].split(',');
+                let row = parseCSVLine(lines[i]);
                 if (row.length > header.length) row = row.slice(0, header.length);
                 while (row.length < header.length) row.push('');
                 row = row.map(cell => cell.trim());
                 const record = {};
                 header.forEach((colName, j) => record[colName] = row[j]);
 
-                if (isNewFormat) {
+                if (isSfReportFormat) {
+                    licensesData.push({
+                        licenseType: 'activation',
+                        licenseName: record['name'] || '',
+                        provisioned: parseIfNotEmpty(record['total licenses']),
+                        activated: parseIfNotEmpty(record['used licenses']),
+                        mau: null,
+                        dau: null,
+                        allowance: null,
+                        usage: null
+                    });
+                } else if (isActivationFormat) {
                     licensesData.push({
                         licenseType: 'activation',
                         licenseName: record['product'] || '',
@@ -182,7 +197,7 @@
                         allowance: null,
                         usage: null
                     });
-                } else {
+                } else if (isLegacyFormat) {
                     licensesData.push({
                         licenseType: record['licensetype'] || '',
                         licenseName: record['licensename'] || '',
@@ -196,9 +211,29 @@
                 }
             }
         }
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const c = line[i];
+                if (c === '"') {
+                    if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+                    else inQuotes = !inQuotes;
+                } else if (c === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += c;
+                }
+            }
+            result.push(current);
+            return result;
+        }
         function parseIfNotEmpty(value) {
             if (!value || value === '') return null;
-            const n = parseInt(value);
+            const cleaned = value.replace(/,/g, '');
+            const n = parseInt(cleaned, 10);
             return isNaN(n) ? null : n;
         }
 
