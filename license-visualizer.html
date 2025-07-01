@@ -135,11 +135,20 @@
         const BACKEND_URL = window.AI_ENDPOINTS.licenseVisualizer;
         const licenseList = document.getElementById('licenseList');
         const chartRoot = document.getElementById('chartRoot');
+        let previousLicenseType = '';
 
         licenseTypeSelect.addEventListener('change', () => {
             const selectedType = licenseTypeSelect.value;
+            if (selectedType === 'consumption' && previousLicenseType === 'activation') {
+                allowanceInput.value = provisionedInput.value;
+                usageInput.value = activatedInput.value;
+            } else if (selectedType === 'activation' && previousLicenseType === 'consumption') {
+                provisionedInput.value = allowanceInput.value;
+                activatedInput.value = usageInput.value;
+            }
             activationFields.classList.toggle('hidden', selectedType !== 'activation');
             consumptionFields.classList.toggle('hidden', selectedType !== 'consumption');
+            previousLicenseType = selectedType;
         });
 
         csvUploadInput.addEventListener('change', handleCSVUpload);
@@ -286,6 +295,7 @@
             provisionedInput.value = ''; activatedInput.value = ''; mauInput.value = ''; dauInput.value = '';
             allowanceInput.value = ''; usageInput.value = '';
             activationFields.classList.add('hidden'); consumptionFields.classList.add('hidden');
+            previousLicenseType = '';
         }
 
         function updateLicenseList() {
@@ -299,6 +309,7 @@
         window.startEditLicense = function(index) {
             editIndex = index; const lic = licensesData[index];
             licenseTypeSelect.value = lic.licenseType; licenseNameInput.value = lic.licenseName;
+            previousLicenseType = lic.licenseType;
             const isActivation = lic.licenseType === 'activation';
             activationFields.classList.toggle('hidden', !isActivation);
             consumptionFields.classList.toggle('hidden', isActivation);
