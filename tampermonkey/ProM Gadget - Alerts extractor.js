@@ -137,8 +137,8 @@
         btn.id = BUTTON_ID;
         btn.textContent = 'Analyze Alerts';
         btn.style.position = 'fixed';
-        btn.style.bottom = '20px';
-        btn.style.right = '20px';
+        btn.style.top = '5%';
+        btn.style.right = '30%';
         btn.style.zIndex = '20000';
         btn.style.padding = '10px 15px';
         btn.style.backgroundColor = '#0070d2';
