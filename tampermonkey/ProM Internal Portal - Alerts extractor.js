@@ -97,8 +97,8 @@
         button.textContent = 'Analyze Alerts';
         button.id = BUTTON_ID;
         button.style.position = 'fixed';
-        button.style.bottom = '20px'; // Modificato da top a bottom
-        button.style.right = '20px';
+        button.style.top = '3%';
+        button.style.right = '15%';
         button.style.zIndex = '20000';
         button.style.padding = '10px 15px';
         button.style.backgroundColor = '#0070d2';
