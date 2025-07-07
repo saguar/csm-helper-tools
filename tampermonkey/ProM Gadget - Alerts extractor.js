@@ -14,6 +14,7 @@
     'use strict';
     const BUTTON_ID = 'extractGadgetAlertsButton_v10';
     const NOTIF_ID = 'gadgetAlertNotif';
+    const EXCLUDED_COLUMNS = ['Organization ID', 'Instance', 'Customer Name'];
 
     function sanitizeFilename(name) {
         return name.replace(/[\\/:*?"<>|]+/g, '_');
@@ -85,18 +86,28 @@
             showNotification('Alert table not found');
             return;
         }
-        const headers = [];
+        const allHeaders = [];
         table.querySelectorAll('thead th').forEach(th => {
             const label = th.getAttribute('aria-label') || th.textContent;
             const text = label.replace(/\s+/g, ' ').trim();
-            if (text) headers.push(text);
+            allHeaders.push(text);
         });
+
+        const headers = [];
+        const includedIdx = [];
+        allHeaders.forEach((h, idx) => {
+            if (h && !EXCLUDED_COLUMNS.includes(h)) {
+                headers.push(h);
+                includedIdx.push(idx);
+            }
+        });
+
         const rowsData = [];
         table.querySelectorAll('tbody tr').forEach(tr => {
             const cells = tr.querySelectorAll('td');
             const obj = {};
-            headers.forEach((h, idx) => {
-                obj[h] = cells[idx] ? cells[idx].textContent.trim() : '';
+            includedIdx.forEach((origIdx, i) => {
+                obj[headers[i]] = cells[origIdx] ? cells[origIdx].textContent.trim() : '';
             });
             rowsData.push(obj);
         });
