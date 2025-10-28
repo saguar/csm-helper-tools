@@ -1,0 +1,723 @@
+{
+  "account": {
+    "name": "Enel Distribuzione SpA",
+    "id": "0013000002xKSSAAU"
+  },
+  "tenant": {
+    "name": "force.com",
+    "id": "00D24000000Jg8cEAC"
+  },
+  "overview": {
+    "aovDistributionScore": 100,
+    "tenantOverview": {
+      "overallScore": {
+        "score": 66,
+        "rating": "Excellent"
+      },
+      "productAdoption": {
+        "score": 58,
+        "change": "↑ 3 from last month"
+      },
+      "customerExpertise": {
+        "score": 100
+      },
+      "technicalHealth": {
+        "score": 55,
+        "change": "↓ 7 from last month"
+      }
+    },
+    "trendingSignals": {
+      "trendingUp": [
+        {
+          "category": "Product Adoption",
+          "signal": "Shield / License Usage Indicator",
+          "score": 100,
+          "change": "(↑ 100)"
+        },
+        {
+          "category": "Product Adoption",
+          "signal": "Service Cloud / Email-to-Case Growth",
+          "score": 100,
+          "change": "(↑ 100)"
+        },
+        {
+          "category": "Product Adoption",
+          "signal": "Sandbox / Percentage of Orgs with Metadata Retrievals",
+          "score": 100,
+          "change": "(↑ 100)"
+        },
+        {
+          "category": "Product Adoption",
+          "signal": "Sandbox / Percentage of Orgs with Metadata Deploys",
+          "score": 66,
+          "change": "(↑ 46)"
+        },
+        {
+          "category": "Product Adoption",
+          "signal": "Sandbox / Percentage of Orgs with Metadata Deploys",
+          "score": 50,
+          "change": "(↑ 40)"
+        },
+        {
+          "category": "Product Adoption",
+          "signal": "Sandbox / Percentage of Orgs with Apex tests runs",
+          "score": 44,
+          "change": "(↑ 34)"
+        },
+        {
+          "category": "Customer Expertise",
+          "signal": "Self-Paced Learning / Agentblazer Status",
+          "score": 100,
+          "change": "(↑ 10)"
+        },
+        {
+          "category": "Customer Expertise",
+          "signal": "Expert-Led Learning and Guidance / Case Engagement",
+          "score": 8,
+          "change": "(↑ 2)"
+        },
+        {
+          "category": "Technical Health",
+          "signal": "Operational Excellence / Core Deployed on Hyperforce",
+          "score": 100,
+          "change": "(↑ 100)"
+        },
+        {
+          "category": "Technical Health",
+          "signal": "Efficiency / Average Page Load Time",
+          "score": 33,
+          "change": "(↑ 6)"
+        },
+        {
+          "category": "Technical Health",
+          "signal": "Efficiency / Throughput Efficiency",
+          "score": 50,
+          "change": "(↑ 5)"
+        },
+        {
+          "category": "Technical Health",
+          "signal": "Efficiency / Rowlock Error Rates",
+          "score": 50,
+          "change": "(↑ 5)"
+        },
+        {
+          "category": "Technical Health",
+          "signal": "Efficiency / EPT Page Load Time",
+          "score": 40,
+          "change": "(↑ 1)"
+        }
+      ],
+      "trendingDown": [
+        {
+          "category": "Product Adoption",
+          "signal": "CRMA Platform / Dataflow Run Completion Engagement",
+          "score": 4,
+          "change": "(↓ 8)"
+        },
+        {
+          "category": "Product Adoption",
+          "signal": "Service Cloud / Cases Growth",
+          "score": 46,
+          "change": "(↓ 6)"
+        },
+        {
+          "category": "Product Adoption",
+          "signal": "CRMA Platform / Connect Framework API Engagement",
+          "score": 9,
+          "change": "(↓ 3)"
+        },
+        {
+          "category": "Product Adoption",
+          "signal": "CRMA Platform / External File Upload Dataflow Runs Engagement",
+          "score": 4,
+          "change": "(↓ 2)"
+        },
+        {
+          "category": "Product Adoption",
+          "signal": "CRMA Platform / Legacy API Requests Engagement",
+          "score": 4,
+          "change": "(↓ 2)"
+        },
+        {
+          "category": "Technical Health",
+          "signal": "Efficiency / Apex Heap Size Errors",
+          "score": 0,
+          "change": "(↓ 89)"
+        }
+      ]
+    }
+  },
+  "productAdoption": {
+    "overallScore": 58,
+    "products": [
+      {
+        "product": "AppExchange",
+        "aovPercentage": "0.3%",
+        "score": 30,
+        "scoreRating": "Fair",
+        "consumption": "Fair"
+      },
+      {
+        "product": "Connect, API, Events",
+        "aovPercentage": "0.3%",
+        "score": 4,
+        "scoreRating": "Fair",
+        "consumption": "Fair"
+      },
+      {
+        "product": "CRMA Platform",
+        "aovPercentage": "0.5%",
+        "score": 46,
+        "scoreRating": "Excellent"
+      },
+      {
+        "product": "Digital Engagement",
+        "aovPercentage": "0.1%",
+        "score": 0,
+        "scoreRating": "Fair",
+        "consumption": "Fair"
+      },
+      {
+        "product": "Feedback Management",
+        "aovPercentage": "0.0%"
+      },
+      {
+        "product": "Mobile, Identity",
+        "aovPercentage": "0.0%",
+        "score": 1,
+        "scoreRating": "Fair",
+        "consumption": "Fair"
+      },
+      {
+        "product": "Partner Relationship Man...",
+        "aovPercentage": "5.1%",
+        "score": 46,
+        "scoreRating": "Good",
+        "licensesProvisioned": "12,050",
+        "licensesActivated": "9,455",
+        "monthlyActiveUsers": "1,354",
+        "licensesUtilized": "14.3%"
+      },
+      {
+        "product": "Privacy and Data Governa...",
+        "aovPercentage": "1.6%",
+        "score": 100,
+        "scoreRating": "Excellent"
+      },
+      {
+        "product": "Sandbox",
+        "aovPercentage": "73%",
+        "score": 91,
+        "scoreRating": "Excellent",
+        "featureUsage": "Good"
+      },
+      {
+        "product": "Self Service",
+        "aovPercentage": "2.7%",
+        "score": 91,
+        "scoreRating": "Excellent",
+        "licensesProvisioned": "500",
+        "licensesActivated": "33",
+        "monthlyActiveUsers": "0",
+        "licensesUtilized": "0%"
+      },
+      {
+        "product": "Service Cloud",
+        "aovPercentage": "1.9%",
+        "score": 78,
+        "scoreRating": "Excellent",
+        "featureUsage": "Fair",
+        "licensesProvisioned": "7,690",
+        "licensesActivated": "6,831",
+        "monthlyActiveUsers": "5,890",
+        "licensesUtilized": "84.6%"
+      },
+      {
+        "product": "Shield",
+        "aovPercentage": "1.9%",
+        "score": 72,
+        "scoreRating": "Excellent",
+        "featureUsage": "Good"
+      },
+      {
+        "product": "Storage",
+        "aovPercentage": "4.1%",
+        "score": 76,
+        "scoreRating": "Excellent"
+      }
+    ]
+  },
+  "technicalHealth": {
+    "overallScore": {
+      "score": 55,
+      "rating": "Good",
+      "change": "↓ 7 from last month"
+    },
+    "subcategories": [
+      {
+        "name": "Customization",
+        "score": 53,
+        "rating": "Good",
+        "capabilities": [
+          {
+            "name": "Org Security",
+            "score": 53,
+            "scoredSignals": [
+              {
+                "signal": "API Only User Page URL",
+                "value": "1",
+                "benchmark": "> 0",
+                "score": 0,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Core MFA Enabled",
+                "value": "1",
+                "benchmark": "> 0",
+                "score": 0,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Enable Set Password in API",
+                "value": "1",
+                "benchmark": "< 1",
+                "score": 0,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Maximum Invalid Login Attempts",
+                "value": "5",
+                "benchmark": "< 4",
+                "score": 50,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Minimum Password Length",
+                "value": "8",
+                "benchmark": "> 7",
+                "score": 100,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Obscure Secret Answer for Password",
+                "value": "0",
+                "benchmark": "> 0",
+                "score": 0,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Password Assistance Message",
+                "value": "0",
+                "benchmark": "> 0",
+                "score": 0,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Password Assistance URL",
+                "value": "0",
+                "benchmark": "> 0",
+                "score": 0,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Password Complexity Requirement",
+                "value": "5",
+                "benchmark": "> 1",
+                "score": 100,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Password Expiration",
+                "value": "90",
+                "benchmark": "< 91",
+                "score": 100,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Password History Restriction",
+                "value": "5",
+                "benchmark": "> 2",
+                "score": 100,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Password Lockout Period",
+                "value": "15",
+                "benchmark": "> 29",
+                "score": 50,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Password Question Requirement",
+                "value": "1",
+                "benchmark": "> 0",
+                "score": 100,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "SSO Enabled",
+                "value": "1",
+                "benchmark": "> 0",
+                "score": 100,
+                "scoreChange": "(-)"
+              }
+            ],
+            "informationalSignals": []
+          }
+        ]
+      },
+      {
+        "name": "Efficiency",
+        "score": 47,
+        "rating": "Good",
+        "change": "(↓ 24)",
+        "capabilities": [
+          {
+            "name": "Data Efficiency",
+            "score": 0,
+            "scoredSignals": [
+              {
+                "signal": "Apex Heap Size Errors",
+                "value": "94",
+                "benchmark": "< 37",
+                "score": 0,
+                "scoreChange": "(↓ 89)"
+              }
+            ],
+            "informationalSignals": [
+              {
+                "signal": "Dashboard Performance PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "Database CPU Consumption Time PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "MQ Longest Wait Time PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "Search Indexing Delay PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "(MCAE) Email Recipient List Count PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "(MCAE) Email Suppression List Count PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "(MCAE) Opportunities per PrOM",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "(MCAE) Prospects per Prospect Account PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "(MCAE) Prospects with Excessive Activity PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "(MCAE) Paused Activity PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              }
+            ]
+          },
+          {
+            "name": "Integration Efficiency",
+            "score": 100,
+            "scoredSignals": [
+              {
+                "signal": "Concurrent API Errors",
+                "value": "0",
+                "benchmark": "< 100",
+                "score": 100,
+                "scoreChange": "(-)"
+              }
+            ],
+            "informationalSignals": [
+              {
+                "signal": "API Request Limit PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "Bulk API Batch PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "Bulk API Dequeue Latency PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "Bulk API Performance PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "Call Service Degradation PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "Concurrent API V2.0 Rows Limit PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              }
+            ]
+          },
+          {
+            "name": "Transaction Efficiency",
+            "score": 57,
+            "scoredSignals": [
+              {
+                "signal": "Apex CPU Time Out Errors",
+                "value": "2",
+                "benchmark": "< 8",
+                "score": 89,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Concurrent Apex Errors",
+                "value": "0",
+                "benchmark": "< 100",
+                "score": 100,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Connection Pool Errors",
+                "value": "880",
+                "benchmark": "< 343",
+                "score": 0,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Rowlock Error Rates",
+                "value": "4,537",
+                "benchmark": "< 5,414",
+                "score": 67,
+                "scoreChange": "(↑ 3)"
+              },
+              {
+                "signal": "Throughput Efficiency",
+                "value": "146",
+                "benchmark": "< 115",
+                "score": 50,
+                "scoreChange": "(↑ 5)"
+              }
+            ],
+            "informationalSignals": [
+              {
+                "signal": "Apex CPU Timeout Exception PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "Apex Future Dequeue Latency PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "Apex Future Performance PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "Apex Queueable Performance PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              }
+            ]
+          },
+          {
+            "name": "User Experience Efficiency",
+            "score": 61,
+            "scoredSignals": [
+              {
+                "signal": "Average Page Load Time",
+                "value": "159",
+                "benchmark": "< 93",
+                "score": 33,
+                "scoreChange": "(↑ 6)"
+              },
+              {
+                "signal": "Concurrent UI Errors",
+                "value": "0",
+                "benchmark": "< 100",
+                "score": 100,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "EPT Page Load Time",
+                "value": "1,468",
+                "benchmark": "< 968",
+                "score": 40,
+                "scoreChange": "(↑ 1)"
+              }
+            ],
+            "informationalSignals": [
+              {
+                "signal": "Concurrent UI Error PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "Dashboard Dequeue Latency PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "End User Login Failure PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "Experienced Page Time (EPT) PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "Org Average Page Time (APT) PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "Web-to-X Request Time PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Observability",
+        "score": 100,
+        "rating": "Excellent",
+        "capabilities": [
+          {
+            "name": "Diagnostics",
+            "score": 100,
+            "scoredSignals": [
+              {
+                "signal": "ApexGuru Adoption",
+                "value": "1",
+                "benchmark": "> 0",
+                "score": 100,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Scale Center Adoption",
+                "value": "1",
+                "benchmark": "> 0",
+                "score": 100,
+                "scoreChange": "(-)"
+              }
+            ],
+            "informationalSignals": []
+          },
+          {
+            "name": "Monitoring",
+            "score": 100,
+            "scoredSignals": [
+              {
+                "signal": "PrOM Enabled",
+                "value": "1",
+                "benchmark": "> 0",
+                "score": 100,
+                "scoreChange": "(-)"
+              }
+            ],
+            "informationalSignals": []
+          }
+        ]
+      },
+      {
+        "name": "Operational Excellence",
+        "score": 54,
+        "rating": "Good",
+        "change": "(↑ 18)",
+        "capabilities": [
+          {
+            "name": "Best Practices",
+            "score": 100,
+            "scoredSignals": [
+              {
+                "signal": "Core Deployed on Hyperforce",
+                "value": "1",
+                "benchmark": "> 0",
+                "score": 100,
+                "scoreChange": "(↑ 100)"
+              }
+            ],
+            "informationalSignals": [
+              {
+                "signal": "(MCAE) Active Automation Rules PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              }
+            ]
+          },
+          {
+            "name": "Technical Debt",
+            "score": 44,
+            "scoredSignals": [
+              {
+                "signal": "Process Builder Workflows",
+                "value": "116,690,466",
+                "benchmark": "< 45,509,282",
+                "score": 0,
+                "scoreChange": "(-)"
+              },
+              {
+                "signal": "Workflow Rules",
+                "value": "7,223",
+                "benchmark": "< 28,153",
+                "score": 89,
+                "scoreChange": "(-)"
+              }
+            ],
+            "informationalSignals": [
+              {
+                "signal": "(MCAE) Archived PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "(MCAE) Custom Objects per Prospect Account PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "(MCAE) Custom Objects per PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              },
+              {
+                "signal": "(MCAE) Inactive Engagement Studio Programs PrOM Alerts",
+                "value": "0",
+                "benchmark": "< 1"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
