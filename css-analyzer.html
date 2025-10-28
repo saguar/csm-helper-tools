@@ -9,17 +9,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      color-scheme: light dark;
-      --bg: #0f172a;
-      --surface: #1e293b;
-      --surface-alt: #111827;
-      --primary: #38bdf8;
-      --success: #4ade80;
-      --warning: #f97316;
-      --danger: #f87171;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --border: rgba(148, 163, 184, 0.2);
+      color-scheme: light;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-alt: #f1f5f9;
+      --primary: #0ea5e9;
+      --success: #15803d;
+      --warning: #b45309;
+      --danger: #b91c1c;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: rgba(148, 163, 184, 0.35);
+      --shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
     }
 
     * {
@@ -30,19 +31,23 @@
     }
 
     body {
-      background: linear-gradient(160deg, #020617, #0f172a 40%, #1e293b 100%);
+      background: linear-gradient(160deg, #e2e8f0, #f8fafc 45%, #ffffff 100%);
       color: var(--text);
       min-height: 100vh;
+      padding-bottom: 4rem;
     }
 
     header {
       padding: 3rem 5vw 1.5rem;
+      display: grid;
+      gap: 1.5rem;
+      max-width: 1200px;
+      margin: 0 auto;
     }
 
     header h1 {
       font-size: clamp(2rem, 5vw, 3rem);
       font-weight: 700;
-      margin-bottom: 0.75rem;
     }
 
     header p {
@@ -51,24 +56,97 @@
       line-height: 1.6;
     }
 
+    .reference-month {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
     main {
-      padding: 0 5vw 4rem;
+      padding: 0 5vw;
       display: grid;
       gap: 2.5rem;
+      max-width: 1200px;
+      margin: 0 auto;
     }
 
     .panel {
-      background: rgba(15, 23, 42, 0.8);
+      background: var(--surface);
       border-radius: 1.25rem;
       padding: 1.75rem;
       border: 1px solid var(--border);
-      backdrop-filter: blur(16px);
-      box-shadow: 0 24px 48px rgba(2, 6, 23, 0.35);
+      box-shadow: var(--shadow);
     }
 
     .panel h2 {
       font-size: 1.35rem;
       margin-bottom: 1rem;
+      color: var(--text);
+    }
+
+    .data-loader {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 720px) {
+      .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: end;
+      }
+    }
+
+    .form-group {
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .form-group label {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .form-group select,
+    .form-group input[type="file"] {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+      padding: 0.65rem 1rem;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .load-button {
+      justify-self: start;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 10px 25px rgba(14, 165, 233, 0.25);
+    }
+
+    .load-button:disabled {
+      background: var(--surface-alt);
+      color: var(--muted);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .helper-text {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
     }
 
     .grid-3 {
@@ -86,21 +164,22 @@
       border-radius: 1rem;
       padding: 1.5rem;
       border: 1px solid var(--border);
-      background: linear-gradient(160deg, rgba(56, 189, 248, 0.16), rgba(148, 163, 184, 0.04));
+      background: linear-gradient(160deg, rgba(14, 165, 233, 0.12), rgba(148, 163, 184, 0.08));
+      display: grid;
+      gap: 0.75rem;
     }
 
     .key-metric h3 {
       font-size: 0.95rem;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--muted);
-      margin-bottom: 0.6rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
     .key-metric strong {
       display: block;
-      font-size: 2.5rem;
+      font-size: 2.2rem;
       font-weight: 700;
       color: var(--text);
     }
@@ -112,19 +191,19 @@
       font-size: 0.85rem;
       padding: 0.35rem 0.65rem;
       border-radius: 999px;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--text);
-      background: rgba(148, 163, 184, 0.15);
+      background: rgba(148, 163, 184, 0.18);
     }
 
     .badge.up {
       color: var(--success);
-      background: rgba(74, 222, 128, 0.1);
+      background: rgba(21, 128, 61, 0.12);
     }
 
     .badge.down {
       color: var(--danger);
-      background: rgba(248, 113, 113, 0.08);
+      background: rgba(185, 28, 28, 0.12);
     }
 
     .overview-grid {
@@ -141,16 +220,16 @@
     .overview-card {
       border-radius: 1rem;
       padding: 1.25rem;
-      background: rgba(15, 23, 42, 0.8);
+      background: var(--surface-alt);
       border: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
+      display: grid;
       gap: 0.65rem;
     }
 
     .overview-card strong {
       font-size: 1.8rem;
       font-weight: 600;
+      color: var(--text);
     }
 
     .signal-list {
@@ -162,7 +241,9 @@
       padding: 1rem;
       border-radius: 1rem;
       border: 1px solid var(--border);
-      background: rgba(15, 23, 42, 0.7);
+      background: var(--surface-alt);
+      display: grid;
+      gap: 0.35rem;
     }
 
     .signal-item header {
@@ -170,13 +251,13 @@
       justify-content: space-between;
       align-items: baseline;
       gap: 1rem;
-      padding: 0;
-      margin: 0 0 0.5rem 0;
+      margin-bottom: 0.25rem;
     }
 
     .signal-item h4 {
       font-size: 1rem;
       font-weight: 600;
+      color: var(--text);
     }
 
     .category-deck {
@@ -187,7 +268,7 @@
     .category-card {
       border-radius: 1.25rem;
       border: 1px solid var(--border);
-      background: rgba(15, 23, 42, 0.75);
+      background: var(--surface-alt);
       padding: 1.5rem;
       display: grid;
       gap: 1.25rem;
@@ -198,14 +279,14 @@
       flex-wrap: wrap;
       gap: 0.75rem;
       justify-content: space-between;
-      align-items: baseline;
+      align-items: center;
     }
 
     .capability {
       border-radius: 1rem;
       padding: 1.25rem;
       border: 1px solid var(--border);
-      background: rgba(15, 23, 42, 0.6);
+      background: var(--surface);
       display: grid;
       gap: 1rem;
     }
@@ -220,8 +301,8 @@
       gap: 0.35rem;
       padding: 0.85rem;
       border-radius: 0.85rem;
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: var(--surface-alt);
     }
 
     .signal-chip span {
@@ -231,6 +312,7 @@
 
     .signal-chip strong {
       font-size: 1.05rem;
+      color: var(--text);
     }
 
     .score-pill {
@@ -243,17 +325,17 @@
     }
 
     .score-high {
-      background: rgba(74, 222, 128, 0.16);
+      background: rgba(21, 128, 61, 0.15);
       color: var(--success);
     }
 
     .score-medium {
-      background: rgba(250, 204, 21, 0.16);
-      color: #facc15;
+      background: rgba(234, 179, 8, 0.18);
+      color: #b45309;
     }
 
     .score-low {
-      background: rgba(248, 113, 113, 0.16);
+      background: rgba(185, 28, 28, 0.15);
       color: var(--danger);
     }
 
@@ -263,13 +345,15 @@
       gap: 1rem;
     }
 
-    .filters input, .filters select {
-      background: rgba(15, 23, 42, 0.8);
+    .filters input,
+    .filters select {
+      background: var(--surface-alt);
       border: 1px solid var(--border);
       border-radius: 999px;
       padding: 0.6rem 1rem;
       color: var(--text);
       min-width: 200px;
+      font-size: 0.95rem;
     }
 
     .filters input::placeholder {
@@ -281,36 +365,83 @@
       color: var(--muted);
       font-style: italic;
     }
+
+    @media (max-width: 640px) {
+      header,
+      main {
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Customer Success Score Analyzer</h1>
-    <p>
-      Esplora metriche chiave, trend e segnali del Customer Success Score. Usa i filtri per mettere a fuoco categorie e segnali specifici e individua rapidamente le aree di rischio o le opportunità da valorizzare.
-    </p>
+    <div>
+      <h1>Customer Success Score Analyzer</h1>
+      <p>
+        Explore key metrics, trends, and scored signals for your customer success score. Upload a JSON export, set the reference month,
+        and use the interactive filters to uncover opportunities and risks faster.
+      </p>
+    </div>
+    <div class="reference-month">Reference month: <strong id="selectedMonth">Sample data</strong></div>
   </header>
   <main>
+    <section class="panel" id="dataLoaderPanel">
+      <h2>Load customer success score</h2>
+      <div class="data-loader">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="referenceMonth">Reference month</label>
+            <select id="referenceMonth">
+              <option value="" disabled selected>-- Select reference month --</option>
+              <option value="January">January</option>
+              <option value="February">February</option>
+              <option value="March">March</option>
+              <option value="April">April</option>
+              <option value="May">May</option>
+              <option value="June">June</option>
+              <option value="July">July</option>
+              <option value="August">August</option>
+              <option value="September">September</option>
+              <option value="October">October</option>
+              <option value="November">November</option>
+              <option value="December">December</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="scoreUpload">Upload score JSON</label>
+            <input type="file" id="scoreUpload" accept=".json,application/json">
+          </div>
+        </div>
+        <button class="load-button" type="button" id="loadScoreBtn" disabled>Load score</button>
+        <p class="helper-text">
+          Upload a JSON file exported from Customer Success Score. The file is not sent anywhere; parsing happens in your browser. The
+          selected reference month will be displayed alongside the loaded score, similar to the License Visualizer tool.
+        </p>
+      </div>
+    </section>
+
     <section class="panel" id="account-overview">
-      <h2>Panoramica account</h2>
+      <h2>Account overview</h2>
       <div class="grid-3" id="accountCards"></div>
     </section>
 
     <section class="panel" id="overall-performance">
-      <h2>Performance complessiva</h2>
+      <h2>Overall performance</h2>
       <div class="overview-grid" id="overviewGrid"></div>
     </section>
 
     <section class="panel" id="trends">
       <div class="filters">
-        <input type="search" id="signalSearch" placeholder="Cerca un segnale..." />
+        <input type="search" id="signalSearch" placeholder="Search a signal..." />
         <select id="trendFilter">
-          <option value="all">Trend: tutti</option>
-          <option value="up">Solo in miglioramento</option>
-          <option value="down">Solo in calo</option>
+          <option value="all">Trend: all</option>
+          <option value="up">Only improving</option>
+          <option value="down">Only declining</option>
         </select>
         <select id="categoryFilter">
-          <option value="all">Categoria: tutte</option>
+          <option value="all">Category: all</option>
         </select>
       </div>
       <div class="grid-3" style="margin-top: 1.5rem;" id="trendColumns">
@@ -323,14 +454,20 @@
           <div class="signal-list" id="trendingDown"></div>
         </div>
         <div>
-          <h3>Warning / Rischi</h3>
+          <h3>Warnings / At risk</h3>
           <div class="signal-list" id="lowSignals"></div>
         </div>
       </div>
     </section>
 
+    <section class="panel" id="all-scored-signals">
+      <h2>All scored signals</h2>
+      <p class="helper-text">Every scored signal from the JSON file is listed below and respects the filters above.</p>
+      <div class="signal-list" id="allSignalsList"></div>
+    </section>
+
     <section class="panel" id="categories">
-      <h2>Analisi per categoria</h2>
+      <h2>Category analysis</h2>
       <div class="category-deck" id="categoryDeck"></div>
     </section>
   </main>
@@ -342,7 +479,7 @@
         <span class="badge" data-field="change"></span>
       </header>
       <p data-field="category" style="color: var(--muted);"></p>
-      <div style="display:flex; align-items:center; gap:0.75rem; margin-top:0.5rem;">
+      <div style="display:flex; align-items:center; gap:0.75rem; margin-top:0.25rem;">
         <strong data-field="score"></strong>
         <span class="badge" data-field="rating"></span>
       </div>
@@ -356,7 +493,7 @@
       return 'score-low';
     };
 
-    const formatScore = (score) => typeof score === 'number' ? `${score}` : score;
+    const formatScore = (score) => (typeof score === 'number' ? `${score}` : score ?? '-');
 
     const createScoreBadge = (score) => {
       const span = document.createElement('span');
@@ -382,12 +519,12 @@
       return card;
     };
 
-    const populateTrendSignals = (signals, container) => {
+    const populateSignalList = (signals, container) => {
       container.innerHTML = '';
       if (!signals.length) {
         const empty = document.createElement('p');
         empty.className = 'empty-state';
-        empty.textContent = 'Nessun segnale corrispondente ai filtri.';
+        empty.textContent = 'No signals match the current filters.';
         container.appendChild(empty);
         return;
       }
@@ -395,7 +532,7 @@
       for (const item of signals) {
         const clone = document.getElementById('signalTemplate').content.firstElementChild.cloneNode(true);
         clone.querySelector('[data-field="signal"]').textContent = item.signal;
-        clone.querySelector('[data-field="category"]').textContent = item.category;
+        clone.querySelector('[data-field="category"]').textContent = item.categoryDescription || item.category || '';
         const changeSpan = clone.querySelector('[data-field="change"]');
         if (item.change) {
           changeSpan.textContent = item.change;
@@ -443,104 +580,54 @@
         for (const capability of category.capabilities || []) {
           const capabilityBlock = document.createElement('section');
           capabilityBlock.className = 'capability';
+          const heading = document.createElement('div');
+          heading.style.display = 'flex';
+          heading.style.justifyContent = 'space-between';
+          heading.style.alignItems = 'center';
+          heading.style.gap = '0.75rem';
 
-          const capHeader = document.createElement('div');
-          capHeader.style.display = 'flex';
-          capHeader.style.flexWrap = 'wrap';
-          capHeader.style.gap = '0.5rem';
-          capHeader.style.alignItems = 'baseline';
-          const capTitle = document.createElement('h4');
-          capTitle.textContent = capability.name;
-          capHeader.appendChild(capTitle);
-          capHeader.appendChild(createScoreBadge(capability.score));
-          capabilityBlock.appendChild(capHeader);
+          const name = document.createElement('h4');
+          name.textContent = capability.name;
+          name.style.fontSize = '1.1rem';
+          name.style.color = 'var(--text)';
+          const capabilityBadge = capability.rating ? document.createElement('span') : null;
+          if (capabilityBadge) {
+            capabilityBadge.className = 'badge';
+            capabilityBadge.textContent = capability.rating;
+          }
+          heading.appendChild(name);
+          if (capabilityBadge) heading.appendChild(capabilityBadge);
+          heading.appendChild(createScoreBadge(capability.score));
+          capabilityBlock.appendChild(heading);
 
-          const scoredSignals = document.createElement('div');
-          scoredSignals.className = 'signals';
-          const scoredTitle = document.createElement('h5');
-          scoredTitle.textContent = 'Segnali con punteggio';
-          scoredTitle.style.color = 'var(--muted)';
-          scoredSignals.appendChild(scoredTitle);
+          if (capability.scoreChange) {
+            const change = document.createElement('span');
+            change.className = `badge ${capability.scoreChange.includes('↑') ? 'up' : capability.scoreChange.includes('↓') ? 'down' : ''}`;
+            change.textContent = `Score change ${capability.scoreChange}`;
+            capabilityBlock.appendChild(change);
+          }
 
-          if (!capability.scoredSignals?.length) {
-            const empty = document.createElement('p');
-            empty.className = 'empty-state';
-            empty.textContent = 'Nessun segnale con punteggio.';
-            scoredSignals.appendChild(empty);
-          } else {
+          if ((capability.scoredSignals || []).length) {
+            const signals = document.createElement('div');
+            signals.className = 'signals';
             for (const signal of capability.scoredSignals) {
               const chip = document.createElement('div');
               chip.className = 'signal-chip';
               const signalName = document.createElement('strong');
               signalName.textContent = signal.signal;
-              const value = document.createElement('span');
-              value.textContent = `Valore: ${signal.value}`;
-              const benchmark = document.createElement('span');
-              benchmark.textContent = `Benchmark: ${signal.benchmark}`;
-              chip.append(signalName, value, benchmark, createScoreBadge(signal.score));
-              if (signal.scoreChange) {
-                const change = document.createElement('span');
-                change.className = `badge ${signal.scoreChange.includes('↑') ? 'up' : signal.scoreChange.includes('↓') ? 'down' : ''}`;
-                change.textContent = signal.scoreChange;
-                chip.appendChild(change);
-              }
-              scoredSignals.appendChild(chip);
+              const signalScore = document.createElement('span');
+              signalScore.textContent = `Score: ${formatScore(signal.score)}${signal.scoreChange ? ` • Change ${signal.scoreChange}` : ''}`;
+              chip.append(signalName, signalScore);
+              signals.appendChild(chip);
             }
+            capabilityBlock.appendChild(signals);
           }
 
-          const informationalSignals = document.createElement('div');
-          informationalSignals.className = 'signals';
-          const infoTitle = document.createElement('h5');
-          infoTitle.textContent = 'Segnali informativi';
-          infoTitle.style.color = 'var(--muted)';
-          informationalSignals.appendChild(infoTitle);
-
-          if (!capability.informationalSignals?.length) {
-            const empty = document.createElement('p');
-            empty.className = 'empty-state';
-            empty.textContent = 'Nessun segnale informativo.';
-            informationalSignals.appendChild(empty);
-          } else {
-            for (const signal of capability.informationalSignals) {
-              const chip = document.createElement('div');
-              chip.className = 'signal-chip';
-              const signalName = document.createElement('strong');
-              signalName.textContent = signal.signal;
-              const value = document.createElement('span');
-              value.textContent = `Valore: ${signal.value}`;
-              const benchmark = document.createElement('span');
-              benchmark.textContent = `Benchmark: ${signal.benchmark}`;
-              chip.append(signalName, value, benchmark);
-              informationalSignals.appendChild(chip);
-            }
-          }
-
-          capabilityBlock.append(scoredSignals, informationalSignals);
           categoryCard.appendChild(capabilityBlock);
         }
 
         deck.appendChild(categoryCard);
       }
-    };
-
-    const applyTrendFilters = (data) => {
-      const searchTerm = document.getElementById('signalSearch').value.toLowerCase();
-      const trendFilter = document.getElementById('trendFilter').value;
-      const categoryFilter = document.getElementById('categoryFilter').value;
-
-      const matchFilters = (signal) => {
-        const matchesSearch = !searchTerm || signal.signal.toLowerCase().includes(searchTerm);
-        const matchesCategory = categoryFilter === 'all' || signal.category === categoryFilter;
-        return matchesSearch && matchesCategory;
-      };
-
-      const trendingUpFiltered = trendFilter !== 'down' ? data.trendingUp.filter(matchFilters) : [];
-      const trendingDownFiltered = trendFilter !== 'up' ? data.trendingDown.filter(matchFilters) : [];
-      const lowSignalsFiltered = data.lowSignals.filter(matchFilters);
-
-      populateTrendSignals(trendingUpFiltered, document.getElementById('trendingUp'));
-      populateTrendSignals(trendingDownFiltered, document.getElementById('trendingDown'));
-      populateTrendSignals(lowSignalsFiltered, document.getElementById('lowSignals'));
     };
 
     const extractLowSignals = (categories) => {
@@ -551,9 +638,11 @@
             if (signal.score !== undefined && signal.score < 50) {
               lowSignals.push({
                 category: `${category.name} / ${capability.name}`,
+                categoryDescription: `${category.name} • ${capability.name}`,
                 signal: signal.signal,
                 score: signal.score,
                 change: signal.scoreChange,
+                rating: signal.rating,
               });
             }
           }
@@ -562,15 +651,38 @@
       return lowSignals;
     };
 
-    const populateAccountCards = (account, tenant, overview) => {
+    const buildAllScoredSignals = (categories) => {
+      const signals = [];
+      for (const category of categories) {
+        for (const capability of category.capabilities || []) {
+          for (const signal of capability.scoredSignals || []) {
+            signals.push({
+              category: category.name,
+              categoryDescription: `${category.name} • ${capability.name}`,
+              signal: signal.signal,
+              score: signal.score,
+              change: signal.scoreChange,
+              rating: signal.rating,
+            });
+          }
+        }
+      }
+      return signals;
+    };
+
+    const populateAccountCards = (account, tenant, overview, referenceMonth) => {
       const container = document.getElementById('accountCards');
       container.innerHTML = '';
 
       const cards = [
-        { title: 'Account', main: account.name, subtitle: account.id },
-        { title: 'Tenant', main: tenant.name, subtitle: tenant.id },
-        { title: 'Customer Success Score', main: overview.overallScore.score, subtitle: overview.overallScore.rating }
+        { title: 'Account', main: account?.name ?? 'N/A', subtitle: account?.id },
+        { title: 'Tenant', main: tenant?.name ?? 'N/A', subtitle: tenant?.id },
+        { title: 'Customer Success Score', main: overview?.overallScore?.score ?? 'N/A', subtitle: overview?.overallScore?.rating }
       ];
+
+      if (referenceMonth) {
+        cards.push({ title: 'Reference Month', main: referenceMonth });
+      }
 
       for (const { title, main, subtitle } of cards) {
         const card = document.createElement('article');
@@ -578,7 +690,7 @@
         const h3 = document.createElement('h3');
         h3.textContent = title;
         const strong = document.createElement('strong');
-        strong.textContent = main;
+        strong.textContent = formatScore(main);
         card.append(h3, strong);
         if (subtitle) {
           const span = document.createElement('span');
@@ -593,53 +705,131 @@
     const populateOverview = (overview) => {
       const grid = document.getElementById('overviewGrid');
       grid.innerHTML = '';
-      grid.appendChild(createOverviewCard('Prodotto adottato', overview.productAdoption.score, overview.productAdoption.change));
-      grid.appendChild(createOverviewCard('Expertise cliente', overview.customerExpertise.score, overview.customerExpertise.change));
-      grid.appendChild(createOverviewCard('Salute tecnica', overview.technicalHealth.score, overview.technicalHealth.change));
-      grid.appendChild(createOverviewCard('Distribuzione AOV', overview.aovDistributionScore));
+      grid.appendChild(createOverviewCard('Product adoption', overview.productAdoption?.score, overview.productAdoption?.change));
+      grid.appendChild(createOverviewCard('Customer expertise', overview.customerExpertise?.score, overview.customerExpertise?.change));
+      grid.appendChild(createOverviewCard('Technical health', overview.technicalHealth?.score, overview.technicalHealth?.change));
+      grid.appendChild(createOverviewCard('AOV distribution', overview.aovDistributionScore));
     };
+
+    const selectedMonthLabel = document.getElementById('selectedMonth');
+    const referenceMonthSelect = document.getElementById('referenceMonth');
+    const scoreUploadInput = document.getElementById('scoreUpload');
+    const loadScoreBtn = document.getElementById('loadScoreBtn');
+
+    let currentTrendData = null;
+    let allScoredSignals = [];
+
+    const categoryFilter = document.getElementById('categoryFilter');
+
+    const populateCategoryOptions = (categories) => {
+      const uniqueCategories = Array.from(new Set(categories)).sort();
+      categoryFilter.innerHTML = '<option value="all">Category: all</option>';
+      for (const name of uniqueCategories) {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        categoryFilter.appendChild(option);
+      }
+    };
+
+    const applyFilters = () => {
+      if (!currentTrendData) return;
+      const searchTerm = document.getElementById('signalSearch').value.toLowerCase();
+      const trendFilterValue = document.getElementById('trendFilter').value;
+      const categoryValue = categoryFilter.value;
+
+      const matchesFilters = (signal) => {
+        const matchesSearch = !searchTerm || signal.signal?.toLowerCase().includes(searchTerm);
+        const matchesCategory = categoryValue === 'all' || signal.category === categoryValue || signal.categoryDescription?.startsWith(`${categoryValue}`);
+        return matchesSearch && matchesCategory;
+      };
+
+      const trendingUpFiltered = trendFilterValue !== 'down' ? currentTrendData.trendingUp.filter(matchesFilters) : [];
+      const trendingDownFiltered = trendFilterValue !== 'up' ? currentTrendData.trendingDown.filter(matchesFilters) : [];
+      const lowSignalsFiltered = currentTrendData.lowSignals.filter(matchesFilters);
+      const allSignalsFiltered = allScoredSignals.filter(matchesFilters);
+
+      populateSignalList(trendingUpFiltered, document.getElementById('trendingUp'));
+      populateSignalList(trendingDownFiltered, document.getElementById('trendingDown'));
+      populateSignalList(lowSignalsFiltered, document.getElementById('lowSignals'));
+      populateSignalList(allSignalsFiltered, document.getElementById('allSignalsList'));
+    };
+
+    const refreshDashboard = (data, referenceMonthText = '') => {
+      try {
+        const overview = data.overview?.tenantOverview || {};
+        const categories = data.overview?.categories || [];
+
+        populateAccountCards(data.account || {}, data.tenant || {}, { overallScore: overview.overallScore }, referenceMonthText);
+        populateOverview({
+          productAdoption: overview.productAdoption || {},
+          customerExpertise: overview.customerExpertise || {},
+          technicalHealth: overview.technicalHealth || {},
+          aovDistributionScore: data.overview?.aovDistributionScore,
+        });
+        buildCategoryDeck(categories);
+
+        currentTrendData = {
+          trendingUp: data.overview?.trendingSignals?.trendingUp || [],
+          trendingDown: data.overview?.trendingSignals?.trendingDown || [],
+          lowSignals: extractLowSignals(categories),
+        };
+        allScoredSignals = buildAllScoredSignals(categories);
+
+        const categoryNames = categories.map((c) => c.name);
+        populateCategoryOptions(categoryNames);
+        applyFilters();
+      } catch (error) {
+        console.error('Unable to render dashboard', error);
+        document.querySelector('main').innerHTML = '<p class="empty-state">Unable to render the Customer Success Score dashboard. Check the JSON file structure.</p>';
+      }
+    };
+
+    const updateLoadButtonState = () => {
+      loadScoreBtn.disabled = !(referenceMonthSelect.value && scoreUploadInput.files.length);
+    };
+
+    referenceMonthSelect.addEventListener('change', updateLoadButtonState);
+    scoreUploadInput.addEventListener('change', updateLoadButtonState);
+
+    loadScoreBtn.addEventListener('click', () => {
+      const file = scoreUploadInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          const month = referenceMonthSelect.value;
+          selectedMonthLabel.textContent = month;
+          refreshDashboard(parsed, month);
+        } catch (error) {
+          console.error('Invalid JSON file', error);
+          alert('The uploaded file is not a valid JSON structure.');
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById('signalSearch').addEventListener('input', applyFilters);
+    document.getElementById('trendFilter').addEventListener('change', applyFilters);
+    categoryFilter.addEventListener('change', applyFilters);
 
     fetch('other/sample-css-json.json')
       .then((response) => response.json())
       .then((data) => {
-        const overview = data.overview.tenantOverview;
-        populateAccountCards(data.account, data.tenant, overview);
-        populateOverview({
-          productAdoption: overview.productAdoption,
-          customerExpertise: overview.customerExpertise,
-          technicalHealth: overview.technicalHealth,
-          aovDistributionScore: data.overview.aovDistributionScore
-        });
-
-        const categories = data.overview.categories || [];
-        buildCategoryDeck(categories);
-
-        const trendData = {
-          trendingUp: data.overview.trendingSignals?.trendingUp || [],
-          trendingDown: data.overview.trendingSignals?.trendingDown || [],
-          lowSignals: extractLowSignals(categories)
-        };
-
-        const categoryFilter = document.getElementById('categoryFilter');
-        const categorySet = new Set();
-        trendData.trendingUp.concat(trendData.trendingDown).forEach((item) => categorySet.add(item.category));
-        trendData.lowSignals.forEach((item) => categorySet.add(item.category.split(' / ')[0]));
-        for (const category of Array.from(categorySet).sort()) {
-          const option = document.createElement('option');
-          option.value = category;
-          option.textContent = category;
-          categoryFilter.appendChild(option);
-        }
-
-        applyTrendFilters(trendData);
-
-        document.getElementById('signalSearch').addEventListener('input', () => applyTrendFilters(trendData));
-        document.getElementById('trendFilter').addEventListener('change', () => applyTrendFilters(trendData));
-        document.getElementById('categoryFilter').addEventListener('change', () => applyTrendFilters(trendData));
+        selectedMonthLabel.textContent = 'Sample data';
+        refreshDashboard(data, 'Sample data');
       })
       .catch((error) => {
-        console.error('Errore durante il caricamento del CSS JSON', error);
-        document.querySelector('main').innerHTML = '<p class="empty-state">Impossibile caricare i dati del Customer Success Score. Verifica il file JSON.</p>';
+        console.error('Unable to load default CSS JSON', error);
+        document.getElementById('accountCards').innerHTML = '';
+        document.getElementById('overviewGrid').innerHTML = '';
+        document.getElementById('categoryDeck').innerHTML = '';
+        document.getElementById('trendingUp').innerHTML = '<p class="empty-state">Upload a JSON file to begin the analysis.</p>';
+        document.getElementById('trendingDown').innerHTML = '';
+        document.getElementById('lowSignals').innerHTML = '';
+        document.getElementById('allSignalsList').innerHTML = '<p class="empty-state">Upload a JSON file to list all scored signals.</p>';
       });
   </script>
 </body>
