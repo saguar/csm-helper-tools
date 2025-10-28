@@ -175,6 +175,11 @@
             const isLegacyFormat = header.includes('licensetype') && header.includes('licensename');
             const isSfReportFormat = header.includes('name') && header.includes('total licenses');
 
+            const normalizedHeader = header.map(h => h.replace(/\s+/g, ' ').trim());
+            const fallbackLicenseNameIndex = getColumnIndex(normalizedHeader, ['license name', 'product', 'name'], 0);
+            const fallbackProvisionedIndex = getColumnIndex(normalizedHeader, ['total licenses', 'licenses provisioned', 'allowance', 'total', 'provisioned'], 1);
+            const fallbackActivatedIndex = getColumnIndex(normalizedHeader, ['used licenses', 'licenses activated', 'usage', 'activated'], 2);
+            
             for (let i = 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
                 let row = parseCSVLine(lines[i]);
@@ -217,8 +222,36 @@
                         allowance: parseIfNotEmpty(record['allowance']),
                         usage: parseIfNotEmpty(record['usage'])
                     });
+                } else {
+                    const licenseName = (row[fallbackLicenseNameIndex] || '').trim();
+                    const provisionedValue = parseIfNotEmpty(row[fallbackProvisionedIndex]);
+                    const activatedValue = parseIfNotEmpty(row[fallbackActivatedIndex]);
+                    const headerIndicators = {
+                        allowance: normalizedHeader[fallbackProvisionedIndex] || '',
+                        usage: normalizedHeader[fallbackActivatedIndex] || ''
+                    };
+                    const looksConsumption = /allowance|usage|consumption/.test(headerIndicators.allowance) || /usage/.test(headerIndicators.usage);
+
+                    licensesData.push({
+                        licenseType: looksConsumption ? 'consumption' : 'activation',
+                        licenseName,
+                        provisioned: looksConsumption ? null : provisionedValue,
+                        activated: looksConsumption ? null : activatedValue,
+                        mau: null,
+                        dau: null,
+                        allowance: looksConsumption ? provisionedValue : null,
+                        usage: looksConsumption ? activatedValue : null
+                    });
                 }
             }
+        }
+        function getColumnIndex(header, candidates, defaultIndex) {
+            for (const candidate of candidates) {
+                const index = header.findIndex(col => col === candidate);
+                if (index !== -1) return index;
+            }
+            if (!header.length) return 0;
+            return Math.min(defaultIndex, header.length - 1);
         }
         function parseCSVLine(line) {
             const result = [];
