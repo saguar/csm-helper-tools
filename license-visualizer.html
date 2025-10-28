@@ -299,11 +299,35 @@
         }
 
         function updateLicenseList() {
-            licenseList.innerHTML = licensesData.length === 0 ? '<p class="text-gray-600">No licenses added.</p>' : '<ul>' +
-                licensesData.map((lic, idx) => `<li><div><strong>${idx + 1}. ${lic.licenseName} (${lic.licenseType === 'activation' ? 'Activation' : 'Consumption'})</strong><br>` +
-                    (lic.licenseType === 'activation' ? `Prov: ${lic.provisioned} – Act: ${lic.activated}${lic.mau !== null ? ' – MAU: ' + lic.mau : ''}${lic.dau !== null ? ' – DAU: ' + lic.dau : ''}`
-                                                      : `Allow: ${lic.allowance} – Usage: ${lic.usage}`) +
-                    `</div><div><button class="edit-btn" onclick="startEditLicense(${idx})">Edit</button><button class="delete-btn" onclick="deleteLicense(${idx})">Delete</button></div></li>`).join('') + '</ul>';
+            if (licensesData.length === 0) {
+                licenseList.innerHTML = '<p class="text-gray-600">No licenses added.</p>';
+                return;
+            }
+
+            const listItems = licensesData.map((lic, idx) => {
+                const typeLabel = lic.licenseType === 'activation' ? 'Activation' : 'Consumption';
+                const details = lic.licenseType === 'activation'
+                    ? `Prov: ${lic.provisioned} – Act: ${lic.activated}${lic.mau !== null ? ' – MAU: ' + lic.mau : ''}${lic.dau !== null ? ' – DAU: ' + lic.dau : ''}`
+                    : `Allow: ${lic.allowance} – Usage: ${lic.usage}`;
+
+                const quickTypeSelect = `
+                    <select class="quick-edit-select" aria-label="Quick edit license type" onchange="quickUpdateLicenseType(${idx}, this.value)">
+                        <option value="activation" ${lic.licenseType === 'activation' ? 'selected' : ''}>Activation Based</option>
+                        <option value="consumption" ${lic.licenseType === 'consumption' ? 'selected' : ''}>Consumption Based</option>
+                    </select>`;
+
+                return `
+                    <li>
+                        <div><strong>${idx + 1}. ${lic.licenseName} (${typeLabel})</strong><br>${details}</div>
+                        <div class="license-actions">
+                            ${quickTypeSelect}
+                            <button class="edit-btn" onclick="startEditLicense(${idx})">Edit</button>
+                            <button class="delete-btn" onclick="deleteLicense(${idx})">Delete</button>
+                        </div>
+                    </li>`;
+            }).join('');
+
+            licenseList.innerHTML = `<ul>${listItems}</ul>`;
         }
 
         window.startEditLicense = function(index) {
@@ -332,6 +356,39 @@
             licensesData.splice(index, 1);
             updateLicenseList();
             renderCharts();
+        };
+
+        window.quickUpdateLicenseType = function(index, newType) {
+            const lic = licensesData[index];
+            if (!lic || lic.licenseType === newType) return;
+
+            if (lic.chartInstance) {
+                lic.chartInstance.destroy();
+                lic.chartInstance = null;
+            }
+
+            if (newType === 'activation') {
+                lic.licenseType = 'activation';
+                lic.provisioned = lic.provisioned ?? lic.allowance ?? null;
+                lic.activated = lic.activated ?? lic.usage ?? null;
+                lic.mau = lic.mau ?? null;
+                lic.dau = lic.dau ?? null;
+                lic.allowance = null;
+                lic.usage = null;
+            } else {
+                lic.licenseType = 'consumption';
+                lic.allowance = lic.allowance ?? lic.provisioned ?? null;
+                lic.usage = lic.usage ?? lic.activated ?? null;
+                lic.provisioned = null;
+                lic.activated = null;
+                lic.mau = null;
+                lic.dau = null;
+            }
+
+            updateLicenseList();
+            if (referenceMonthSelect.value) {
+                renderCharts();
+            }
         };
 
         aiAnalyzeBtn.addEventListener('click', () => {
