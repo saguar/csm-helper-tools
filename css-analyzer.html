@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Success Score Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-alt: #111827;
+      --primary: #38bdf8;
+      --success: #4ade80;
+      --warning: #f97316;
+      --danger: #f87171;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: rgba(148, 163, 184, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(160deg, #020617, #0f172a 40%, #1e293b 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 3rem 5vw 1.5rem;
+    }
+
+    header h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+
+    header p {
+      color: var(--muted);
+      max-width: 900px;
+      line-height: 1.6;
+    }
+
+    main {
+      padding: 0 5vw 4rem;
+      display: grid;
+      gap: 2.5rem;
+    }
+
+    .panel {
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 1.25rem;
+      padding: 1.75rem;
+      border: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 24px 48px rgba(2, 6, 23, 0.35);
+    }
+
+    .panel h2 {
+      font-size: 1.35rem;
+      margin-bottom: 1rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 900px) {
+      .grid-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    .key-metric {
+      border-radius: 1rem;
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+      background: linear-gradient(160deg, rgba(56, 189, 248, 0.16), rgba(148, 163, 184, 0.04));
+    }
+
+    .key-metric h3 {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .key-metric strong {
+      display: block;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 999px;
+      font-weight: 500;
+      color: var(--text);
+      background: rgba(148, 163, 184, 0.15);
+    }
+
+    .badge.up {
+      color: var(--success);
+      background: rgba(74, 222, 128, 0.1);
+    }
+
+    .badge.down {
+      color: var(--danger);
+      background: rgba(248, 113, 113, 0.08);
+    }
+
+    .overview-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    @media (min-width: 720px) {
+      .overview-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .overview-card {
+      border-radius: 1rem;
+      padding: 1.25rem;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .overview-card strong {
+      font-size: 1.8rem;
+      font-weight: 600;
+    }
+
+    .signal-list {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .signal-item {
+      padding: 1rem;
+      border-radius: 1rem;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.7);
+    }
+
+    .signal-item header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 0;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .signal-item h4 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .category-deck {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .category-card {
+      border-radius: 1.25rem;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.75);
+      padding: 1.5rem;
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .category-headline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .capability {
+      border-radius: 1rem;
+      padding: 1.25rem;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.6);
+      display: grid;
+      gap: 1rem;
+    }
+
+    .signals {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .signal-chip {
+      display: grid;
+      gap: 0.35rem;
+      padding: 0.85rem;
+      border-radius: 0.85rem;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      background: rgba(15, 23, 42, 0.75);
+    }
+
+    .signal-chip span {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .signal-chip strong {
+      font-size: 1.05rem;
+    }
+
+    .score-pill {
+      justify-self: flex-start;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .score-high {
+      background: rgba(74, 222, 128, 0.16);
+      color: var(--success);
+    }
+
+    .score-medium {
+      background: rgba(250, 204, 21, 0.16);
+      color: #facc15;
+    }
+
+    .score-low {
+      background: rgba(248, 113, 113, 0.16);
+      color: var(--danger);
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .filters input, .filters select {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.6rem 1rem;
+      color: var(--text);
+      min-width: 200px;
+    }
+
+    .filters input::placeholder {
+      color: var(--muted);
+    }
+
+    .empty-state {
+      padding: 1rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Customer Success Score Analyzer</h1>
+    <p>
+      Esplora metriche chiave, trend e segnali del Customer Success Score. Usa i filtri per mettere a fuoco categorie e segnali specifici e individua rapidamente le aree di rischio o le opportunità da valorizzare.
+    </p>
+  </header>
+  <main>
+    <section class="panel" id="account-overview">
+      <h2>Panoramica account</h2>
+      <div class="grid-3" id="accountCards"></div>
+    </section>
+
+    <section class="panel" id="overall-performance">
+      <h2>Performance complessiva</h2>
+      <div class="overview-grid" id="overviewGrid"></div>
+    </section>
+
+    <section class="panel" id="trends">
+      <div class="filters">
+        <input type="search" id="signalSearch" placeholder="Cerca un segnale..." />
+        <select id="trendFilter">
+          <option value="all">Trend: tutti</option>
+          <option value="up">Solo in miglioramento</option>
+          <option value="down">Solo in calo</option>
+        </select>
+        <select id="categoryFilter">
+          <option value="all">Categoria: tutte</option>
+        </select>
+      </div>
+      <div class="grid-3" style="margin-top: 1.5rem;" id="trendColumns">
+        <div>
+          <h3>Trending up</h3>
+          <div class="signal-list" id="trendingUp"></div>
+        </div>
+        <div>
+          <h3>Trending down</h3>
+          <div class="signal-list" id="trendingDown"></div>
+        </div>
+        <div>
+          <h3>Warning / Rischi</h3>
+          <div class="signal-list" id="lowSignals"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="categories">
+      <h2>Analisi per categoria</h2>
+      <div class="category-deck" id="categoryDeck"></div>
+    </section>
+  </main>
+
+  <template id="signalTemplate">
+    <article class="signal-item">
+      <header>
+        <h4 data-field="signal"></h4>
+        <span class="badge" data-field="change"></span>
+      </header>
+      <p data-field="category" style="color: var(--muted);"></p>
+      <div style="display:flex; align-items:center; gap:0.75rem; margin-top:0.5rem;">
+        <strong data-field="score"></strong>
+        <span class="badge" data-field="rating"></span>
+      </div>
+    </article>
+  </template>
+
+  <script>
+    const scoreClass = (score) => {
+      if (score >= 80) return 'score-high';
+      if (score >= 50) return 'score-medium';
+      return 'score-low';
+    };
+
+    const formatScore = (score) => typeof score === 'number' ? `${score}` : score;
+
+    const createScoreBadge = (score) => {
+      const span = document.createElement('span');
+      span.className = `score-pill ${scoreClass(score)}`;
+      span.textContent = `Score ${formatScore(score)}`;
+      return span;
+    };
+
+    const createOverviewCard = (title, score, extra) => {
+      const card = document.createElement('article');
+      card.className = 'overview-card';
+      const h3 = document.createElement('h3');
+      h3.textContent = title;
+      const strong = document.createElement('strong');
+      strong.textContent = formatScore(score);
+      card.append(h3, strong);
+      if (extra) {
+        const span = document.createElement('span');
+        span.className = 'badge';
+        span.textContent = extra;
+        card.appendChild(span);
+      }
+      return card;
+    };
+
+    const populateTrendSignals = (signals, container) => {
+      container.innerHTML = '';
+      if (!signals.length) {
+        const empty = document.createElement('p');
+        empty.className = 'empty-state';
+        empty.textContent = 'Nessun segnale corrispondente ai filtri.';
+        container.appendChild(empty);
+        return;
+      }
+
+      for (const item of signals) {
+        const clone = document.getElementById('signalTemplate').content.firstElementChild.cloneNode(true);
+        clone.querySelector('[data-field="signal"]').textContent = item.signal;
+        clone.querySelector('[data-field="category"]').textContent = item.category;
+        const changeSpan = clone.querySelector('[data-field="change"]');
+        if (item.change) {
+          changeSpan.textContent = item.change;
+          changeSpan.classList.add(item.change.includes('↑') ? 'up' : item.change.includes('↓') ? 'down' : '');
+        } else {
+          changeSpan.remove();
+        }
+        const scoreElement = clone.querySelector('[data-field="score"]');
+        scoreElement.textContent = formatScore(item.score ?? '-');
+        const ratingBadge = clone.querySelector('[data-field="rating"]');
+        if (item.rating) {
+          ratingBadge.textContent = item.rating;
+        } else {
+          ratingBadge.remove();
+        }
+        container.appendChild(clone);
+      }
+    };
+
+    const buildCategoryDeck = (categories) => {
+      const deck = document.getElementById('categoryDeck');
+      deck.innerHTML = '';
+
+      for (const category of categories) {
+        const categoryCard = document.createElement('article');
+        categoryCard.className = 'category-card';
+
+        const headline = document.createElement('div');
+        headline.className = 'category-headline';
+        const title = document.createElement('h3');
+        title.textContent = category.name;
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = category.rating || 'N/A';
+        headline.append(title, badge, createScoreBadge(category.score));
+        categoryCard.appendChild(headline);
+
+        if (category.change) {
+          const change = document.createElement('span');
+          change.className = `badge ${category.change.includes('↑') ? 'up' : category.change.includes('↓') ? 'down' : ''}`;
+          change.textContent = `Trend ${category.change}`;
+          categoryCard.appendChild(change);
+        }
+
+        for (const capability of category.capabilities || []) {
+          const capabilityBlock = document.createElement('section');
+          capabilityBlock.className = 'capability';
+
+          const capHeader = document.createElement('div');
+          capHeader.style.display = 'flex';
+          capHeader.style.flexWrap = 'wrap';
+          capHeader.style.gap = '0.5rem';
+          capHeader.style.alignItems = 'baseline';
+          const capTitle = document.createElement('h4');
+          capTitle.textContent = capability.name;
+          capHeader.appendChild(capTitle);
+          capHeader.appendChild(createScoreBadge(capability.score));
+          capabilityBlock.appendChild(capHeader);
+
+          const scoredSignals = document.createElement('div');
+          scoredSignals.className = 'signals';
+          const scoredTitle = document.createElement('h5');
+          scoredTitle.textContent = 'Segnali con punteggio';
+          scoredTitle.style.color = 'var(--muted)';
+          scoredSignals.appendChild(scoredTitle);
+
+          if (!capability.scoredSignals?.length) {
+            const empty = document.createElement('p');
+            empty.className = 'empty-state';
+            empty.textContent = 'Nessun segnale con punteggio.';
+            scoredSignals.appendChild(empty);
+          } else {
+            for (const signal of capability.scoredSignals) {
+              const chip = document.createElement('div');
+              chip.className = 'signal-chip';
+              const signalName = document.createElement('strong');
+              signalName.textContent = signal.signal;
+              const value = document.createElement('span');
+              value.textContent = `Valore: ${signal.value}`;
+              const benchmark = document.createElement('span');
+              benchmark.textContent = `Benchmark: ${signal.benchmark}`;
+              chip.append(signalName, value, benchmark, createScoreBadge(signal.score));
+              if (signal.scoreChange) {
+                const change = document.createElement('span');
+                change.className = `badge ${signal.scoreChange.includes('↑') ? 'up' : signal.scoreChange.includes('↓') ? 'down' : ''}`;
+                change.textContent = signal.scoreChange;
+                chip.appendChild(change);
+              }
+              scoredSignals.appendChild(chip);
+            }
+          }
+
+          const informationalSignals = document.createElement('div');
+          informationalSignals.className = 'signals';
+          const infoTitle = document.createElement('h5');
+          infoTitle.textContent = 'Segnali informativi';
+          infoTitle.style.color = 'var(--muted)';
+          informationalSignals.appendChild(infoTitle);
+
+          if (!capability.informationalSignals?.length) {
+            const empty = document.createElement('p');
+            empty.className = 'empty-state';
+            empty.textContent = 'Nessun segnale informativo.';
+            informationalSignals.appendChild(empty);
+          } else {
+            for (const signal of capability.informationalSignals) {
+              const chip = document.createElement('div');
+              chip.className = 'signal-chip';
+              const signalName = document.createElement('strong');
+              signalName.textContent = signal.signal;
+              const value = document.createElement('span');
+              value.textContent = `Valore: ${signal.value}`;
+              const benchmark = document.createElement('span');
+              benchmark.textContent = `Benchmark: ${signal.benchmark}`;
+              chip.append(signalName, value, benchmark);
+              informationalSignals.appendChild(chip);
+            }
+          }
+
+          capabilityBlock.append(scoredSignals, informationalSignals);
+          categoryCard.appendChild(capabilityBlock);
+        }
+
+        deck.appendChild(categoryCard);
+      }
+    };
+
+    const applyTrendFilters = (data) => {
+      const searchTerm = document.getElementById('signalSearch').value.toLowerCase();
+      const trendFilter = document.getElementById('trendFilter').value;
+      const categoryFilter = document.getElementById('categoryFilter').value;
+
+      const matchFilters = (signal) => {
+        const matchesSearch = !searchTerm || signal.signal.toLowerCase().includes(searchTerm);
+        const matchesCategory = categoryFilter === 'all' || signal.category === categoryFilter;
+        return matchesSearch && matchesCategory;
+      };
+
+      const trendingUpFiltered = trendFilter !== 'down' ? data.trendingUp.filter(matchFilters) : [];
+      const trendingDownFiltered = trendFilter !== 'up' ? data.trendingDown.filter(matchFilters) : [];
+      const lowSignalsFiltered = data.lowSignals.filter(matchFilters);
+
+      populateTrendSignals(trendingUpFiltered, document.getElementById('trendingUp'));
+      populateTrendSignals(trendingDownFiltered, document.getElementById('trendingDown'));
+      populateTrendSignals(lowSignalsFiltered, document.getElementById('lowSignals'));
+    };
+
+    const extractLowSignals = (categories) => {
+      const lowSignals = [];
+      for (const category of categories) {
+        for (const capability of category.capabilities || []) {
+          for (const signal of capability.scoredSignals || []) {
+            if (signal.score !== undefined && signal.score < 50) {
+              lowSignals.push({
+                category: `${category.name} / ${capability.name}`,
+                signal: signal.signal,
+                score: signal.score,
+                change: signal.scoreChange,
+              });
+            }
+          }
+        }
+      }
+      return lowSignals;
+    };
+
+    const populateAccountCards = (account, tenant, overview) => {
+      const container = document.getElementById('accountCards');
+      container.innerHTML = '';
+
+      const cards = [
+        { title: 'Account', main: account.name, subtitle: account.id },
+        { title: 'Tenant', main: tenant.name, subtitle: tenant.id },
+        { title: 'Customer Success Score', main: overview.overallScore.score, subtitle: overview.overallScore.rating }
+      ];
+
+      for (const { title, main, subtitle } of cards) {
+        const card = document.createElement('article');
+        card.className = 'key-metric';
+        const h3 = document.createElement('h3');
+        h3.textContent = title;
+        const strong = document.createElement('strong');
+        strong.textContent = main;
+        card.append(h3, strong);
+        if (subtitle) {
+          const span = document.createElement('span');
+          span.className = 'badge';
+          span.textContent = subtitle;
+          card.appendChild(span);
+        }
+        container.appendChild(card);
+      }
+    };
+
+    const populateOverview = (overview) => {
+      const grid = document.getElementById('overviewGrid');
+      grid.innerHTML = '';
+      grid.appendChild(createOverviewCard('Prodotto adottato', overview.productAdoption.score, overview.productAdoption.change));
+      grid.appendChild(createOverviewCard('Expertise cliente', overview.customerExpertise.score, overview.customerExpertise.change));
+      grid.appendChild(createOverviewCard('Salute tecnica', overview.technicalHealth.score, overview.technicalHealth.change));
+      grid.appendChild(createOverviewCard('Distribuzione AOV', overview.aovDistributionScore));
+    };
+
+    fetch('other/sample-css-json.json')
+      .then((response) => response.json())
+      .then((data) => {
+        const overview = data.overview.tenantOverview;
+        populateAccountCards(data.account, data.tenant, overview);
+        populateOverview({
+          productAdoption: overview.productAdoption,
+          customerExpertise: overview.customerExpertise,
+          technicalHealth: overview.technicalHealth,
+          aovDistributionScore: data.overview.aovDistributionScore
+        });
+
+        const categories = data.overview.categories || [];
+        buildCategoryDeck(categories);
+
+        const trendData = {
+          trendingUp: data.overview.trendingSignals?.trendingUp || [],
+          trendingDown: data.overview.trendingSignals?.trendingDown || [],
+          lowSignals: extractLowSignals(categories)
+        };
+
+        const categoryFilter = document.getElementById('categoryFilter');
+        const categorySet = new Set();
+        trendData.trendingUp.concat(trendData.trendingDown).forEach((item) => categorySet.add(item.category));
+        trendData.lowSignals.forEach((item) => categorySet.add(item.category.split(' / ')[0]));
+        for (const category of Array.from(categorySet).sort()) {
+          const option = document.createElement('option');
+          option.value = category;
+          option.textContent = category;
+          categoryFilter.appendChild(option);
+        }
+
+        applyTrendFilters(trendData);
+
+        document.getElementById('signalSearch').addEventListener('input', () => applyTrendFilters(trendData));
+        document.getElementById('trendFilter').addEventListener('change', () => applyTrendFilters(trendData));
+        document.getElementById('categoryFilter').addEventListener('change', () => applyTrendFilters(trendData));
+      })
+      .catch((error) => {
+        console.error('Errore durante il caricamento del CSS JSON', error);
+        document.querySelector('main').innerHTML = '<p class="empty-state">Impossibile caricare i dati del Customer Success Score. Verifica il file JSON.</p>';
+      });
+  </script>
+</body>
+</html>
