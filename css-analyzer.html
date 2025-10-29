@@ -261,6 +261,49 @@
       color: var(--text);
     }
 
+    .signal-definition {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+      line-height: 1.4;
+    }
+
+    .signal-category {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .signal-metrics {
+      display: grid;
+      gap: 0.65rem;
+      margin-top: 0.5rem;
+    }
+
+    .score-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .metric-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.18);
+      color: var(--text);
+      font-size: 0.8rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .metric-pill strong {
+      font-size: 0.85rem;
+      color: inherit;
+    }
+
     .category-deck {
       display: grid;
       gap: 1.5rem;
@@ -281,6 +324,13 @@
       gap: 0.75rem;
       justify-content: space-between;
       align-items: center;
+    }
+
+    .subcategory-heading {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
     }
 
     .capability {
@@ -381,7 +431,7 @@
     <div>
       <h1>Customer Success Score Analyzer</h1>
       <p>
-        Explore key metrics, trends, and scored signals for your customer success score. Upload a JSON export, set the reference month,
+        Explore key metrics, trends, and scored signals for your customer success score. Upload a CSV export, pick a snapshot date,
         and use the interactive filters to uncover opportunities and risks faster.
       </p>
     </div>
@@ -393,32 +443,20 @@
       <div class="data-loader">
         <div class="form-grid">
           <div class="form-group">
-            <label for="referenceMonth">Reference month</label>
+            <label for="referenceMonth">Snapshot date</label>
             <select id="referenceMonth">
-              <option value="" disabled selected>-- Select reference month --</option>
-              <option value="January">January</option>
-              <option value="February">February</option>
-              <option value="March">March</option>
-              <option value="April">April</option>
-              <option value="May">May</option>
-              <option value="June">June</option>
-              <option value="July">July</option>
-              <option value="August">August</option>
-              <option value="September">September</option>
-              <option value="October">October</option>
-              <option value="November">November</option>
-              <option value="December">December</option>
+              <option value="" disabled selected>Upload a CSV to populate dates</option>
             </select>
           </div>
           <div class="form-group">
-            <label for="scoreUpload">Upload score JSON</label>
-            <input type="file" id="scoreUpload" accept=".json,application/json">
+            <label for="scoreUpload">Upload Customer Success Score CSV</label>
+            <input type="file" id="scoreUpload" accept=".csv,text/csv">
           </div>
         </div>
         <button class="load-button" type="button" id="loadScoreBtn" disabled>Load score</button>
         <p class="helper-text">
-          Upload a JSON file exported from Customer Success Score. The file is not sent anywhere; parsing happens in your browser. The
-          selected reference month will be displayed alongside the loaded score, similar to the License Visualizer tool.
+          Upload a CSV export from Customer Success Score. The file is not sent anywhere; parsing happens in your browser. The
+          selected snapshot date determines which records are displayed across the dashboard.
         </p>
       </div>
     </section>
@@ -463,7 +501,7 @@
 
     <section class="panel" id="all-scored-signals">
       <h2>All scored signals</h2>
-      <p class="helper-text">Every scored signal from the JSON file is listed below and respects the filters above.</p>
+      <p class="helper-text">Every scored signal from the CSV file is listed below and respects the filters above.</p>
       <div class="signal-list" id="allSignalsList"></div>
     </section>
 
@@ -476,25 +514,51 @@
   <template id="signalTemplate">
     <article class="signal-item">
       <header>
-        <h4 data-field="signal"></h4>
+        <div style="display:flex; flex-direction:column; gap:0.25rem;">
+          <h4 data-field="signal"></h4>
+          <p class="signal-definition" data-field="definition"></p>
+        </div>
         <span class="badge" data-field="change"></span>
       </header>
-      <p data-field="category" style="color: var(--muted);"></p>
-      <div style="display:flex; align-items:center; gap:0.75rem; margin-top:0.25rem;">
-        <strong data-field="score"></strong>
-        <span class="badge" data-field="rating"></span>
+      <p class="signal-category" data-field="category"></p>
+      <div class="signal-metrics">
+        <div class="score-group">
+          <strong data-field="score"></strong>
+          <span class="badge" data-field="rating"></span>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+          <span class="metric-pill" data-field="value"></span>
+          <span class="metric-pill" data-field="benchmark"></span>
+          <span class="metric-pill" data-field="mom"></span>
+          <span class="metric-pill" data-field="qoq"></span>
+        </div>
       </div>
     </article>
   </template>
 
   <script>
     const scoreClass = (score) => {
-      if (score >= 80) return 'score-high';
-      if (score >= 50) return 'score-medium';
-      return 'score-low';
+      if (Number.isFinite(score)) {
+        if (score >= 80) return 'score-high';
+        if (score >= 50) return 'score-medium';
+        return 'score-low';
+      }
+      return 'score-medium';
     };
 
-    const formatScore = (score) => (typeof score === 'number' ? `${score}` : score ?? '-');
+    const formatScore = (score, fallback) => {
+      if (Number.isFinite(score)) {
+        const options = Number.isInteger(score)
+          ? { maximumFractionDigits: 0 }
+          : { maximumFractionDigits: 2 };
+        return new Intl.NumberFormat('en-US', options).format(score);
+      }
+      if (fallback !== undefined && fallback !== null && `${fallback}`.trim()) {
+        return `${fallback}`.trim();
+      }
+      if (typeof score === 'string' && score.trim()) return score.trim();
+      return '-';
+    };
 
     const createScoreBadge = (score) => {
       const span = document.createElement('span');
@@ -503,13 +567,13 @@
       return span;
     };
 
-    const createOverviewCard = (title, score, extra) => {
+    const createOverviewCard = (title, value, extra) => {
       const card = document.createElement('article');
       card.className = 'overview-card';
       const h3 = document.createElement('h3');
       h3.textContent = title;
       const strong = document.createElement('strong');
-      strong.textContent = formatScore(score);
+      strong.textContent = formatScore(value);
       card.append(h3, strong);
       if (extra) {
         const span = document.createElement('span');
@@ -518,6 +582,404 @@
         card.appendChild(span);
       }
       return card;
+    };
+
+    const formatNumber = (value, options = {}) => {
+      if (!Number.isFinite(value)) return '';
+      const formatter = new Intl.NumberFormat('en-US', {
+        maximumFractionDigits: 2,
+        ...options,
+      });
+      return formatter.format(value);
+    };
+
+    const parseNumber = (value) => {
+      if (value === null || value === undefined) return null;
+      const str = String(value).trim();
+      if (!str) return null;
+      const sanitized = str.replace(/\s|%/g, '');
+      const match = sanitized.match(/[-+]?\d+[.,]?\d*(?:[.,]\d+)?/);
+      if (!match) return null;
+      let numeric = match[0];
+      const lastComma = numeric.lastIndexOf(',');
+      const lastDot = numeric.lastIndexOf('.');
+      if (lastComma > lastDot) {
+        numeric = numeric.replace(/\./g, '').replace(',', '.');
+      } else if (lastDot > lastComma) {
+        numeric = numeric.replace(/,/g, '');
+      } else {
+        numeric = numeric.replace(/[.,]/g, '');
+      }
+      const parsed = Number(numeric);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const ratingFromScore = (score) => {
+      if (!Number.isFinite(score)) return '';
+      if (score >= 80) return 'Excellent';
+      if (score >= 50) return 'On track';
+      return 'Needs attention';
+    };
+
+    const formatSigned = (value) => {
+      if (!Number.isFinite(value)) return 'N/A';
+      if (value === 0) return '0';
+      const formatted = formatNumber(Math.abs(value));
+      return `${value > 0 ? '+' : '-'}${formatted}`;
+    };
+
+    const changePiece = (value, label) => {
+      if (!Number.isFinite(value)) return null;
+      const formatted = formatNumber(Math.abs(value));
+      const direction = value > 0 ? '↑' : value < 0 ? '↓' : '→';
+      return `${direction} ${formatted} ${label}`;
+    };
+
+    const buildChangeLabel = (mom, qoq) => {
+      return [changePiece(mom, 'MoM'), changePiece(qoq, 'QoQ')]
+        .filter(Boolean)
+        .join(' • ');
+    };
+
+    const evaluateBenchmark = (valueNumeric, benchmarkRaw) => {
+      if (!Number.isFinite(valueNumeric)) return null;
+      if (!benchmarkRaw) return null;
+      const cleaned = benchmarkRaw.replace(/\s/g, '');
+      const match = cleaned.match(/(<=|>=|<|>|=)\s*([-+]?\d+[.,]?\d*(?:[.,]\d+)?)/);
+      if (!match) return null;
+      const operator = match[1];
+      const threshold = parseNumber(match[2]);
+      if (!Number.isFinite(threshold)) return null;
+      switch (operator) {
+        case '<=':
+          return valueNumeric <= threshold ? 'met' : 'missed';
+        case '>=':
+          return valueNumeric >= threshold ? 'met' : 'missed';
+        case '<':
+          return valueNumeric < threshold ? 'met' : 'missed';
+        case '>':
+          return valueNumeric > threshold ? 'met' : 'missed';
+        case '=':
+          return valueNumeric === threshold ? 'met' : 'missed';
+        default:
+          return null;
+      }
+    };
+
+    const splitCSVLine = (line) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i += 1) {
+        const char = line[i];
+        if (char === '"') {
+          const next = line[i + 1];
+          if (inQuotes && next === '"') {
+            current += '"';
+            i += 1;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
+    };
+
+    const parseCSV = (text) => {
+      const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      const lines = [];
+      let buffer = '';
+      let inQuotes = false;
+      for (let i = 0; i < normalized.length; i += 1) {
+        const char = normalized[i];
+        if (char === '"') {
+          const next = normalized[i + 1];
+          if (inQuotes && next === '"') {
+            buffer += '"';
+            i += 1;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === '\n' && !inQuotes) {
+          lines.push(buffer);
+          buffer = '';
+        } else {
+          buffer += char;
+        }
+      }
+      if (buffer) {
+        lines.push(buffer);
+      }
+      const filtered = lines.filter((line) => line.trim().length);
+      if (!filtered.length) return [];
+      const headerCells = splitCSVLine(filtered.shift());
+      if (!headerCells.length) return [];
+      headerCells[0] = headerCells[0].replace(/^\uFEFF/, '');
+      const headers = headerCells.map((cell) => cell.trim());
+      const rows = [];
+      for (const line of filtered) {
+        const cells = splitCSVLine(line).map((cell) => cell.trim());
+        const row = {};
+        headers.forEach((header, index) => {
+          row[header] = cells[index] ?? '';
+        });
+        const hasData = Object.values(row).some((value) => value && `${value}`.trim().length);
+        if (hasData) {
+          rows.push(row);
+        }
+      }
+      return rows;
+    };
+
+    const COLUMN_MAP = {
+      'Snapshot Date': 'snapshotDate',
+      'Company Name': 'companyName',
+      'Company ID': 'companyId',
+      'Account Name': 'accountName',
+      'Account ID': 'accountId',
+      'Tenant Type': 'tenantType',
+      'Tenant ID': 'tenantId',
+      'Account Local Name': 'accountLocalName',
+      'Success Plan': 'successPlan',
+      'Category Name': 'categoryName',
+      'Subcategory Name': 'subcategoryName',
+      'Capability Name': 'capabilityName',
+      'Signal Name': 'signalName',
+      Definition: 'definition',
+      Score: 'scoreRaw',
+      Value: 'value',
+      'MoM Change': 'moMChangeRaw',
+      'QoQ Change': 'qoQChangeRaw',
+      Benchmark: 'benchmark',
+    };
+
+    const normalizeRow = (row) => {
+      const normalized = {};
+      for (const [column, key] of Object.entries(COLUMN_MAP)) {
+        const value = row[column] ?? row[column.replace(/\s+/g, ' ')] ?? '';
+        normalized[key] = typeof value === 'string' ? value.trim() : value;
+      }
+      normalized.score = parseNumber(normalized.scoreRaw);
+      normalized.valueNumeric = parseNumber(normalized.value);
+      normalized.moMChange = parseNumber(normalized.moMChangeRaw);
+      normalized.qoQChange = parseNumber(normalized.qoQChangeRaw);
+      return normalized;
+    };
+
+    const transformRow = (row) => {
+      const processed = { ...row };
+      processed.rating = ratingFromScore(row.score);
+      processed.categoryDescription = [row.categoryName, row.subcategoryName, row.capabilityName]
+        .filter(Boolean)
+        .join(' • ');
+      processed.changeText = buildChangeLabel(row.moMChange, row.qoQChange);
+      processed.changeDirection = row.moMChange > 0 || row.qoQChange > 0 ? 'up' : row.moMChange < 0 || row.qoQChange < 0 ? 'down' : 'flat';
+      processed.momText = Number.isFinite(row.moMChange)
+        ? `${row.moMChange > 0 ? '+' : row.moMChange < 0 ? '-' : ''}${formatNumber(Math.abs(row.moMChange))}`
+        : '';
+      processed.qoqText = Number.isFinite(row.qoQChange)
+        ? `${row.qoQChange > 0 ? '+' : row.qoQChange < 0 ? '-' : ''}${formatNumber(Math.abs(row.qoQChange))}`
+        : '';
+      processed.valueDisplay = row.value && row.value.length ? row.value : Number.isFinite(row.valueNumeric) ? formatNumber(row.valueNumeric) : '';
+      const benchmarkStatus = evaluateBenchmark(row.valueNumeric, row.benchmark);
+      processed.benchmarkStatus = benchmarkStatus;
+      processed.benchmarkDisplay = row.benchmark
+        ? `${row.benchmark}${benchmarkStatus ? ` • ${benchmarkStatus}` : ''}`
+        : '';
+      return processed;
+    };
+
+    const average = (values) => {
+      const valid = values.filter((value) => Number.isFinite(value));
+      if (!valid.length) return null;
+      return valid.reduce((sum, value) => sum + value, 0) / valid.length;
+    };
+
+    const computeSummary = (rows) => {
+      const categories = new Set(rows.map((row) => row.categoryName).filter(Boolean));
+      const capabilities = new Set(
+        rows.map((row) => `${row.categoryName || '—'}::${row.capabilityName || row.subcategoryName || '—'}`)
+      );
+      const benchmarkEvaluated = rows.filter((row) => row.benchmarkStatus);
+      const met = benchmarkEvaluated.filter((row) => row.benchmarkStatus === 'met').length;
+      const missed = benchmarkEvaluated.filter((row) => row.benchmarkStatus === 'missed').length;
+      return {
+        averageScore: average(rows.map((row) => row.score)),
+        totalSignals: rows.length,
+        uniqueCategories: categories.size,
+        uniqueCapabilities: capabilities.size,
+        averageValue: average(rows.map((row) => row.valueNumeric)),
+        averageMoM: average(rows.map((row) => row.moMChange)),
+        averageQoQ: average(rows.map((row) => row.qoQChange)),
+        benchmarkEvaluated: {
+          total: benchmarkEvaluated.length,
+          met,
+          missed,
+        },
+      };
+    };
+
+    const buildCategoryHierarchy = (rows) => {
+      const categoryMap = new Map();
+      for (const row of rows) {
+        const categoryName = row.categoryName || 'Uncategorized';
+        const subcategoryName = row.subcategoryName || 'General';
+        const capabilityName = row.capabilityName || 'General';
+
+        if (!categoryMap.has(categoryName)) {
+          categoryMap.set(categoryName, {
+            name: categoryName,
+            scores: [],
+            moms: [],
+            qoqs: [],
+            subcategories: new Map(),
+          });
+        }
+
+        const category = categoryMap.get(categoryName);
+        if (Number.isFinite(row.score)) category.scores.push(row.score);
+        if (Number.isFinite(row.moMChange)) category.moms.push(row.moMChange);
+        if (Number.isFinite(row.qoQChange)) category.qoqs.push(row.qoQChange);
+
+        if (!category.subcategories.has(subcategoryName)) {
+          category.subcategories.set(subcategoryName, new Map());
+        }
+
+        const subcategory = category.subcategories.get(subcategoryName);
+        if (!subcategory.has(capabilityName)) {
+          subcategory.set(capabilityName, {
+            name: capabilityName,
+            subcategory: subcategoryName,
+            scores: [],
+            moms: [],
+            qoqs: [],
+            signals: [],
+          });
+        }
+
+        const capability = subcategory.get(capabilityName);
+        capability.signals.push(row);
+        if (Number.isFinite(row.score)) capability.scores.push(row.score);
+        if (Number.isFinite(row.moMChange)) capability.moms.push(row.moMChange);
+        if (Number.isFinite(row.qoQChange)) capability.qoqs.push(row.qoQChange);
+      }
+
+      return Array.from(categoryMap.values())
+        .map((category) => {
+          const capabilities = [];
+          for (const subcategory of category.subcategories.values()) {
+            for (const capability of subcategory.values()) {
+              const score = average(capability.scores);
+              const mom = average(capability.moms);
+              const qoq = average(capability.qoqs);
+              capabilities.push({
+                name: capability.name,
+                subcategory: capability.subcategory,
+                score,
+                rating: ratingFromScore(score),
+                changeText: buildChangeLabel(mom, qoq),
+                momChange: mom,
+                qoQChange: qoq,
+                signals: capability.signals,
+              });
+            }
+          }
+
+          const score = average(category.scores);
+          const mom = average(category.moms);
+          const qoq = average(category.qoqs);
+
+          return {
+            name: category.name,
+            score,
+            rating: ratingFromScore(score),
+            changeText: buildChangeLabel(mom, qoq),
+            momChange: mom,
+            qoQChange: qoq,
+            capabilities: capabilities.sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity)),
+          };
+        })
+        .sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity));
+    };
+
+    const createInfoCard = (title, main, subtitle) => {
+      const card = document.createElement('article');
+      card.className = 'key-metric';
+      const h3 = document.createElement('h3');
+      h3.textContent = title;
+      const strong = document.createElement('strong');
+      strong.textContent = main;
+      card.append(h3, strong);
+      if (subtitle) {
+        const span = document.createElement('span');
+        span.className = 'badge';
+        span.textContent = subtitle;
+        card.appendChild(span);
+      }
+      return card;
+    };
+
+    const populateAccountOverview = (info, snapshotDate) => {
+      const container = document.getElementById('accountCards');
+      container.innerHTML = '';
+      const cards = [
+        createInfoCard('Company', info.companyName || 'N/A', info.companyId ? `ID: ${info.companyId}` : ''),
+        createInfoCard('Account', info.accountName || 'N/A', info.accountId ? `ID: ${info.accountId}` : ''),
+        createInfoCard('Tenant type', info.tenantType || 'N/A', info.tenantId ? `ID: ${info.tenantId}` : ''),
+        createInfoCard('Account local name', info.accountLocalName || 'N/A'),
+        createInfoCard('Success plan', info.successPlan || 'N/A'),
+        createInfoCard('Snapshot date', snapshotDate || 'N/A'),
+      ];
+      cards.forEach((card) => container.appendChild(card));
+    };
+
+    const populateSummaryCards = (summary) => {
+      const grid = document.getElementById('overviewGrid');
+      grid.innerHTML = '';
+      grid.appendChild(
+        createOverviewCard(
+          'Average score',
+          summary.averageScore,
+          ratingFromScore(summary.averageScore) || 'No scored signals'
+        )
+      );
+      grid.appendChild(
+        createOverviewCard(
+          'Signals in snapshot',
+          summary.totalSignals,
+          `${summary.uniqueCategories} categories • ${summary.uniqueCapabilities} capabilities`
+        )
+      );
+      grid.appendChild(
+        createOverviewCard(
+          'Average MoM change',
+          formatSigned(summary.averageMoM),
+          summary.averageQoQ === null ? '' : `Avg QoQ ${formatSigned(summary.averageQoQ)}`
+        )
+      );
+      const benchmarkInfo = summary.benchmarkEvaluated.total
+        ? `${summary.benchmarkEvaluated.met}/${summary.benchmarkEvaluated.total} met`
+        : 'No benchmark rules';
+      const benchmarkExtra = summary.benchmarkEvaluated.missed
+        ? `${summary.benchmarkEvaluated.missed} missed`
+        : summary.benchmarkEvaluated.total
+          ? 'All met'
+          : '';
+      grid.appendChild(createOverviewCard('Benchmark adherence', benchmarkInfo, benchmarkExtra));
+    };
+
+    const createMetricPill = (label, value) => {
+      if (value === null || value === undefined || `${value}`.trim() === '') return null;
+      const pill = document.createElement('span');
+      pill.className = 'metric-pill';
+      pill.innerHTML = `<strong>${label}</strong> ${value}`;
+      return pill;
     };
 
     const populateSignalList = (signals, container) => {
@@ -532,29 +994,78 @@
 
       for (const item of signals) {
         const clone = document.getElementById('signalTemplate').content.firstElementChild.cloneNode(true);
-        clone.querySelector('[data-field="signal"]').textContent = item.signal;
-        clone.querySelector('[data-field="category"]').textContent = item.categoryDescription || item.category || '';
+        clone.querySelector('[data-field="signal"]').textContent = item.signalName;
+        const definitionElement = clone.querySelector('[data-field="definition"]');
+        if (item.definition) {
+          definitionElement.textContent = item.definition;
+        } else {
+          definitionElement.remove();
+        }
+        const categoryElement = clone.querySelector('[data-field="category"]');
+        categoryElement.textContent = item.categoryDescription || item.categoryName || '';
+
         const changeSpan = clone.querySelector('[data-field="change"]');
-        if (item.change) {
-          changeSpan.textContent = item.change;
-          changeSpan.classList.add(item.change.includes('↑') ? 'up' : item.change.includes('↓') ? 'down' : '');
+        if (item.changeText) {
+          changeSpan.textContent = item.changeText;
+          if (item.moMChange > 0 || item.qoQChange > 0) {
+            changeSpan.classList.add('up');
+          } else if (item.moMChange < 0 || item.qoQChange < 0) {
+            changeSpan.classList.add('down');
+          }
         } else {
           changeSpan.remove();
         }
-        const scoreElement = clone.querySelector('[data-field="score"]');
-        scoreElement.textContent = formatScore(item.score ?? '-');
+
+        clone.querySelector('[data-field="score"]').textContent = formatScore(item.score, item.scoreRaw);
+
         const ratingBadge = clone.querySelector('[data-field="rating"]');
         if (item.rating) {
           ratingBadge.textContent = item.rating;
         } else {
           ratingBadge.remove();
         }
+
+        const valuePill = clone.querySelector('[data-field="value"]');
+        if (item.valueDisplay) {
+          valuePill.innerHTML = `<strong>Value</strong> ${item.valueDisplay}`;
+        } else {
+          valuePill.remove();
+        }
+
+        const benchmarkPill = clone.querySelector('[data-field="benchmark"]');
+        if (item.benchmarkDisplay) {
+          benchmarkPill.innerHTML = `<strong>Benchmark</strong> ${item.benchmarkDisplay}`;
+        } else if (item.benchmark) {
+          benchmarkPill.innerHTML = `<strong>Benchmark</strong> ${item.benchmark}`;
+        } else {
+          benchmarkPill.remove();
+        }
+
+        const momPill = clone.querySelector('[data-field="mom"]');
+        if (item.momText) {
+          momPill.innerHTML = `<strong>MoM</strong> ${item.momText}`;
+        } else {
+          momPill.remove();
+        }
+
+        const qoqPill = clone.querySelector('[data-field="qoq"]');
+        if (item.qoqText) {
+          qoqPill.innerHTML = `<strong>QoQ</strong> ${item.qoqText}`;
+        } else {
+          qoqPill.remove();
+        }
+
         container.appendChild(clone);
       }
     };
 
     const buildCategoryDeck = (categories) => {
       const deck = document.getElementById('categoryDeck');
+      if (!categories.length) {
+        deck.innerHTML = '<p class="empty-state">No category data available for the selected snapshot.</p>';
+        return;
+      }
+
       deck.innerHTML = '';
 
       for (const category of categories) {
@@ -571,219 +1082,168 @@
         headline.append(title, badge, createScoreBadge(category.score));
         categoryCard.appendChild(headline);
 
-        if (category.change) {
+        if (category.changeText) {
           const change = document.createElement('span');
-          change.className = `badge ${category.change.includes('↑') ? 'up' : category.change.includes('↓') ? 'down' : ''}`;
-          change.textContent = `Trend ${category.change}`;
+          change.className = `badge ${category.momChange > 0 ? 'up' : category.momChange < 0 ? 'down' : ''}`;
+          change.textContent = category.changeText;
           categoryCard.appendChild(change);
         }
 
+        const subcategoryGroups = new Map();
         for (const capability of category.capabilities || []) {
-          const capabilityBlock = document.createElement('section');
-          capabilityBlock.className = 'capability';
-          const heading = document.createElement('div');
-          heading.style.display = 'flex';
-          heading.style.justifyContent = 'space-between';
-          heading.style.alignItems = 'center';
-          heading.style.gap = '0.75rem';
-
-          const name = document.createElement('h4');
-          name.textContent = capability.name;
-          name.style.fontSize = '1.1rem';
-          name.style.color = 'var(--text)';
-          const capabilityBadge = capability.rating ? document.createElement('span') : null;
-          if (capabilityBadge) {
-            capabilityBadge.className = 'badge';
-            capabilityBadge.textContent = capability.rating;
+          const key = capability.subcategory || 'General';
+          if (!subcategoryGroups.has(key)) {
+            subcategoryGroups.set(key, []);
           }
-          heading.appendChild(name);
-          if (capabilityBadge) heading.appendChild(capabilityBadge);
-          heading.appendChild(createScoreBadge(capability.score));
-          capabilityBlock.appendChild(heading);
+          subcategoryGroups.get(key).push(capability);
+        }
 
-          if (capability.scoreChange) {
-            const change = document.createElement('span');
-            change.className = `badge ${capability.scoreChange.includes('↑') ? 'up' : capability.scoreChange.includes('↓') ? 'down' : ''}`;
-            change.textContent = `Score change ${capability.scoreChange}`;
-            capabilityBlock.appendChild(change);
-          }
+        for (const [subcategoryName, capabilities] of subcategoryGroups) {
+          const subHeading = document.createElement('h4');
+          subHeading.className = 'subcategory-heading';
+          subHeading.textContent = subcategoryName;
+          categoryCard.appendChild(subHeading);
 
-          if ((capability.scoredSignals || []).length) {
+          for (const capability of capabilities) {
+            const capabilityBlock = document.createElement('section');
+            capabilityBlock.className = 'capability';
+
+            const heading = document.createElement('div');
+            heading.style.display = 'flex';
+            heading.style.justifyContent = 'space-between';
+            heading.style.alignItems = 'center';
+            heading.style.flexWrap = 'wrap';
+            heading.style.gap = '0.75rem';
+
+            const name = document.createElement('h4');
+            name.textContent = capability.name;
+            name.style.fontSize = '1.1rem';
+            name.style.color = 'var(--text)';
+            heading.appendChild(name);
+
+            if (capability.rating) {
+              const capabilityBadge = document.createElement('span');
+              capabilityBadge.className = 'badge';
+              capabilityBadge.textContent = capability.rating;
+              heading.appendChild(capabilityBadge);
+            }
+
+            heading.appendChild(createScoreBadge(capability.score));
+
+            if (capability.changeText) {
+              const change = document.createElement('span');
+              change.className = `badge ${capability.momChange > 0 ? 'up' : capability.momChange < 0 ? 'down' : ''}`;
+              change.textContent = capability.changeText;
+              heading.appendChild(change);
+            }
+
+            capabilityBlock.appendChild(heading);
+
             const signals = document.createElement('div');
             signals.className = 'signals';
-            for (const signal of capability.scoredSignals) {
+            for (const signal of capability.signals || []) {
               const chip = document.createElement('div');
               chip.className = 'signal-chip';
-              const signalName = document.createElement('strong');
-              signalName.textContent = signal.signal;
-              const signalScore = document.createElement('span');
-              signalScore.textContent = `Score: ${formatScore(signal.score)}${signal.scoreChange ? ` • Change ${signal.scoreChange}` : ''}`;
-              chip.append(signalName, signalScore);
+
+              const title = document.createElement('strong');
+              title.textContent = signal.signalName;
+              chip.appendChild(title);
+
+              if (signal.definition) {
+                const definition = document.createElement('span');
+                definition.textContent = signal.definition;
+                chip.appendChild(definition);
+              }
+
+              const metrics = document.createElement('div');
+              metrics.style.display = 'flex';
+              metrics.style.flexWrap = 'wrap';
+              metrics.style.gap = '0.5rem';
+              metrics.style.marginTop = '0.35rem';
+
+              const scorePill = createMetricPill('Score', formatScore(signal.score, signal.scoreRaw));
+              if (scorePill) metrics.appendChild(scorePill);
+
+              const ratingPill = createMetricPill('Rating', signal.rating);
+              if (ratingPill) metrics.appendChild(ratingPill);
+
+              const valuePill = createMetricPill('Value', signal.valueDisplay);
+              if (valuePill) metrics.appendChild(valuePill);
+
+              const benchmarkPill = createMetricPill('Benchmark', signal.benchmarkDisplay || signal.benchmark);
+              if (benchmarkPill) metrics.appendChild(benchmarkPill);
+
+              const momPill = createMetricPill('MoM', signal.momText);
+              if (momPill) metrics.appendChild(momPill);
+
+              const qoqPill = createMetricPill('QoQ', signal.qoqText);
+              if (qoqPill) metrics.appendChild(qoqPill);
+
+              chip.appendChild(metrics);
               signals.appendChild(chip);
             }
             capabilityBlock.appendChild(signals);
+            categoryCard.appendChild(capabilityBlock);
           }
-
-          categoryCard.appendChild(capabilityBlock);
         }
 
         deck.appendChild(categoryCard);
       }
     };
 
-    const extractLowSignals = (categories) => {
-      const lowSignals = [];
-      for (const category of categories) {
-        for (const capability of category.capabilities || []) {
-          for (const signal of capability.scoredSignals || []) {
-            if (signal.score !== undefined && signal.score < 50) {
-              lowSignals.push({
-                category: `${category.name} / ${capability.name}`,
-                categoryDescription: `${category.name} • ${capability.name}`,
-                signal: signal.signal,
-                score: signal.score,
-                change: signal.scoreChange,
-                rating: signal.rating,
-              });
-            }
-          }
-        }
-      }
-      return lowSignals;
-    };
-
-    const buildAllScoredSignals = (categories, trendingUp = [], trendingDown = []) => {
-      const signalMap = new Map();
-
-      const upsertSignal = (entry) => {
-        if (!entry?.signal) return;
-        const categoryKey = entry.category ?? entry.categoryDescription ?? '';
-        const key = `${categoryKey.toLowerCase()}::${entry.signal.toLowerCase()}`;
-        const existing = signalMap.get(key) || {};
-        signalMap.set(key, {
-          category: existing.category || entry.category || entry.categoryDescription || '',
-          categoryDescription: existing.categoryDescription || entry.categoryDescription || entry.category || '',
-          signal: existing.signal || entry.signal,
-          score: existing.score ?? entry.score,
-          change: existing.change ?? entry.change,
-          rating: existing.rating ?? entry.rating,
-        });
-      };
-
-      for (const category of categories) {
-        for (const capability of category.capabilities || []) {
-          for (const signal of capability.scoredSignals || []) {
-            upsertSignal({
-              category: category.name,
-              categoryDescription: `${category.name} • ${capability.name}`,
-              signal: signal.signal,
-              score: signal.score,
-              change: signal.scoreChange,
-              rating: signal.rating,
-            });
-          }
-        }
-      }
-
-      const appendTrending = (list) => {
-        for (const signal of list) {
-          upsertSignal({
-            category: signal.category,
-            categoryDescription: signal.category,
-            signal: signal.signal,
-            score: signal.score,
-            change: signal.change,
-            rating: signal.rating,
-          });
-        }
-      };
-
-      appendTrending(trendingUp);
-      appendTrending(trendingDown);
-
-      return Array.from(signalMap.values());
-    };
-
-    const populateAccountCards = (account, tenant, overview, referenceMonth) => {
-      const container = document.getElementById('accountCards');
-      container.innerHTML = '';
-
-      const cards = [
-        { title: 'Account', main: account?.name ?? 'N/A', subtitle: account?.id },
-        { title: 'Tenant', main: tenant?.name ?? 'N/A', subtitle: tenant?.id },
-        { title: 'Customer Success Score', main: overview?.overallScore?.score ?? 'N/A', subtitle: overview?.overallScore?.rating }
-      ];
-
-      if (referenceMonth) {
-        cards.push({ title: 'Reference Month', main: referenceMonth });
-      }
-
-      for (const { title, main, subtitle } of cards) {
-        const card = document.createElement('article');
-        card.className = 'key-metric';
-        const h3 = document.createElement('h3');
-        h3.textContent = title;
-        const strong = document.createElement('strong');
-        strong.textContent = formatScore(main);
-        card.append(h3, strong);
-        if (subtitle) {
-          const span = document.createElement('span');
-          span.className = 'badge';
-          span.textContent = subtitle;
-          card.appendChild(span);
-        }
-        container.appendChild(card);
-      }
-    };
-
-    const populateOverview = (overview) => {
-      const grid = document.getElementById('overviewGrid');
-      grid.innerHTML = '';
-      grid.appendChild(createOverviewCard('Product adoption', overview.productAdoption?.score, overview.productAdoption?.change));
-      grid.appendChild(createOverviewCard('Customer expertise', overview.customerExpertise?.score, overview.customerExpertise?.change));
-      grid.appendChild(createOverviewCard('Technical health', overview.technicalHealth?.score, overview.technicalHealth?.change));
-    };
-
-    const selectedMonthLabel = document.getElementById('selectedMonth');
-    const referenceMonthSelect = document.getElementById('referenceMonth');
-    const scoreUploadInput = document.getElementById('scoreUpload');
-    const loadScoreBtn = document.getElementById('loadScoreBtn');
-
-    let currentTrendData = null;
-    let allScoredSignals = [];
-
-    const categoryFilter = document.getElementById('categoryFilter');
-
-    const resetDashboard = () => {
-      currentTrendData = null;
-      allScoredSignals = [];
-      selectedMonthLabel.textContent = 'Not selected';
-      document.getElementById('accountCards').innerHTML = '';
-      document.getElementById('overviewGrid').innerHTML = '';
-      document.getElementById('categoryDeck').innerHTML = '<p class="empty-state">Upload a JSON file to view category insights.</p>';
-      const emptyTrendMessage = '<p class="empty-state">Upload a JSON file to begin the analysis.</p>';
-      document.getElementById('trendingUp').innerHTML = emptyTrendMessage;
-      document.getElementById('trendingDown').innerHTML = emptyTrendMessage;
-      document.getElementById('lowSignals').innerHTML = emptyTrendMessage;
-      document.getElementById('allSignalsList').innerHTML = '<p class="empty-state">Upload a JSON file to list all scored signals.</p>';
-      categoryFilter.innerHTML = '<option value="all">Category: all</option>';
-      categoryFilter.value = 'all';
-      referenceMonthSelect.selectedIndex = 0;
-      scoreUploadInput.value = '';
-      loadScoreBtn.disabled = true;
-    };
-
     const populateCategoryOptions = (categories) => {
-      const uniqueCategories = Array.from(new Set(categories)).sort();
+      const uniqueCategories = Array.from(new Set(categories)).filter(Boolean).sort();
       categoryFilter.innerHTML = '<option value="all">Category: all</option>';
-      categoryFilter.value = 'all';
       for (const name of uniqueCategories) {
         const option = document.createElement('option');
         option.value = name;
         option.textContent = name;
         categoryFilter.appendChild(option);
       }
+      categoryFilter.value = 'all';
     };
+
+    const clearVisualizations = (message) => {
+      currentTrendData = null;
+      allScoredSignals = [];
+      document.getElementById('accountCards').innerHTML = '';
+      document.getElementById('overviewGrid').innerHTML = '';
+      document.getElementById('categoryDeck').innerHTML = `<p class="empty-state">${message}</p>`;
+      document.getElementById('trendingUp').innerHTML = `<p class="empty-state">${message}</p>`;
+      document.getElementById('trendingDown').innerHTML = `<p class="empty-state">${message}</p>`;
+      document.getElementById('lowSignals').innerHTML = `<p class="empty-state">${message}</p>`;
+      document.getElementById('allSignalsList').innerHTML = `<p class="empty-state">${message}</p>`;
+      document.getElementById('signalSearch').value = '';
+      document.getElementById('trendFilter').value = 'all';
+      categoryFilter.innerHTML = '<option value="all">Category: all</option>';
+      categoryFilter.value = 'all';
+    };
+
+    const populateReferenceOptions = (dates) => {
+      referenceMonthSelect.innerHTML = '';
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      placeholder.textContent = dates.length ? '-- Select snapshot date --' : 'Upload a CSV to populate dates';
+      referenceMonthSelect.appendChild(placeholder);
+      for (const date of dates) {
+        const option = document.createElement('option');
+        option.value = date;
+        option.textContent = date;
+        referenceMonthSelect.appendChild(option);
+      }
+    };
+
+    const selectedMonthLabel = document.getElementById('selectedMonth');
+    const referenceMonthSelect = document.getElementById('referenceMonth');
+    const scoreUploadInput = document.getElementById('scoreUpload');
+    const loadScoreBtn = document.getElementById('loadScoreBtn');
+    const categoryFilter = document.getElementById('categoryFilter');
+
+    let parsedRows = [];
+    let currentTrendData = null;
+    let allScoredSignals = [];
 
     const applyFilters = () => {
       if (!currentTrendData) return;
@@ -792,13 +1252,21 @@
       const categoryValue = categoryFilter.value;
 
       const matchesFilters = (signal) => {
-        const matchesSearch = !searchTerm || signal.signal?.toLowerCase().includes(searchTerm);
-        const matchesCategory = categoryValue === 'all' || signal.category === categoryValue || signal.categoryDescription?.startsWith(`${categoryValue}`);
+        const matchesSearch =
+          !searchTerm ||
+          signal.signalName?.toLowerCase().includes(searchTerm) ||
+          signal.definition?.toLowerCase().includes(searchTerm);
+        const matchesCategory =
+          categoryValue === 'all' ||
+          signal.categoryName === categoryValue ||
+          signal.categoryDescription?.startsWith(`${categoryValue}`);
         return matchesSearch && matchesCategory;
       };
 
-      const trendingUpFiltered = trendFilterValue !== 'down' ? currentTrendData.trendingUp.filter(matchesFilters) : [];
-      const trendingDownFiltered = trendFilterValue !== 'up' ? currentTrendData.trendingDown.filter(matchesFilters) : [];
+      const trendingUpFiltered =
+        trendFilterValue !== 'down' ? currentTrendData.trendingUp.filter(matchesFilters) : [];
+      const trendingDownFiltered =
+        trendFilterValue !== 'up' ? currentTrendData.trendingDown.filter(matchesFilters) : [];
       const lowSignalsFiltered = currentTrendData.lowSignals.filter(matchesFilters);
       const allSignalsFiltered = allScoredSignals.filter(matchesFilters);
 
@@ -808,64 +1276,97 @@
       populateSignalList(allSignalsFiltered, document.getElementById('allSignalsList'));
     };
 
-    const refreshDashboard = (data, referenceMonthText = '') => {
-      try {
-        const overview = data.overview?.tenantOverview || {};
-        const categories = data.overview?.categories || [];
-        const trendingUp = data.overview?.trendingSignals?.trendingUp || [];
-        const trendingDown = data.overview?.trendingSignals?.trendingDown || [];
-
-        populateAccountCards(data.account || {}, data.tenant || {}, { overallScore: overview.overallScore }, referenceMonthText);
-        populateOverview({
-          productAdoption: overview.productAdoption || {},
-          customerExpertise: overview.customerExpertise || {},
-          technicalHealth: overview.technicalHealth || {},
-        });
-        buildCategoryDeck(categories);
-
-        currentTrendData = {
-          trendingUp,
-          trendingDown,
-          lowSignals: extractLowSignals(categories),
-        };
-        allScoredSignals = buildAllScoredSignals(categories, trendingUp, trendingDown);
-
-        const categoryNames = [
-          ...allScoredSignals.map((signal) => signal.category),
-          ...currentTrendData.lowSignals.map((signal) => signal.category),
-        ].filter(Boolean);
-        populateCategoryOptions(categoryNames);
-        applyFilters();
-      } catch (error) {
-        console.error('Unable to render dashboard', error);
-        document.querySelector('main').innerHTML = '<p class="empty-state">Unable to render the Customer Success Score dashboard. Check the JSON file structure.</p>';
+    const refreshDashboard = (rows, snapshotDate) => {
+      if (!rows.length) {
+        selectedMonthLabel.textContent = snapshotDate || 'Not selected';
+        clearVisualizations('No records match the selected snapshot date.');
+        return;
       }
+
+      const processed = rows.map(transformRow);
+      const summary = computeSummary(processed);
+      const categories = buildCategoryHierarchy(processed);
+      const accountInfo = processed[0];
+
+      selectedMonthLabel.textContent = snapshotDate || 'Not selected';
+      populateAccountOverview(accountInfo, snapshotDate);
+      populateSummaryCards(summary);
+      buildCategoryDeck(categories);
+
+      currentTrendData = {
+        trendingUp: processed.filter((signal) => Number.isFinite(signal.moMChange) && signal.moMChange > 0),
+        trendingDown: processed.filter((signal) => Number.isFinite(signal.moMChange) && signal.moMChange < 0),
+        lowSignals: processed.filter(
+          (signal) =>
+            (Number.isFinite(signal.score) && signal.score < 50) || signal.benchmarkStatus === 'missed'
+        ),
+      };
+      allScoredSignals = processed;
+
+      populateCategoryOptions(processed.map((signal) => signal.categoryName));
+      applyFilters();
     };
 
     const updateLoadButtonState = () => {
-      loadScoreBtn.disabled = !(referenceMonthSelect.value && scoreUploadInput.files.length);
+      loadScoreBtn.disabled = !(parsedRows.length && referenceMonthSelect.value);
     };
 
-    referenceMonthSelect.addEventListener('change', updateLoadButtonState);
-    scoreUploadInput.addEventListener('change', updateLoadButtonState);
+    const resetDashboard = () => {
+      parsedRows = [];
+      selectedMonthLabel.textContent = 'Not selected';
+      populateReferenceOptions([]);
+      scoreUploadInput.value = '';
+      loadScoreBtn.disabled = true;
+      clearVisualizations('Upload a CSV file to begin the analysis.');
+    };
 
-    loadScoreBtn.addEventListener('click', () => {
-      const file = scoreUploadInput.files[0];
-      if (!file) return;
+    scoreUploadInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) {
+        resetDashboard();
+        return;
+      }
 
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = (loadEvent) => {
         try {
-          const parsed = JSON.parse(event.target.result);
-          const month = referenceMonthSelect.value;
-          selectedMonthLabel.textContent = month || 'Not selected';
-          refreshDashboard(parsed, month);
+          const rawRows = parseCSV(loadEvent.target.result);
+          parsedRows = rawRows.map(normalizeRow);
+          if (!parsedRows.length) {
+            resetDashboard();
+            alert('The uploaded CSV does not contain any records.');
+            return;
+          }
+          const snapshotDates = Array.from(
+            new Set(parsedRows.map((row) => row.snapshotDate).filter((date) => date && date.length))
+          ).sort((a, b) => {
+            const dateA = new Date(a);
+            const dateB = new Date(b);
+            if (!Number.isNaN(dateA) && !Number.isNaN(dateB)) {
+              return dateB - dateA;
+            }
+            return `${b}`.localeCompare(`${a}`);
+          });
+          populateReferenceOptions(snapshotDates);
+          clearVisualizations('Select a snapshot date and click "Load score".');
+          selectedMonthLabel.textContent = 'Not selected';
+          updateLoadButtonState();
         } catch (error) {
-          console.error('Invalid JSON file', error);
-          alert('The uploaded file is not a valid JSON structure.');
+          console.error('Unable to parse CSV file', error);
+          alert('The uploaded file is not a valid Customer Success Score CSV export.');
+          resetDashboard();
         }
       };
       reader.readAsText(file);
+    });
+
+    referenceMonthSelect.addEventListener('change', updateLoadButtonState);
+
+    loadScoreBtn.addEventListener('click', () => {
+      const snapshotDate = referenceMonthSelect.value;
+      if (!snapshotDate || !parsedRows.length) return;
+      const rows = parsedRows.filter((row) => row.snapshotDate === snapshotDate);
+      refreshDashboard(rows, snapshotDate);
     });
 
     document.getElementById('signalSearch').addEventListener('input', applyFilters);
@@ -874,5 +1375,6 @@
 
     resetDashboard();
   </script>
+
 </body>
 </html>
