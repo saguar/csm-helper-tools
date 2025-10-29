@@ -41,7 +41,7 @@
       padding: 3rem 5vw 1.5rem;
       display: grid;
       gap: 1.5rem;
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
     }
 
@@ -68,7 +68,7 @@
       padding: 0 5vw;
       display: grid;
       gap: 2.5rem;
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
     }
 
@@ -471,6 +471,12 @@
       <div class="overview-grid" id="overviewGrid"></div>
     </section>
 
+    <section class="panel" id="all-scored-signals">
+      <h2>All scored signals</h2>
+      <p class="helper-text">Every scored signal from the CSV file is listed below and respects the filters above.</p>
+      <div class="signal-list" id="allSignalsList"></div>
+    </section>
+
     <section class="panel" id="trends">
       <div class="filters">
         <input type="search" id="signalSearch" placeholder="Search a signal..." />
@@ -497,12 +503,6 @@
           <div class="signal-list" id="lowSignals"></div>
         </div>
       </div>
-    </section>
-
-    <section class="panel" id="all-scored-signals">
-      <h2>All scored signals</h2>
-      <p class="helper-text">Every scored signal from the CSV file is listed below and respects the filters above.</p>
-      <div class="signal-list" id="allSignalsList"></div>
     </section>
 
     <section class="panel" id="categories">
@@ -925,16 +925,53 @@
       return card;
     };
 
+    const formatSnapshotMonth = (snapshotDate) => {
+      if (!snapshotDate) {
+        return 'N/A';
+      }
+
+      const trimmed = `${snapshotDate}`.trim();
+      const isoMatch = trimmed.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$/);
+      let parsed = null;
+
+      if (isoMatch) {
+        const [, year, month, day] = isoMatch;
+        parsed = new Date(Number(year), Number(month) - 1, Number(day || 1));
+      } else {
+        const attempt = new Date(trimmed);
+        if (!Number.isNaN(attempt.getTime())) {
+          parsed = attempt;
+        }
+      }
+
+      if ((!parsed || Number.isNaN(parsed.getTime())) && trimmed.includes('/')) {
+        const parts = trimmed.split('/').map((part) => part.trim());
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            const [year, month, day] = parts.map((part) => Number.parseInt(part, 10));
+            parsed = new Date(year, (month || 1) - 1, day || 1);
+          } else if (parts[2].length === 4) {
+            const [first, second, year] = parts.map((part) => Number.parseInt(part, 10));
+            const month = Number.isFinite(first) ? first : 1;
+            parsed = new Date(year, (month || 1) - 1, Number.isFinite(second) ? second : 1);
+          }
+        }
+      }
+
+      if (!parsed || Number.isNaN(parsed.getTime())) {
+        return snapshotDate;
+      }
+
+      return parsed.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    };
+
     const populateAccountOverview = (info, snapshotDate) => {
       const container = document.getElementById('accountCards');
       container.innerHTML = '';
       const cards = [
-        createInfoCard('Company', info.companyName || 'N/A', info.companyId ? `ID: ${info.companyId}` : ''),
-        createInfoCard('Account', info.accountName || 'N/A', info.accountId ? `ID: ${info.accountId}` : ''),
-        createInfoCard('Tenant type', info.tenantType || 'N/A', info.tenantId ? `ID: ${info.tenantId}` : ''),
+        createInfoCard('Company', info.companyName || 'N/A'),
         createInfoCard('Account local name', info.accountLocalName || 'N/A'),
-        createInfoCard('Success plan', info.successPlan || 'N/A'),
-        createInfoCard('Snapshot date', snapshotDate || 'N/A'),
+        createInfoCard('Snapshot date', formatSnapshotMonth(snapshotDate)),
       ];
       cards.forEach((card) => container.appendChild(card));
     };
