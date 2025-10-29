@@ -194,6 +194,7 @@
       font-weight: 600;
       color: var(--text);
       background: rgba(148, 163, 184, 0.18);
+      white-space: nowrap;
     }
 
     .badge.up {
@@ -651,12 +652,28 @@
       return lowSignals;
     };
 
-    const buildAllScoredSignals = (categories) => {
-      const signals = [];
+    const buildAllScoredSignals = (categories, trendingUp = [], trendingDown = []) => {
+      const signalMap = new Map();
+
+      const upsertSignal = (entry) => {
+        if (!entry?.signal) return;
+        const categoryKey = entry.category ?? entry.categoryDescription ?? '';
+        const key = `${categoryKey.toLowerCase()}::${entry.signal.toLowerCase()}`;
+        const existing = signalMap.get(key) || {};
+        signalMap.set(key, {
+          category: existing.category || entry.category || entry.categoryDescription || '',
+          categoryDescription: existing.categoryDescription || entry.categoryDescription || entry.category || '',
+          signal: existing.signal || entry.signal,
+          score: existing.score ?? entry.score,
+          change: existing.change ?? entry.change,
+          rating: existing.rating ?? entry.rating,
+        });
+      };
+
       for (const category of categories) {
         for (const capability of category.capabilities || []) {
           for (const signal of capability.scoredSignals || []) {
-            signals.push({
+            upsertSignal({
               category: category.name,
               categoryDescription: `${category.name} • ${capability.name}`,
               signal: signal.signal,
@@ -667,7 +684,24 @@
           }
         }
       }
-      return signals;
+
+      const appendTrending = (list) => {
+        for (const signal of list) {
+          upsertSignal({
+            category: signal.category,
+            categoryDescription: signal.category,
+            signal: signal.signal,
+            score: signal.score,
+            change: signal.change,
+            rating: signal.rating,
+          });
+        }
+      };
+
+      appendTrending(trendingUp);
+      appendTrending(trendingDown);
+
+      return Array.from(signalMap.values());
     };
 
     const populateAccountCards = (account, tenant, overview, referenceMonth) => {
@@ -708,7 +742,6 @@
       grid.appendChild(createOverviewCard('Product adoption', overview.productAdoption?.score, overview.productAdoption?.change));
       grid.appendChild(createOverviewCard('Customer expertise', overview.customerExpertise?.score, overview.customerExpertise?.change));
       grid.appendChild(createOverviewCard('Technical health', overview.technicalHealth?.score, overview.technicalHealth?.change));
-      grid.appendChild(createOverviewCard('AOV distribution', overview.aovDistributionScore));
     };
 
     const selectedMonthLabel = document.getElementById('selectedMonth');
@@ -787,7 +820,6 @@
           productAdoption: overview.productAdoption || {},
           customerExpertise: overview.customerExpertise || {},
           technicalHealth: overview.technicalHealth || {},
-          aovDistributionScore: data.overview?.aovDistributionScore,
         });
         buildCategoryDeck(categories);
 
@@ -796,12 +828,10 @@
           trendingDown,
           lowSignals: extractLowSignals(categories),
         };
-        allScoredSignals = buildAllScoredSignals(categories);
+        allScoredSignals = buildAllScoredSignals(categories, trendingUp, trendingDown);
 
         const categoryNames = [
-          ...categories.map((c) => c.name),
-          ...trendingUp.map((signal) => signal.category),
-          ...trendingDown.map((signal) => signal.category),
+          ...allScoredSignals.map((signal) => signal.category),
           ...currentTrendData.lowSignals.map((signal) => signal.category),
         ].filter(Boolean);
         populateCategoryOptions(categoryNames);
