@@ -341,68 +341,6 @@
       color: inherit;
     }
 
-    .category-deck {
-      display: grid;
-      gap: 1.5rem;
-    }
-
-    .category-card {
-      border-radius: 1.25rem;
-      border: 1px solid var(--border);
-      background: var(--surface-alt);
-      padding: 1.5rem;
-      display: grid;
-      gap: 1.25rem;
-    }
-
-    .category-headline {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .subcategory-heading {
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--muted);
-    }
-
-    .capability {
-      border-radius: 1rem;
-      padding: 1.25rem;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      display: grid;
-      gap: 1rem;
-    }
-
-    .signals {
-      display: grid;
-      gap: 0.75rem;
-    }
-
-    .signal-chip {
-      display: grid;
-      gap: 0.35rem;
-      padding: 0.85rem;
-      border-radius: 0.85rem;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      background: var(--surface-alt);
-    }
-
-    .signal-chip span {
-      color: var(--muted);
-      font-size: 0.85rem;
-    }
-
-    .signal-chip strong {
-      font-size: 1.05rem;
-      color: var(--text);
-    }
-
     .score-pill {
       justify-self: flex-start;
       padding: 0.25rem 0.65rem;
@@ -487,12 +425,113 @@
       gap: 0.5rem;
     }
 
-    .subcategory-header {
+    .score-tree-heading {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-top: 0.5rem;
+    }
+
+    .score-tree {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .score-tree > li {
+      padding-left: 0.5rem;
+    }
+
+    .score-tree-node {
       display: flex;
-      align-items: center;
-      gap: 0.75rem;
       flex-wrap: wrap;
-      margin-top: 1.25rem;
+      gap: 0.5rem;
+      align-items: center;
+      border-radius: 0.9rem;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(148, 163, 184, 0.08);
+      padding: 0.85rem 1rem;
+      position: relative;
+    }
+
+    .score-tree-node::before {
+      content: '';
+      position: absolute;
+      width: 0.6rem;
+      height: 0.6rem;
+      border-radius: 50%;
+      background: var(--primary);
+      left: -0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      box-shadow: 0 0 0 2px var(--surface);
+    }
+
+    .score-tree-category {
+      background: linear-gradient(160deg, rgba(14, 165, 233, 0.15), rgba(148, 163, 184, 0.08));
+      border-color: rgba(14, 165, 233, 0.25);
+    }
+
+    .score-tree-subcategory {
+      background: var(--surface);
+    }
+
+    .score-tree-subcategory::before {
+      background: var(--muted);
+    }
+
+    .score-tree-label {
+      font-weight: 600;
+      color: var(--text);
+      flex: 1 1 200px;
+      min-width: 160px;
+    }
+
+    .score-tree-placeholder {
+      border-style: dashed;
+      background: rgba(148, 163, 184, 0.05);
+    }
+
+    .score-tree-placeholder .score-tree-label {
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .score-tree-placeholder::before {
+      background: rgba(148, 163, 184, 0.6);
+    }
+
+    .score-tree-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-left: auto;
+    }
+
+    .score-tree-children {
+      list-style: none;
+      margin: 0.75rem 0 0;
+      padding-left: 1.75rem;
+      border-left: 2px solid rgba(148, 163, 184, 0.35);
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .score-tree-children > li {
+      position: relative;
+    }
+
+    .score-tree-children > li::before {
+      content: '';
+      position: absolute;
+      left: -1.75rem;
+      top: 1rem;
+      width: 1.75rem;
+      height: 1px;
+      background: rgba(148, 163, 184, 0.35);
     }
 
     @media (max-width: 640px) {
@@ -584,38 +623,6 @@
       <div id="allSignalsList"></div>
     </section>
 
-    <section class="panel" id="trends">
-      <div class="filters">
-        <input type="search" class="signal-search" id="signalSearch" placeholder="Search a signal..." />
-        <select id="trendFilter">
-          <option value="all">Trend: all</option>
-          <option value="up">Only improving</option>
-          <option value="down">Only declining</option>
-        </select>
-        <select id="categoryFilter" class="category-filter">
-          <option value="all">Category: all</option>
-        </select>
-      </div>
-      <div class="grid-3" style="margin-top: 1.5rem;" id="trendColumns">
-        <div>
-          <h3>Trending up</h3>
-          <div class="signal-list" id="trendingUp"></div>
-        </div>
-        <div>
-          <h3>Trending down</h3>
-          <div class="signal-list" id="trendingDown"></div>
-        </div>
-        <div>
-          <h3>Warnings / At risk</h3>
-          <div class="signal-list" id="lowSignals"></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel" id="categories">
-      <h2>Category analysis</h2>
-      <div class="category-deck" id="categoryDeck"></div>
-    </section>
   </main>
 
   <template id="signalTemplate">
@@ -1350,21 +1357,6 @@
       return clone;
     };
 
-    const populateSignalList = (signals, container) => {
-      container.innerHTML = '';
-      if (!signals.length) {
-        const empty = document.createElement('p');
-        empty.className = 'empty-state';
-        empty.textContent = 'No signals match the current filters.';
-        container.appendChild(empty);
-        return;
-      }
-
-      signals.forEach((item) => {
-        container.appendChild(createSignalItem(item));
-      });
-    };
-
     const populateGroupedSignals = (signals, container) => {
       container.innerHTML = '';
       if (!signals.length) {
@@ -1406,7 +1398,65 @@
       }
     };
 
-    const populateOverallScores = (overallRows, categoryRows = []) => {
+    const createScoreTreeNode = (item, level) => {
+      const node = document.createElement('div');
+      node.className = `score-tree-node score-tree-${level}`;
+
+      const label = document.createElement('span');
+      label.className = 'score-tree-label';
+      label.textContent = item.title || item.name || item.categoryName || item.subcategoryName || 'Untitled';
+      node.appendChild(label);
+
+      const scoreText = formatScore(item.score, item.scoreRaw);
+      if (scoreText && scoreText !== '-') {
+        if (Number.isFinite(item.score)) {
+          node.appendChild(createScoreBadge(item.score));
+        } else {
+          const badge = document.createElement('span');
+          badge.className = `score-pill ${scoreClass(item.score)}`;
+          badge.textContent = `Score ${scoreText}`;
+          node.appendChild(badge);
+        }
+      }
+
+      if (item.rating) {
+        const ratingBadge = document.createElement('span');
+        ratingBadge.className = 'badge';
+        ratingBadge.textContent = item.rating;
+        node.appendChild(ratingBadge);
+      }
+
+      if (item.changeText) {
+        const momChangeValue = Number.isFinite(item.moMChange) ? item.moMChange : item.momChange;
+        const qoqChangeValue = Number.isFinite(item.qoQChange) ? item.qoQChange : item.qoqChange;
+        const direction =
+          (Number.isFinite(momChangeValue) && momChangeValue > 0) ||
+          (Number.isFinite(qoqChangeValue) && qoqChangeValue > 0)
+            ? 'up'
+            : (Number.isFinite(momChangeValue) && momChangeValue < 0) ||
+              (Number.isFinite(qoqChangeValue) && qoqChangeValue < 0)
+            ? 'down'
+            : '';
+        const changeBadge = document.createElement('span');
+        changeBadge.className = `badge ${direction}`.trim();
+        changeBadge.textContent = item.changeText;
+        node.appendChild(changeBadge);
+      }
+
+      const metrics = document.createElement('div');
+      metrics.className = 'score-tree-metrics';
+      const momPill = createMetricPill('MoM', item.momText);
+      if (momPill) metrics.appendChild(momPill);
+      const qoqPill = createMetricPill('QoQ', item.qoqText);
+      if (qoqPill) metrics.appendChild(qoqPill);
+      if (metrics.children.length) {
+        node.appendChild(metrics);
+      }
+
+      return node;
+    };
+
+    const populateOverallScores = (overallRows, categoryBreakdown = []) => {
       const container = document.getElementById('overallScoreGrid');
       container.innerHTML = '';
 
@@ -1415,17 +1465,17 @@
         const decorated = decorateSummaryRow(row);
         summaries.push({ ...decorated, title: row.scoreName || 'Overall score' });
       });
-      categoryRows.forEach((row) => {
-        const decorated = decorateSummaryRow(row);
-        summaries.push({ ...decorated, title: row.categoryName || row.scoreName || 'Category score' });
-      });
 
-      if (!summaries.length) {
+      const hasCategories = Array.isArray(categoryBreakdown) && categoryBreakdown.length > 0;
+
+      if (!summaries.length && !hasCategories) {
         container.innerHTML = '<p class="empty-state">No overall scores available for the current selection.</p>';
         return;
       }
 
-      summaries.forEach((row) => {
+      const cardsToRender = summaries.length ? summaries : [{ title: 'Category breakdown' }];
+
+      cardsToRender.forEach((row, index) => {
         const card = document.createElement('article');
         card.className = 'score-summary';
 
@@ -1434,7 +1484,9 @@
         const title = document.createElement('h3');
         title.textContent = row.title;
         header.appendChild(title);
-        header.appendChild(createScoreBadge(row.score));
+        if (Number.isFinite(row.score)) {
+          header.appendChild(createScoreBadge(row.score));
+        }
         card.appendChild(header);
 
         if (row.rating) {
@@ -1446,7 +1498,13 @@
 
         if (row.changeText) {
           const changeBadge = document.createElement('span');
-          changeBadge.className = `badge ${row.moMChange > 0 ? 'up' : row.moMChange < 0 ? 'down' : ''}`;
+          const direction =
+            (Number.isFinite(row.moMChange) && row.moMChange > 0) || (Number.isFinite(row.qoQChange) && row.qoQChange > 0)
+              ? 'up'
+              : (Number.isFinite(row.moMChange) && row.moMChange < 0) || (Number.isFinite(row.qoQChange) && row.qoQChange < 0)
+              ? 'down'
+              : '';
+          changeBadge.className = `badge ${direction}`.trim();
           changeBadge.textContent = row.changeText;
           card.appendChild(changeBadge);
         }
@@ -1461,163 +1519,50 @@
           card.appendChild(metrics);
         }
 
-        container.appendChild(card);
-      });
-    };
+        if (hasCategories && index === 0) {
+          const treeLabel = document.createElement('p');
+          treeLabel.className = 'score-tree-heading';
+          treeLabel.textContent = 'Categories & subcategories';
+          card.appendChild(treeLabel);
 
-    const buildCategoryDeck = (categories) => {
-      const deck = document.getElementById('categoryDeck');
-      if (!categories.length) {
-        deck.innerHTML = '<p class="empty-state">No category data available for the selected snapshot.</p>';
-        return;
-      }
+          const tree = document.createElement('ul');
+          tree.className = 'score-tree';
 
-      deck.innerHTML = '';
+          categoryBreakdown.forEach((category) => {
+            const categoryItem = document.createElement('li');
+            const categoryNode = createScoreTreeNode({ ...category, title: category.name }, 'category');
+            categoryItem.appendChild(categoryNode);
 
-      categories.forEach((category) => {
-        const categoryCard = document.createElement('article');
-        categoryCard.className = 'category-card';
+            const subcategories = Array.isArray(category.subcategories) ? category.subcategories : [];
+            const subList = document.createElement('ul');
+            subList.className = 'score-tree-children';
 
-        const headline = document.createElement('div');
-        headline.className = 'category-headline';
-        const title = document.createElement('h3');
-        title.textContent = category.name;
-        headline.appendChild(title);
+            if (!subcategories.length) {
+              const placeholderItem = document.createElement('li');
+              const placeholderNode = createScoreTreeNode(
+                { title: 'No subcategory scores available' },
+                'subcategory'
+              );
+              placeholderNode.classList.add('score-tree-placeholder');
+              placeholderItem.appendChild(placeholderNode);
+              subList.appendChild(placeholderItem);
+            } else {
+              subcategories.forEach((subcategory) => {
+                const subItem = document.createElement('li');
+                const subNode = createScoreTreeNode({ ...subcategory, title: subcategory.name }, 'subcategory');
+                subItem.appendChild(subNode);
+                subList.appendChild(subItem);
+              });
+            }
 
-        const badge = document.createElement('span');
-        badge.className = 'badge';
-        badge.textContent = category.rating || 'N/A';
-        headline.appendChild(badge);
+            categoryItem.appendChild(subList);
+            tree.appendChild(categoryItem);
+          });
 
-        headline.appendChild(createScoreBadge(category.score));
-        categoryCard.appendChild(headline);
-
-        if (category.changeText) {
-          const change = document.createElement('span');
-          change.className = `badge ${category.momChange > 0 ? 'up' : category.momChange < 0 ? 'down' : ''}`;
-          change.textContent = category.changeText;
-          categoryCard.appendChild(change);
+          card.appendChild(tree);
         }
 
-        category.subcategories.forEach((subcategory) => {
-          const subHeader = document.createElement('div');
-          subHeader.className = 'subcategory-header';
-
-          const subTitle = document.createElement('h4');
-          subTitle.className = 'subcategory-heading';
-          subTitle.textContent = subcategory.name;
-          subHeader.appendChild(subTitle);
-
-          if (subcategory.rating) {
-            const ratingBadge = document.createElement('span');
-            ratingBadge.className = 'badge';
-            ratingBadge.textContent = subcategory.rating;
-            subHeader.appendChild(ratingBadge);
-          }
-
-          subHeader.appendChild(createScoreBadge(subcategory.score));
-
-          if (subcategory.changeText) {
-            const change = document.createElement('span');
-            change.className = `badge ${subcategory.momChange > 0 ? 'up' : subcategory.momChange < 0 ? 'down' : ''}`;
-            change.textContent = subcategory.changeText;
-            subHeader.appendChild(change);
-          }
-
-          categoryCard.appendChild(subHeader);
-
-          if (!subcategory.capabilities.length) {
-            const empty = document.createElement('p');
-            empty.className = 'empty-state';
-            empty.textContent = 'No signals available for this subcategory.';
-            categoryCard.appendChild(empty);
-            return;
-          }
-
-          subcategory.capabilities.forEach((capability) => {
-            const capabilityBlock = document.createElement('section');
-            capabilityBlock.className = 'capability';
-
-            const heading = document.createElement('div');
-            heading.style.display = 'flex';
-            heading.style.justifyContent = 'space-between';
-            heading.style.alignItems = 'center';
-            heading.style.flexWrap = 'wrap';
-            heading.style.gap = '0.75rem';
-
-            const name = document.createElement('h4');
-            name.textContent = capability.name;
-            name.style.fontSize = '1.1rem';
-            name.style.color = 'var(--text)';
-            heading.appendChild(name);
-
-            if (capability.rating) {
-              const capabilityBadge = document.createElement('span');
-              capabilityBadge.className = 'badge';
-              capabilityBadge.textContent = capability.rating;
-              heading.appendChild(capabilityBadge);
-            }
-
-            heading.appendChild(createScoreBadge(capability.score));
-
-            if (capability.changeText) {
-              const change = document.createElement('span');
-              change.className = `badge ${capability.momChange > 0 ? 'up' : capability.momChange < 0 ? 'down' : ''}`;
-              change.textContent = capability.changeText;
-              heading.appendChild(change);
-            }
-
-            capabilityBlock.appendChild(heading);
-
-            const signals = document.createElement('div');
-            signals.className = 'signals';
-            for (const signal of capability.signals || []) {
-              const chip = document.createElement('div');
-              chip.className = 'signal-chip';
-
-              const title = document.createElement('strong');
-              title.textContent = signal.signalName;
-              chip.appendChild(title);
-
-              if (signal.definition) {
-                const definition = document.createElement('span');
-                definition.textContent = signal.definition;
-                chip.appendChild(definition);
-              }
-
-              const metrics = document.createElement('div');
-              metrics.style.display = 'flex';
-              metrics.style.flexWrap = 'wrap';
-              metrics.style.gap = '0.5rem';
-              metrics.style.marginTop = '0.35rem';
-
-              const scorePill = createMetricPill('Score', formatScore(signal.score, signal.scoreRaw));
-              if (scorePill) metrics.appendChild(scorePill);
-
-              const ratingPill = createMetricPill('Rating', signal.rating);
-              if (ratingPill) metrics.appendChild(ratingPill);
-
-              const valuePill = createMetricPill('Value', signal.valueDisplay);
-              if (valuePill) metrics.appendChild(valuePill);
-
-              const benchmarkPill = createMetricPill('Benchmark', signal.benchmarkDisplay || signal.benchmark);
-              if (benchmarkPill) metrics.appendChild(benchmarkPill);
-
-              const momPill = createMetricPill('MoM', signal.momText);
-              if (momPill) metrics.appendChild(momPill);
-
-              const qoqPill = createMetricPill('QoQ', signal.qoqText);
-              if (qoqPill) metrics.appendChild(qoqPill);
-
-              chip.appendChild(metrics);
-              signals.appendChild(chip);
-            }
-            capabilityBlock.appendChild(signals);
-            categoryCard.appendChild(capabilityBlock);
-          });
-        });
-
-        deck.appendChild(categoryCard);
+        container.appendChild(card);
       });
     };
 
@@ -1636,33 +1581,26 @@
     };
 
     const clearVisualizations = (message) => {
-      currentTrendData = null;
       allScoredSignals = [];
-      document.getElementById('accountCards').innerHTML = '';
-      document.getElementById('overallScoreGrid').innerHTML = `<p class="empty-state">${message}</p>`;
-      document.getElementById('categoryDeck').innerHTML = `<p class="empty-state">${message}</p>`;
-      document.getElementById('trendingUp').innerHTML = `<p class="empty-state">${message}</p>`;
-      document.getElementById('trendingDown').innerHTML = `<p class="empty-state">${message}</p>`;
-      document.getElementById('lowSignals').innerHTML = `<p class="empty-state">${message}</p>`;
-      document.getElementById('allSignalsList').innerHTML = `<p class="empty-state">${message}</p>`;
+      const accountCards = document.getElementById('accountCards');
+      if (accountCards) accountCards.innerHTML = '';
+      const overallGrid = document.getElementById('overallScoreGrid');
+      if (overallGrid) overallGrid.innerHTML = `<p class="empty-state">${message}</p>`;
+      if (allSignalsListContainer) {
+        allSignalsListContainer.innerHTML = `<p class="empty-state">${message}</p>`;
+      }
       document.querySelectorAll('.signal-search').forEach((input) => {
         input.value = '';
       });
-      const allSignalsSubcategoryFilter = document.getElementById('allSignalsSubcategoryFilter');
       if (allSignalsSubcategoryFilter) {
         allSignalsSubcategoryFilter.innerHTML = '<option value="all">Subcategory: all</option>';
         allSignalsSubcategoryFilter.value = 'all';
         allSignalsSubcategoryFilter.disabled = true;
       }
-      const allSignalsCapabilityFilter = document.getElementById('allSignalsCapabilityFilter');
       if (allSignalsCapabilityFilter) {
         allSignalsCapabilityFilter.innerHTML = '<option value="all">Capability: all</option>';
         allSignalsCapabilityFilter.value = 'all';
         allSignalsCapabilityFilter.disabled = true;
-      }
-      const trendFilterSelect = document.getElementById('trendFilter');
-      if (trendFilterSelect) {
-        trendFilterSelect.value = 'all';
       }
       document.querySelectorAll('.category-filter').forEach((select) => {
         select.innerHTML = '<option value="all">Category: all</option>';
@@ -1693,18 +1631,15 @@
     const accountFilterSelect = document.getElementById('accountFilter');
     const scoreUploadInput = document.getElementById('scoreUpload');
     const loadScoreBtn = document.getElementById('loadScoreBtn');
-    const trendSearchInput = document.getElementById('signalSearch');
     const allSignalsSearchInput = document.getElementById('allSignalsSearch');
-    const searchInputs = [trendSearchInput, allSignalsSearchInput].filter(Boolean);
-    const trendFilter = document.getElementById('trendFilter');
-    const trendCategoryFilter = document.getElementById('categoryFilter');
+    const searchInputs = [allSignalsSearchInput].filter(Boolean);
     const allSignalsCategoryFilter = document.getElementById('allSignalsCategoryFilter');
     const allSignalsSubcategoryFilter = document.getElementById('allSignalsSubcategoryFilter');
     const allSignalsCapabilityFilter = document.getElementById('allSignalsCapabilityFilter');
-    const categoryFilters = [trendCategoryFilter, allSignalsCategoryFilter].filter(Boolean);
+    const categoryFilters = [allSignalsCategoryFilter].filter(Boolean);
+    const allSignalsListContainer = document.getElementById('allSignalsList');
 
     let parsedDataset = null;
-    let currentTrendData = null;
     let allScoredSignals = [];
 
     const resetTenantTypeSelect = (message) => {
@@ -1740,9 +1675,8 @@
     };
 
     const applyFilters = () => {
-      if (!currentTrendData) return;
+      if (!allSignalsListContainer) return;
       const searchTerm = (searchInputs[0]?.value || '').toLowerCase();
-      const trendFilterValue = trendFilter ? trendFilter.value : 'all';
       const categoryValue = categoryFilters[0]?.value || 'all';
       const subcategoryValue =
         allSignalsSubcategoryFilter && !allSignalsSubcategoryFilter.disabled
@@ -1767,17 +1701,8 @@
         return matchesSearch && matchesCategory && matchesSubcategory && matchesCapability;
       };
 
-      const trendingUpFiltered =
-        trendFilterValue !== 'down' ? currentTrendData.trendingUp.filter(matchesFilters) : [];
-      const trendingDownFiltered =
-        trendFilterValue !== 'up' ? currentTrendData.trendingDown.filter(matchesFilters) : [];
-      const lowSignalsFiltered = currentTrendData.lowSignals.filter(matchesFilters);
-      const allSignalsFiltered = allScoredSignals.filter(matchesFilters);
-
-      populateSignalList(trendingUpFiltered, document.getElementById('trendingUp'));
-      populateSignalList(trendingDownFiltered, document.getElementById('trendingDown'));
-      populateSignalList(lowSignalsFiltered, document.getElementById('lowSignals'));
-      populateGroupedSignals(allSignalsFiltered, document.getElementById('allSignalsList'));
+      const filteredSignals = allScoredSignals.filter(matchesFilters);
+      populateGroupedSignals(filteredSignals, allSignalsListContainer);
     };
 
     const updateAllSignalsFilterOptions = ({ resetSubcategory = false, resetCapability = false } = {}) => {
@@ -1982,18 +1907,10 @@
       selectedAccountLabel.textContent = accountName || accountInfo.accountName || 'Not selected';
 
       populateAccountOverview({ ...accountInfo, accountName: accountInfo.accountName || accountName }, snapshotDate, accountName);
-      populateOverallScores(overallRows, categoryRows);
 
       const categories = buildCategoryHierarchy(processed, categoryRows, subcategoryRows);
-      buildCategoryDeck(categories);
+      populateOverallScores(overallRows, categories);
 
-      currentTrendData = {
-        trendingUp: processed.filter((signal) => Number.isFinite(signal.moMChange) && signal.moMChange > 0),
-        trendingDown: processed.filter((signal) => Number.isFinite(signal.moMChange) && signal.moMChange < 0),
-        lowSignals: processed.filter(
-          (signal) => (Number.isFinite(signal.score) && signal.score < 50) || signal.benchmarkStatus === 'missed'
-        ),
-      };
       allScoredSignals = processed;
 
       const categoryNames = [
@@ -2180,9 +2097,6 @@
     searchInputs.forEach((input) => {
       input.addEventListener('input', (event) => syncSearchInputs(event.target));
     });
-    if (trendFilter) {
-      trendFilter.addEventListener('change', applyFilters);
-    }
     categoryFilters.forEach((select) => {
       select.addEventListener('change', (event) => syncCategoryFilters(event.target));
     });
