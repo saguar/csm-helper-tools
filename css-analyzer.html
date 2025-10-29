@@ -152,12 +152,11 @@
     .grid-3 {
       display: grid;
       gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     }
 
-    @media (min-width: 900px) {
-      .grid-3 {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
+    .grid-3 > * {
+      min-width: 0;
     }
 
     .key-metric {
@@ -207,35 +206,72 @@
       background: rgba(185, 28, 28, 0.12);
     }
 
-    .overview-grid {
+    .signal-list {
       display: grid;
       gap: 1rem;
     }
 
-    @media (min-width: 720px) {
-      .overview-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    .overview-card {
+    details.accordion {
       border-radius: 1rem;
-      padding: 1.25rem;
-      background: var(--surface-alt);
       border: 1px solid var(--border);
-      display: grid;
-      gap: 0.65rem;
+      background: var(--surface-alt);
+      overflow: hidden;
     }
 
-    .overview-card strong {
-      font-size: 1.8rem;
+    details.accordion + details.accordion {
+      margin-top: 1rem;
+    }
+
+    details.accordion summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding: 1.1rem 1.25rem;
       font-weight: 600;
       color: var(--text);
     }
 
-    .signal-list {
-      display: grid;
-      gap: 1rem;
+    details.accordion summary::-webkit-details-marker {
+      display: none;
+    }
+
+    details.accordion summary::after {
+      content: '+';
+      font-size: 1.2rem;
+      transition: transform 0.2s ease;
+      color: var(--muted);
+    }
+
+    details.accordion[open] summary::after {
+      content: '−';
+      color: var(--primary);
+    }
+
+    .accordion-title {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-size: 1rem;
+    }
+
+    details.accordion summary .score-pill {
+      margin-left: auto;
+    }
+
+    .accordion-content {
+      padding: 0 1.25rem 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .accordion-content .signal-list {
+      margin-top: 1rem;
+    }
+
+    .all-signals-controls {
+      margin-bottom: 1.5rem;
     }
 
     .signal-item {
@@ -466,26 +502,27 @@
       <div class="grid-3" id="accountCards"></div>
     </section>
 
-    <section class="panel" id="overall-performance">
-      <h2>Overall performance</h2>
-      <div class="overview-grid" id="overviewGrid"></div>
-    </section>
-
     <section class="panel" id="all-scored-signals">
       <h2>All scored signals</h2>
       <p class="helper-text">Every scored signal from the CSV file is listed below and respects the filters above.</p>
-      <div class="signal-list" id="allSignalsList"></div>
+      <div class="filters all-signals-controls">
+        <input type="search" class="signal-search" id="allSignalsSearch" placeholder="Search a signal..." />
+        <select id="allSignalsCategoryFilter" class="category-filter">
+          <option value="all">Category: all</option>
+        </select>
+      </div>
+      <div id="allSignalsList"></div>
     </section>
 
     <section class="panel" id="trends">
       <div class="filters">
-        <input type="search" id="signalSearch" placeholder="Search a signal..." />
+        <input type="search" class="signal-search" id="signalSearch" placeholder="Search a signal..." />
         <select id="trendFilter">
           <option value="all">Trend: all</option>
           <option value="up">Only improving</option>
           <option value="down">Only declining</option>
         </select>
-        <select id="categoryFilter">
+        <select id="categoryFilter" class="category-filter">
           <option value="all">Category: all</option>
         </select>
       </div>
@@ -565,23 +602,6 @@
       span.className = `score-pill ${scoreClass(score)}`;
       span.textContent = `Score ${formatScore(score)}`;
       return span;
-    };
-
-    const createOverviewCard = (title, value, extra) => {
-      const card = document.createElement('article');
-      card.className = 'overview-card';
-      const h3 = document.createElement('h3');
-      h3.textContent = title;
-      const strong = document.createElement('strong');
-      strong.textContent = formatScore(value);
-      card.append(h3, strong);
-      if (extra) {
-        const span = document.createElement('span');
-        span.className = 'badge';
-        span.textContent = extra;
-        card.appendChild(span);
-      }
-      return card;
     };
 
     const formatNumber = (value, options = {}) => {
@@ -801,30 +821,6 @@
       return valid.reduce((sum, value) => sum + value, 0) / valid.length;
     };
 
-    const computeSummary = (rows) => {
-      const categories = new Set(rows.map((row) => row.categoryName).filter(Boolean));
-      const capabilities = new Set(
-        rows.map((row) => `${row.categoryName || '—'}::${row.capabilityName || row.subcategoryName || '—'}`)
-      );
-      const benchmarkEvaluated = rows.filter((row) => row.benchmarkStatus);
-      const met = benchmarkEvaluated.filter((row) => row.benchmarkStatus === 'met').length;
-      const missed = benchmarkEvaluated.filter((row) => row.benchmarkStatus === 'missed').length;
-      return {
-        averageScore: average(rows.map((row) => row.score)),
-        totalSignals: rows.length,
-        uniqueCategories: categories.size,
-        uniqueCapabilities: capabilities.size,
-        averageValue: average(rows.map((row) => row.valueNumeric)),
-        averageMoM: average(rows.map((row) => row.moMChange)),
-        averageQoQ: average(rows.map((row) => row.qoQChange)),
-        benchmarkEvaluated: {
-          total: benchmarkEvaluated.length,
-          met,
-          missed,
-        },
-      };
-    };
-
     const buildCategoryHierarchy = (rows) => {
       const categoryMap = new Map();
       for (const row of rows) {
@@ -976,47 +972,78 @@
       cards.forEach((card) => container.appendChild(card));
     };
 
-    const populateSummaryCards = (summary) => {
-      const grid = document.getElementById('overviewGrid');
-      grid.innerHTML = '';
-      grid.appendChild(
-        createOverviewCard(
-          'Average score',
-          summary.averageScore,
-          ratingFromScore(summary.averageScore) || 'No scored signals'
-        )
-      );
-      grid.appendChild(
-        createOverviewCard(
-          'Signals in snapshot',
-          summary.totalSignals,
-          `${summary.uniqueCategories} categories • ${summary.uniqueCapabilities} capabilities`
-        )
-      );
-      grid.appendChild(
-        createOverviewCard(
-          'Average MoM change',
-          formatSigned(summary.averageMoM),
-          summary.averageQoQ === null ? '' : `Avg QoQ ${formatSigned(summary.averageQoQ)}`
-        )
-      );
-      const benchmarkInfo = summary.benchmarkEvaluated.total
-        ? `${summary.benchmarkEvaluated.met}/${summary.benchmarkEvaluated.total} met`
-        : 'No benchmark rules';
-      const benchmarkExtra = summary.benchmarkEvaluated.missed
-        ? `${summary.benchmarkEvaluated.missed} missed`
-        : summary.benchmarkEvaluated.total
-          ? 'All met'
-          : '';
-      grid.appendChild(createOverviewCard('Benchmark adherence', benchmarkInfo, benchmarkExtra));
-    };
-
     const createMetricPill = (label, value) => {
       if (value === null || value === undefined || `${value}`.trim() === '') return null;
       const pill = document.createElement('span');
       pill.className = 'metric-pill';
       pill.innerHTML = `<strong>${label}</strong> ${value}`;
       return pill;
+    };
+
+    const createSignalItem = (item) => {
+      const clone = document.getElementById('signalTemplate').content.firstElementChild.cloneNode(true);
+      clone.querySelector('[data-field="signal"]').textContent = item.signalName;
+      const definitionElement = clone.querySelector('[data-field="definition"]');
+      if (item.definition) {
+        definitionElement.textContent = item.definition;
+      } else {
+        definitionElement.remove();
+      }
+      const categoryElement = clone.querySelector('[data-field="category"]');
+      categoryElement.textContent = item.categoryDescription || item.categoryName || '';
+
+      const changeSpan = clone.querySelector('[data-field="change"]');
+      if (item.changeText) {
+        changeSpan.textContent = item.changeText;
+        if (item.moMChange > 0 || item.qoQChange > 0) {
+          changeSpan.classList.add('up');
+        } else if (item.moMChange < 0 || item.qoQChange < 0) {
+          changeSpan.classList.add('down');
+        }
+      } else {
+        changeSpan.remove();
+      }
+
+      clone.querySelector('[data-field="score"]').textContent = formatScore(item.score, item.scoreRaw);
+
+      const ratingBadge = clone.querySelector('[data-field="rating"]');
+      if (item.rating) {
+        ratingBadge.textContent = item.rating;
+      } else {
+        ratingBadge.remove();
+      }
+
+      const valuePill = clone.querySelector('[data-field="value"]');
+      if (item.valueDisplay) {
+        valuePill.innerHTML = `<strong>Value</strong> ${item.valueDisplay}`;
+      } else {
+        valuePill.remove();
+      }
+
+      const benchmarkPill = clone.querySelector('[data-field="benchmark"]');
+      if (item.benchmarkDisplay) {
+        benchmarkPill.innerHTML = `<strong>Benchmark</strong> ${item.benchmarkDisplay}`;
+      } else if (item.benchmark) {
+        benchmarkPill.innerHTML = `<strong>Benchmark</strong> ${item.benchmark}`;
+      } else {
+        benchmarkPill.remove();
+      }
+
+      const momPill = clone.querySelector('[data-field="mom"]');
+      if (item.momText) {
+        momPill.innerHTML = `<strong>MoM</strong> ${item.momText}`;
+      } else {
+        momPill.remove();
+      }
+
+      const qoqPill = clone.querySelector('[data-field="qoq"]');
+      if (item.qoqText) {
+        qoqPill.innerHTML = `<strong>QoQ</strong> ${item.qoqText}`;
+      } else {
+        qoqPill.remove();
+      }
+
+      return clone;
     };
 
     const populateSignalList = (signals, container) => {
@@ -1029,71 +1056,69 @@
         return;
       }
 
-      for (const item of signals) {
-        const clone = document.getElementById('signalTemplate').content.firstElementChild.cloneNode(true);
-        clone.querySelector('[data-field="signal"]').textContent = item.signalName;
-        const definitionElement = clone.querySelector('[data-field="definition"]');
-        if (item.definition) {
-          definitionElement.textContent = item.definition;
-        } else {
-          definitionElement.remove();
-        }
-        const categoryElement = clone.querySelector('[data-field="category"]');
-        categoryElement.textContent = item.categoryDescription || item.categoryName || '';
+      signals.forEach((item) => {
+        container.appendChild(createSignalItem(item));
+      });
+    };
 
-        const changeSpan = clone.querySelector('[data-field="change"]');
-        if (item.changeText) {
-          changeSpan.textContent = item.changeText;
-          if (item.moMChange > 0 || item.qoQChange > 0) {
-            changeSpan.classList.add('up');
-          } else if (item.moMChange < 0 || item.qoQChange < 0) {
-            changeSpan.classList.add('down');
-          }
-        } else {
-          changeSpan.remove();
-        }
-
-        clone.querySelector('[data-field="score"]').textContent = formatScore(item.score, item.scoreRaw);
-
-        const ratingBadge = clone.querySelector('[data-field="rating"]');
-        if (item.rating) {
-          ratingBadge.textContent = item.rating;
-        } else {
-          ratingBadge.remove();
-        }
-
-        const valuePill = clone.querySelector('[data-field="value"]');
-        if (item.valueDisplay) {
-          valuePill.innerHTML = `<strong>Value</strong> ${item.valueDisplay}`;
-        } else {
-          valuePill.remove();
-        }
-
-        const benchmarkPill = clone.querySelector('[data-field="benchmark"]');
-        if (item.benchmarkDisplay) {
-          benchmarkPill.innerHTML = `<strong>Benchmark</strong> ${item.benchmarkDisplay}`;
-        } else if (item.benchmark) {
-          benchmarkPill.innerHTML = `<strong>Benchmark</strong> ${item.benchmark}`;
-        } else {
-          benchmarkPill.remove();
-        }
-
-        const momPill = clone.querySelector('[data-field="mom"]');
-        if (item.momText) {
-          momPill.innerHTML = `<strong>MoM</strong> ${item.momText}`;
-        } else {
-          momPill.remove();
-        }
-
-        const qoqPill = clone.querySelector('[data-field="qoq"]');
-        if (item.qoqText) {
-          qoqPill.innerHTML = `<strong>QoQ</strong> ${item.qoqText}`;
-        } else {
-          qoqPill.remove();
-        }
-
-        container.appendChild(clone);
+    const populateGroupedSignals = (signals, container) => {
+      container.innerHTML = '';
+      if (!signals.length) {
+        const empty = document.createElement('p');
+        empty.className = 'empty-state';
+        empty.textContent = 'No signals match the current filters.';
+        container.appendChild(empty);
+        return;
       }
+
+      const map = new Map();
+      for (const signal of signals) {
+        const category = signal.categoryName || 'Uncategorized';
+        if (!map.has(category)) {
+          map.set(category, []);
+        }
+        map.get(category).push(signal);
+      }
+
+      const sortedCategories = Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+      sortedCategories.forEach(([categoryName, items]) => {
+        const details = document.createElement('details');
+        details.className = 'accordion';
+        details.open = true;
+
+        const summary = document.createElement('summary');
+        summary.setAttribute('aria-label', `${categoryName} category signals`);
+
+        const title = document.createElement('span');
+        title.className = 'accordion-title';
+        title.textContent = categoryName;
+        summary.appendChild(title);
+
+        const count = document.createElement('span');
+        count.className = 'badge';
+        count.textContent = `${items.length} signal${items.length === 1 ? '' : 's'}`;
+        summary.appendChild(count);
+
+        const averageScore = average(items.map((item) => item.score));
+        if (averageScore !== null) {
+          summary.appendChild(createScoreBadge(averageScore));
+        }
+
+        details.appendChild(summary);
+
+        const content = document.createElement('div');
+        content.className = 'accordion-content';
+        const list = document.createElement('div');
+        list.className = 'signal-list';
+        const sortedSignals = items.slice().sort((a, b) => a.signalName.localeCompare(b.signalName));
+        sortedSignals.forEach((signal) => {
+          list.appendChild(createSignalItem(signal));
+        });
+        content.appendChild(list);
+        details.appendChild(content);
+
+        container.appendChild(details);
+      });
     };
 
     const buildCategoryDeck = (categories) => {
@@ -1230,30 +1255,38 @@
 
     const populateCategoryOptions = (categories) => {
       const uniqueCategories = Array.from(new Set(categories)).filter(Boolean).sort();
-      categoryFilter.innerHTML = '<option value="all">Category: all</option>';
-      for (const name of uniqueCategories) {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        categoryFilter.appendChild(option);
-      }
-      categoryFilter.value = 'all';
+      document.querySelectorAll('.category-filter').forEach((select) => {
+        select.innerHTML = '<option value="all">Category: all</option>';
+        for (const name of uniqueCategories) {
+          const option = document.createElement('option');
+          option.value = name;
+          option.textContent = name;
+          select.appendChild(option);
+        }
+        select.value = 'all';
+      });
     };
 
     const clearVisualizations = (message) => {
       currentTrendData = null;
       allScoredSignals = [];
       document.getElementById('accountCards').innerHTML = '';
-      document.getElementById('overviewGrid').innerHTML = '';
       document.getElementById('categoryDeck').innerHTML = `<p class="empty-state">${message}</p>`;
       document.getElementById('trendingUp').innerHTML = `<p class="empty-state">${message}</p>`;
       document.getElementById('trendingDown').innerHTML = `<p class="empty-state">${message}</p>`;
       document.getElementById('lowSignals').innerHTML = `<p class="empty-state">${message}</p>`;
       document.getElementById('allSignalsList').innerHTML = `<p class="empty-state">${message}</p>`;
-      document.getElementById('signalSearch').value = '';
-      document.getElementById('trendFilter').value = 'all';
-      categoryFilter.innerHTML = '<option value="all">Category: all</option>';
-      categoryFilter.value = 'all';
+      document.querySelectorAll('.signal-search').forEach((input) => {
+        input.value = '';
+      });
+      const trendFilterSelect = document.getElementById('trendFilter');
+      if (trendFilterSelect) {
+        trendFilterSelect.value = 'all';
+      }
+      document.querySelectorAll('.category-filter').forEach((select) => {
+        select.innerHTML = '<option value="all">Category: all</option>';
+        select.value = 'all';
+      });
     };
 
     const populateReferenceOptions = (dates) => {
@@ -1276,17 +1309,43 @@
     const referenceMonthSelect = document.getElementById('referenceMonth');
     const scoreUploadInput = document.getElementById('scoreUpload');
     const loadScoreBtn = document.getElementById('loadScoreBtn');
-    const categoryFilter = document.getElementById('categoryFilter');
+    const trendSearchInput = document.getElementById('signalSearch');
+    const allSignalsSearchInput = document.getElementById('allSignalsSearch');
+    const searchInputs = [trendSearchInput, allSignalsSearchInput].filter(Boolean);
+    const trendFilter = document.getElementById('trendFilter');
+    const trendCategoryFilter = document.getElementById('categoryFilter');
+    const allSignalsCategoryFilter = document.getElementById('allSignalsCategoryFilter');
+    const categoryFilters = [trendCategoryFilter, allSignalsCategoryFilter].filter(Boolean);
 
     let parsedRows = [];
     let currentTrendData = null;
     let allScoredSignals = [];
 
+    const syncSearchInputs = (source) => {
+      const value = source.value;
+      searchInputs.forEach((input) => {
+        if (input !== source && input.value !== value) {
+          input.value = value;
+        }
+      });
+      applyFilters();
+    };
+
+    const syncCategoryFilters = (source) => {
+      const value = source.value;
+      categoryFilters.forEach((select) => {
+        if (select !== source && select.value !== value) {
+          select.value = value;
+        }
+      });
+      applyFilters();
+    };
+
     const applyFilters = () => {
       if (!currentTrendData) return;
-      const searchTerm = document.getElementById('signalSearch').value.toLowerCase();
-      const trendFilterValue = document.getElementById('trendFilter').value;
-      const categoryValue = categoryFilter.value;
+      const searchTerm = (searchInputs[0]?.value || '').toLowerCase();
+      const trendFilterValue = trendFilter ? trendFilter.value : 'all';
+      const categoryValue = categoryFilters[0]?.value || 'all';
 
       const matchesFilters = (signal) => {
         const matchesSearch =
@@ -1310,7 +1369,7 @@
       populateSignalList(trendingUpFiltered, document.getElementById('trendingUp'));
       populateSignalList(trendingDownFiltered, document.getElementById('trendingDown'));
       populateSignalList(lowSignalsFiltered, document.getElementById('lowSignals'));
-      populateSignalList(allSignalsFiltered, document.getElementById('allSignalsList'));
+      populateGroupedSignals(allSignalsFiltered, document.getElementById('allSignalsList'));
     };
 
     const refreshDashboard = (rows, snapshotDate) => {
@@ -1321,13 +1380,11 @@
       }
 
       const processed = rows.map(transformRow);
-      const summary = computeSummary(processed);
       const categories = buildCategoryHierarchy(processed);
       const accountInfo = processed[0];
 
       selectedMonthLabel.textContent = snapshotDate || 'Not selected';
       populateAccountOverview(accountInfo, snapshotDate);
-      populateSummaryCards(summary);
       buildCategoryDeck(categories);
 
       currentTrendData = {
@@ -1406,9 +1463,15 @@
       refreshDashboard(rows, snapshotDate);
     });
 
-    document.getElementById('signalSearch').addEventListener('input', applyFilters);
-    document.getElementById('trendFilter').addEventListener('change', applyFilters);
-    categoryFilter.addEventListener('change', applyFilters);
+    searchInputs.forEach((input) => {
+      input.addEventListener('input', (event) => syncSearchInputs(event.target));
+    });
+    if (trendFilter) {
+      trendFilter.addEventListener('change', applyFilters);
+    }
+    categoryFilters.forEach((select) => {
+      select.addEventListener('change', (event) => syncCategoryFilters(event.target));
+    });
 
     resetDashboard();
   </script>
