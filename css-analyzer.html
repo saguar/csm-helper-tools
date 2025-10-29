@@ -528,6 +528,12 @@
             </select>
           </div>
           <div class="form-group">
+            <label for="tenantTypeFilter">Tenant type</label>
+            <select id="tenantTypeFilter" disabled>
+              <option value="" disabled selected>Select a snapshot date first</option>
+            </select>
+          </div>
+          <div class="form-group">
             <label for="accountFilter">Account name</label>
             <select id="accountFilter" disabled>
               <option value="" disabled selected>Select a snapshot date first</option>
@@ -567,6 +573,12 @@
         <input type="search" class="signal-search" id="allSignalsSearch" placeholder="Search a signal..." />
         <select id="allSignalsCategoryFilter" class="category-filter">
           <option value="all">Category: all</option>
+        </select>
+        <select id="allSignalsSubcategoryFilter" disabled>
+          <option value="all">Subcategory: all</option>
+        </select>
+        <select id="allSignalsCapabilityFilter" disabled>
+          <option value="all">Capability: all</option>
         </select>
       </div>
       <div id="allSignalsList"></div>
@@ -1394,22 +1406,33 @@
       }
     };
 
-    const populateOverallScores = (rows) => {
+    const populateOverallScores = (overallRows, categoryRows = []) => {
       const container = document.getElementById('overallScoreGrid');
       container.innerHTML = '';
-      if (!rows.length) {
+
+      const summaries = [];
+      overallRows.forEach((row) => {
+        const decorated = decorateSummaryRow(row);
+        summaries.push({ ...decorated, title: row.scoreName || 'Overall score' });
+      });
+      categoryRows.forEach((row) => {
+        const decorated = decorateSummaryRow(row);
+        summaries.push({ ...decorated, title: row.categoryName || row.scoreName || 'Category score' });
+      });
+
+      if (!summaries.length) {
         container.innerHTML = '<p class="empty-state">No overall scores available for the current selection.</p>';
         return;
       }
 
-      rows.map(decorateSummaryRow).forEach((row) => {
+      summaries.forEach((row) => {
         const card = document.createElement('article');
         card.className = 'score-summary';
 
         const header = document.createElement('div');
         header.className = 'score-summary-header';
         const title = document.createElement('h3');
-        title.textContent = row.scoreName || 'Overall score';
+        title.textContent = row.title;
         header.appendChild(title);
         header.appendChild(createScoreBadge(row.score));
         card.appendChild(header);
@@ -1625,6 +1648,18 @@
       document.querySelectorAll('.signal-search').forEach((input) => {
         input.value = '';
       });
+      const allSignalsSubcategoryFilter = document.getElementById('allSignalsSubcategoryFilter');
+      if (allSignalsSubcategoryFilter) {
+        allSignalsSubcategoryFilter.innerHTML = '<option value="all">Subcategory: all</option>';
+        allSignalsSubcategoryFilter.value = 'all';
+        allSignalsSubcategoryFilter.disabled = true;
+      }
+      const allSignalsCapabilityFilter = document.getElementById('allSignalsCapabilityFilter');
+      if (allSignalsCapabilityFilter) {
+        allSignalsCapabilityFilter.innerHTML = '<option value="all">Capability: all</option>';
+        allSignalsCapabilityFilter.value = 'all';
+        allSignalsCapabilityFilter.disabled = true;
+      }
       const trendFilterSelect = document.getElementById('trendFilter');
       if (trendFilterSelect) {
         trendFilterSelect.value = 'all';
@@ -1654,6 +1689,7 @@
     const selectedMonthLabel = document.getElementById('selectedMonth');
     const selectedAccountLabel = document.getElementById('selectedAccount');
     const referenceMonthSelect = document.getElementById('referenceMonth');
+    const tenantTypeFilterSelect = document.getElementById('tenantTypeFilter');
     const accountFilterSelect = document.getElementById('accountFilter');
     const scoreUploadInput = document.getElementById('scoreUpload');
     const loadScoreBtn = document.getElementById('loadScoreBtn');
@@ -1663,11 +1699,19 @@
     const trendFilter = document.getElementById('trendFilter');
     const trendCategoryFilter = document.getElementById('categoryFilter');
     const allSignalsCategoryFilter = document.getElementById('allSignalsCategoryFilter');
+    const allSignalsSubcategoryFilter = document.getElementById('allSignalsSubcategoryFilter');
+    const allSignalsCapabilityFilter = document.getElementById('allSignalsCapabilityFilter');
     const categoryFilters = [trendCategoryFilter, allSignalsCategoryFilter].filter(Boolean);
 
     let parsedDataset = null;
     let currentTrendData = null;
     let allScoredSignals = [];
+
+    const resetTenantTypeSelect = (message) => {
+      if (!tenantTypeFilterSelect) return;
+      tenantTypeFilterSelect.innerHTML = `<option value="" disabled selected>${message}</option>`;
+      tenantTypeFilterSelect.disabled = true;
+    };
 
     const resetAccountSelect = (message) => {
       accountFilterSelect.innerHTML = `<option value="" disabled selected>${message}</option>`;
@@ -1691,6 +1735,7 @@
           select.value = value;
         }
       });
+      updateAllSignalsFilterOptions({ resetSubcategory: true, resetCapability: true });
       applyFilters();
     };
 
@@ -1699,6 +1744,14 @@
       const searchTerm = (searchInputs[0]?.value || '').toLowerCase();
       const trendFilterValue = trendFilter ? trendFilter.value : 'all';
       const categoryValue = categoryFilters[0]?.value || 'all';
+      const subcategoryValue =
+        allSignalsSubcategoryFilter && !allSignalsSubcategoryFilter.disabled
+          ? allSignalsSubcategoryFilter.value
+          : 'all';
+      const capabilityValue =
+        allSignalsCapabilityFilter && !allSignalsCapabilityFilter.disabled
+          ? allSignalsCapabilityFilter.value
+          : 'all';
 
       const matchesFilters = (signal) => {
         const matchesSearch =
@@ -1709,7 +1762,9 @@
           categoryValue === 'all' ||
           signal.categoryName === categoryValue ||
           signal.categoryDescription?.startsWith(`${categoryValue}`);
-        return matchesSearch && matchesCategory;
+        const matchesSubcategory = subcategoryValue === 'all' || signal.subcategoryName === subcategoryValue;
+        const matchesCapability = capabilityValue === 'all' || signal.capabilityName === capabilityValue;
+        return matchesSearch && matchesCategory && matchesSubcategory && matchesCapability;
       };
 
       const trendingUpFiltered =
@@ -1725,7 +1780,74 @@
       populateGroupedSignals(allSignalsFiltered, document.getElementById('allSignalsList'));
     };
 
-    const populateAccountOptions = (snapshotDate) => {
+    const updateAllSignalsFilterOptions = ({ resetSubcategory = false, resetCapability = false } = {}) => {
+      if (!allSignalsSubcategoryFilter || !allSignalsCapabilityFilter) return;
+
+      const categoryValue = allSignalsCategoryFilter ? allSignalsCategoryFilter.value : 'all';
+      const relevantSignals =
+        categoryValue === 'all'
+          ? allScoredSignals
+          : allScoredSignals.filter((signal) => signal.categoryName === categoryValue);
+
+      const previousSubValue = resetSubcategory ? 'all' : allSignalsSubcategoryFilter.value || 'all';
+      const subcategories = new Set();
+      relevantSignals.forEach((signal) => {
+        if (signal.subcategoryName) {
+          subcategories.add(signal.subcategoryName);
+        }
+      });
+      const sortedSubs = Array.from(subcategories).sort((a, b) => a.localeCompare(b));
+
+      allSignalsSubcategoryFilter.innerHTML = '';
+      const defaultSub = document.createElement('option');
+      defaultSub.value = 'all';
+      defaultSub.textContent = 'Subcategory: all';
+      allSignalsSubcategoryFilter.appendChild(defaultSub);
+      sortedSubs.forEach((name) => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        allSignalsSubcategoryFilter.appendChild(option);
+      });
+
+      const newSubValue = sortedSubs.includes(previousSubValue) ? previousSubValue : 'all';
+      allSignalsSubcategoryFilter.value = newSubValue;
+      const subcategoryChanged = newSubValue !== previousSubValue;
+
+      const previousCapValue =
+        resetCapability || subcategoryChanged ? 'all' : allSignalsCapabilityFilter.value || 'all';
+      const capabilitySignals = relevantSignals.filter(
+        (signal) => newSubValue === 'all' || signal.subcategoryName === newSubValue
+      );
+      const capabilities = new Set();
+      capabilitySignals.forEach((signal) => {
+        if (signal.capabilityName) {
+          capabilities.add(signal.capabilityName);
+        }
+      });
+      const sortedCaps = Array.from(capabilities).sort((a, b) => a.localeCompare(b));
+
+      allSignalsCapabilityFilter.innerHTML = '';
+      const defaultCap = document.createElement('option');
+      defaultCap.value = 'all';
+      defaultCap.textContent = 'Capability: all';
+      allSignalsCapabilityFilter.appendChild(defaultCap);
+      sortedCaps.forEach((name) => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        allSignalsCapabilityFilter.appendChild(option);
+      });
+
+      const newCapValue = sortedCaps.includes(previousCapValue) ? previousCapValue : 'all';
+      allSignalsCapabilityFilter.value = newCapValue;
+
+      const hasSignals = allScoredSignals.length > 0;
+      allSignalsSubcategoryFilter.disabled = !hasSignals;
+      allSignalsCapabilityFilter.disabled = !hasSignals;
+    };
+
+    const populateAccountOptions = (snapshotDate, tenantTypeValue = 'all') => {
       if (!parsedDataset || !snapshotDate) {
         resetAccountSelect(snapshotDate ? 'No accounts for selected date' : 'Select a snapshot date first');
         updateLoadButtonState();
@@ -1735,7 +1857,9 @@
       const accounts = new Set();
       ['signals', 'categories', 'subcategories', 'overall'].forEach((key) => {
         (parsedDataset[key] || []).forEach((row) => {
-          if (row.snapshotDate === snapshotDate && row.accountName) {
+          const matchesTenant =
+            tenantTypeValue === 'all' || !tenantTypeValue || (row.tenantType || '') === tenantTypeValue;
+          if (row.snapshotDate === snapshotDate && row.accountName && matchesTenant) {
             accounts.add(row.accountName);
           }
         });
@@ -1749,7 +1873,7 @@
         option.value = '';
         option.disabled = true;
         option.selected = true;
-        option.textContent = 'No accounts for selected date';
+        option.textContent = tenantTypeValue && tenantTypeValue !== 'all' ? 'No accounts for selected tenant type' : 'No accounts for selected date';
         accountFilterSelect.appendChild(option);
         accountFilterSelect.disabled = true;
         updateLoadButtonState();
@@ -1777,6 +1901,47 @@
       updateLoadButtonState();
     };
 
+    const populateTenantTypeOptions = (snapshotDate) => {
+      if (!tenantTypeFilterSelect) return;
+      if (!parsedDataset || !snapshotDate) {
+        resetTenantTypeSelect(snapshotDate ? 'No tenant types for selected date' : 'Select a snapshot date first');
+        return;
+      }
+
+      const types = new Set();
+      ['signals', 'categories', 'subcategories', 'overall'].forEach((key) => {
+        (parsedDataset[key] || []).forEach((row) => {
+          if (row.snapshotDate === snapshotDate && row.tenantType) {
+            types.add(row.tenantType);
+          }
+        });
+      });
+
+      const sorted = Array.from(types).sort((a, b) => a.localeCompare(b));
+
+      if (!sorted.length) {
+        tenantTypeFilterSelect.innerHTML = '<option value="all">Tenant type: all</option>';
+        tenantTypeFilterSelect.value = 'all';
+        tenantTypeFilterSelect.disabled = true;
+        return;
+      }
+
+      tenantTypeFilterSelect.innerHTML = '';
+      const allOption = document.createElement('option');
+      allOption.value = 'all';
+      allOption.textContent = 'Tenant type: all';
+      tenantTypeFilterSelect.appendChild(allOption);
+      sorted.forEach((type) => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type;
+        tenantTypeFilterSelect.appendChild(option);
+      });
+
+      tenantTypeFilterSelect.disabled = false;
+      tenantTypeFilterSelect.value = sorted.length === 1 ? sorted[0] : 'all';
+    };
+
     const collectSnapshotDates = (dataset) => {
       if (!dataset) return [];
       const values = new Set();
@@ -1797,9 +1962,13 @@
       });
     };
 
-    const refreshDashboard = (dataset, snapshotDate, accountName) => {
+    const refreshDashboard = (dataset, snapshotDate, accountName, tenantTypeValue = '') => {
       if (!dataset) return;
-      const filterBySelection = (row) => row.snapshotDate === snapshotDate && (!accountName || row.accountName === accountName);
+      const activeTenantType = tenantTypeValue && tenantTypeValue !== 'all' ? tenantTypeValue : '';
+      const filterBySelection = (row) =>
+        row.snapshotDate === snapshotDate &&
+        (!activeTenantType || (row.tenantType || '') === activeTenantType) &&
+        (!accountName || row.accountName === accountName);
 
       const overallRows = (dataset.overall || []).filter(filterBySelection);
       const categoryRows = (dataset.categories || []).filter(filterBySelection);
@@ -1813,7 +1982,7 @@
       selectedAccountLabel.textContent = accountName || accountInfo.accountName || 'Not selected';
 
       populateAccountOverview({ ...accountInfo, accountName: accountInfo.accountName || accountName }, snapshotDate, accountName);
-      populateOverallScores(overallRows);
+      populateOverallScores(overallRows, categoryRows);
 
       const categories = buildCategoryHierarchy(processed, categoryRows, subcategoryRows);
       buildCategoryDeck(categories);
@@ -1835,6 +2004,7 @@
       ];
 
       populateCategoryOptions(categoryNames);
+      updateAllSignalsFilterOptions({ resetSubcategory: true, resetCapability: true });
       applyFilters();
     };
 
@@ -1847,6 +2017,7 @@
       selectedMonthLabel.textContent = 'Not selected';
       selectedAccountLabel.textContent = 'Not selected';
       populateReferenceOptions([]);
+      resetTenantTypeSelect('Select a snapshot date first');
       resetAccountSelect('Select a snapshot date first');
       scoreUploadInput.value = '';
       loadScoreBtn.disabled = true;
@@ -1928,6 +2099,7 @@
             parsedDataset = parseWorkbook(loadEvent.target.result);
             const dates = collectSnapshotDates(parsedDataset);
             populateReferenceOptions(dates);
+            resetTenantTypeSelect(dates.length ? 'Select a snapshot date first' : 'No data available');
             resetAccountSelect(dates.length ? 'Select a snapshot date first' : 'No data available');
             clearVisualizations('Select a snapshot date and account, then click "Load score".');
             selectedMonthLabel.textContent = 'Not selected';
@@ -1959,6 +2131,7 @@
             };
             const dates = collectSnapshotDates(parsedDataset);
             populateReferenceOptions(dates);
+            resetTenantTypeSelect(dates.length ? 'Select a snapshot date first' : 'No data available');
             resetAccountSelect(dates.length ? 'Select a snapshot date first' : 'No data available');
             clearVisualizations('Select a snapshot date and account, then click "Load score".');
             selectedMonthLabel.textContent = 'Not selected';
@@ -1975,10 +2148,22 @@
     });
 
     referenceMonthSelect.addEventListener('change', () => {
-      populateAccountOptions(referenceMonthSelect.value);
+      populateTenantTypeOptions(referenceMonthSelect.value);
+      const tenantValue =
+        tenantTypeFilterSelect && !tenantTypeFilterSelect.disabled ? tenantTypeFilterSelect.value || 'all' : 'all';
+      populateAccountOptions(referenceMonthSelect.value, tenantValue);
       selectedAccountLabel.textContent = 'Not selected';
       updateLoadButtonState();
     });
+
+    if (tenantTypeFilterSelect) {
+      tenantTypeFilterSelect.addEventListener('change', () => {
+        const tenantValue = tenantTypeFilterSelect.disabled ? 'all' : tenantTypeFilterSelect.value || 'all';
+        populateAccountOptions(referenceMonthSelect.value, tenantValue);
+        selectedAccountLabel.textContent = 'Not selected';
+        updateLoadButtonState();
+      });
+    }
 
     accountFilterSelect.addEventListener('change', () => {
       updateLoadButtonState();
@@ -1988,7 +2173,8 @@
       const snapshotDate = referenceMonthSelect.value;
       const accountName = accountFilterSelect.value;
       if (!snapshotDate || !parsedDataset || !accountName) return;
-      refreshDashboard(parsedDataset, snapshotDate, accountName);
+      const tenantValue = tenantTypeFilterSelect && !tenantTypeFilterSelect.disabled ? tenantTypeFilterSelect.value : '';
+      refreshDashboard(parsedDataset, snapshotDate, accountName, tenantValue);
     });
 
     searchInputs.forEach((input) => {
@@ -2000,6 +2186,17 @@
     categoryFilters.forEach((select) => {
       select.addEventListener('change', (event) => syncCategoryFilters(event.target));
     });
+
+    if (allSignalsSubcategoryFilter) {
+      allSignalsSubcategoryFilter.addEventListener('change', () => {
+        updateAllSignalsFilterOptions({ resetCapability: true });
+        applyFilters();
+      });
+    }
+
+    if (allSignalsCapabilityFilter) {
+      allSignalsCapabilityFilter.addEventListener('change', applyFilters);
+    }
 
     resetDashboard();
   </script>
