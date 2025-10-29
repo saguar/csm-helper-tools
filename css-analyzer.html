@@ -711,6 +711,166 @@
       return Number.isFinite(parsed) ? parsed : null;
     };
 
+    const normalizeKey = (value) => {
+      if (value === null || value === undefined) return '';
+      return String(value).trim().toLowerCase().replace(/\s+/g, ' ');
+    };
+
+    const TECH_HEALTH_SCORED_STRUCTURE = [
+      {
+        name: 'Efficiency',
+        weight: 0.52,
+        capabilities: [
+          {
+            name: 'User Experience Efficiency',
+            signals: [
+              { name: 'EPT Page Load Time', aliases: ['experience page time (ept)', 'average page load time'] },
+              { name: 'Concurrent UI Errors' },
+            ],
+          },
+          {
+            name: 'Integration Efficiency',
+            signals: [
+              { name: 'Concurrent API Errors' },
+              { name: 'API performance', aliases: ['api performance score', 'api performance index'] },
+            ],
+          },
+          {
+            name: 'Transaction Efficiency',
+            signals: [
+              { name: 'Concurrent Apex Errors' },
+              { name: 'CPU Timeout Errors', aliases: ['apex cpu time out errors', 'apex cpu timeout errors'] },
+              { name: 'Rowlock Errors', aliases: ['rowlock error rates', 'row lock errors'] },
+            ],
+          },
+          {
+            name: 'Data Efficiency',
+            signals: [{ name: 'Heap Size Errors', aliases: ['apex heap size errors'] }],
+          },
+        ],
+      },
+      {
+        name: 'Operational Excellence',
+        weight: 0.28,
+        capabilities: [
+          {
+            name: 'Tech Debt',
+            signals: [
+              { name: 'Process Builder Workflows' },
+              { name: 'Workflow Rules' },
+            ],
+          },
+          {
+            name: 'Best Practices',
+            signals: [{ name: 'Core Deployed on Hyperforce' }],
+          },
+        ],
+      },
+      {
+        name: 'Customization',
+        weight: 0.1,
+        capabilities: [
+          {
+            name: 'Org Security',
+            signals: [
+              { name: 'SSO Enabled', aliases: ['single sign-on (sso) enabled'] },
+              { name: 'Core MFA Enabled', aliases: ['mfa enabled', 'mfa enforcement'] },
+              { name: 'Maximum Invalid Login Attempts' },
+              { name: 'Minimum Password Length' },
+              { name: 'Minimum Password Lifetime Requirement' },
+              { name: 'Password Complexity Requirement' },
+              { name: 'Password Expiration' },
+              { name: 'Password History Restriction' },
+              { name: 'Password Lockout Period' },
+              { name: 'Password Question Requirement' },
+              { name: 'Obscure Secret Answer for Password' },
+            ],
+          },
+          {
+            name: 'Security configurations',
+            signals: [
+              { name: 'Prompt Injection Detection Enabled' },
+              { name: 'Toxicity Detection in Prompts Enabled' },
+            ],
+          },
+        ],
+      },
+      {
+        name: 'Observability',
+        weight: 0.1,
+        capabilities: [
+          {
+            name: 'Monitoring',
+            signals: [{ name: 'ProM Enabled' }],
+          },
+          {
+            name: 'Diagnostics',
+            signals: [
+              { name: 'Scale Center Adoption' },
+              { name: 'ApexGuru Adoption', aliases: ['apex guru adoption'] },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const TECH_HEALTH_CAPABILITY_LOOKUP = (() => {
+      const capabilityMap = new Map();
+      TECH_HEALTH_SCORED_STRUCTURE.forEach((subcategory) => {
+        subcategory.capabilities.forEach((capability) => {
+          const capabilityKey = normalizeKey(capability.name);
+          if (!capabilityKey) return;
+          if (!capabilityMap.has(capabilityKey)) {
+            capabilityMap.set(capabilityKey, {
+              name: capability.name,
+              subcategoryName: subcategory.name,
+              subcategoryWeight: subcategory.weight,
+              signals: new Set(),
+            });
+          }
+          const entry = capabilityMap.get(capabilityKey);
+          capability.signals.forEach((signal) => {
+            const descriptor = typeof signal === 'string' ? { name: signal } : signal;
+            const primary = normalizeKey(descriptor.name);
+            if (primary) entry.signals.add(primary);
+            if (Array.isArray(descriptor.aliases)) {
+              descriptor.aliases.forEach((alias) => {
+                const normalizedAlias = normalizeKey(alias);
+                if (normalizedAlias) entry.signals.add(normalizedAlias);
+              });
+            }
+          });
+        });
+      });
+      return capabilityMap;
+    })();
+
+    const classifySignal = (row) => {
+      const categoryKey = normalizeKey(row.categoryName);
+      if (categoryKey !== 'technical health') {
+        return { type: 'scored' };
+      }
+
+      const capabilityKey = normalizeKey(row.capabilityName);
+      const signalKey = normalizeKey(row.signalName);
+      if (!capabilityKey || !signalKey) {
+        return { type: 'informational' };
+      }
+
+      const capability = TECH_HEALTH_CAPABILITY_LOOKUP.get(capabilityKey);
+      if (!capability) {
+        return { type: 'informational' };
+      }
+
+      const isScored = capability.signals.has(signalKey);
+      return {
+        type: isScored ? 'scored' : 'informational',
+        subcategoryName: capability.subcategoryName,
+        subcategoryWeight: capability.subcategoryWeight,
+        capabilityName: capability.name,
+      };
+    };
+
     const normalizeDateValue = (value) => {
       if (value === null || value === undefined || value === '') return '';
       if (value instanceof Date && !Number.isNaN(value.getTime())) {
@@ -978,6 +1138,19 @@
 
     const transformSignalRow = (row) => {
       const processed = { ...row };
+      const classification = classifySignal(row);
+      processed.signalType = classification.type;
+      processed.isScored = classification.type === 'scored';
+      processed.isInformational = classification.type === 'informational';
+      if (classification.subcategoryName) {
+        processed.technicalHealthSubcategory = classification.subcategoryName;
+      }
+      if (typeof classification.subcategoryWeight === 'number') {
+        processed.technicalHealthSubcategoryWeight = classification.subcategoryWeight;
+      }
+      if (classification.capabilityName) {
+        processed.technicalHealthCapability = classification.capabilityName;
+      }
       processed.rating = ratingFromScore(row.score);
       processed.categoryDescription = [row.categoryName, row.subcategoryName, row.capabilityName]
         .filter(Boolean)
@@ -1901,6 +2074,7 @@
       const signalRows = (dataset.signals || []).filter(filterBySelection);
 
       const processed = signalRows.map(transformSignalRow);
+      const scoredSignals = processed.filter((signal) => signal.isScored);
       const accountInfo = signalRows[0] || categoryRows[0] || subcategoryRows[0] || overallRows[0] || {};
 
       selectedMonthLabel.textContent = snapshotDate ? formatSnapshotMonth(snapshotDate) : 'Not selected';
@@ -1908,14 +2082,14 @@
 
       populateAccountOverview({ ...accountInfo, accountName: accountInfo.accountName || accountName }, snapshotDate, accountName);
 
-      const categories = buildCategoryHierarchy(processed, categoryRows, subcategoryRows);
+      const categories = buildCategoryHierarchy(scoredSignals, categoryRows, subcategoryRows);
       populateOverallScores(overallRows, categories);
 
-      allScoredSignals = processed;
+      allScoredSignals = scoredSignals;
 
       const categoryNames = [
         ...new Set([
-          ...processed.map((signal) => signal.categoryName),
+          ...scoredSignals.map((signal) => signal.categoryName),
           ...categoryRows.map((row) => row.categoryName),
         ].filter(Boolean)),
       ];
