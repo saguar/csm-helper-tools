@@ -637,7 +637,7 @@
       <p class="signal-category" data-field="category"></p>
       <div class="signal-metrics">
         <div class="score-group">
-          <strong data-field="score"></strong>
+          <span data-field="score"></span>
           <span class="badge" data-field="rating"></span>
         </div>
         <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
@@ -674,10 +674,10 @@
       return '-';
     };
 
-    const createScoreBadge = (score) => {
+    const createScoreBadge = (score, fallback) => {
       const span = document.createElement('span');
       span.className = `score-pill ${scoreClass(score)}`;
-      span.textContent = `Score ${formatScore(score)}`;
+      span.textContent = `Score ${formatScore(score, fallback)}`;
       return span;
     };
 
@@ -1539,7 +1539,9 @@
         changeSpan.remove();
       }
 
-      clone.querySelector('[data-field="score"]').textContent = formatScore(item.score, item.scoreRaw);
+      const scorePlaceholder = clone.querySelector('[data-field="score"]');
+      const scoreBadge = createScoreBadge(item.score, item.scoreRaw);
+      scorePlaceholder.replaceWith(scoreBadge);
 
       const ratingBadge = clone.querySelector('[data-field="rating"]');
       if (item.rating) {
