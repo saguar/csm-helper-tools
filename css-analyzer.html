@@ -900,9 +900,9 @@
 
     const ratingFromScore = (score) => {
       if (!Number.isFinite(score)) return '';
-      if (score >= 80) return 'Excellent';
-      if (score >= 50) return 'On track';
-      return 'Needs attention';
+      if (score >= 61) return 'Excellent';
+      if (score >= 31) return 'Good';
+      return 'Fair';
     };
 
     const formatSigned = (value) => {
@@ -923,6 +923,57 @@
       return [changePiece(mom, 'MoM'), changePiece(qoq, 'QoQ')]
         .filter(Boolean)
         .join(' • ');
+    };
+
+    const CUSTOMER_SUCCESS_SCORE_WEIGHTS = [
+      { key: 'product adoption', weight: 5 },
+      { key: 'customer expertise', weight: 2 },
+      { key: 'technical health', weight: 3 },
+    ];
+
+    const calculateCustomerSuccessScore = (categories = []) => {
+      if (!Array.isArray(categories) || !categories.length) return null;
+
+      const categoryByKey = new Map();
+      categories.forEach((category) => {
+        const key = normalizeKey(category?.name);
+        if (key) {
+          categoryByKey.set(key, category);
+        }
+      });
+
+      const weightedAverage = (selector) => {
+        let weightedSum = 0;
+        let totalWeight = 0;
+        CUSTOMER_SUCCESS_SCORE_WEIGHTS.forEach(({ key, weight }) => {
+          const category = categoryByKey.get(key);
+          if (!category) return;
+          const value = selector(category);
+          if (Number.isFinite(value)) {
+            weightedSum += value * weight;
+            totalWeight += weight;
+          }
+        });
+        if (!totalWeight) return null;
+        return weightedSum / totalWeight;
+      };
+
+      const score = weightedAverage((category) => category.score);
+      if (!Number.isFinite(score)) return null;
+
+      const moMChange = weightedAverage((category) => category.moMChange);
+      const qoQChange = weightedAverage((category) => category.qoQChange);
+
+      return {
+        title: 'Customer Success Score',
+        score,
+        rating: ratingFromScore(score),
+        moMChange,
+        qoQChange,
+        changeText: buildChangeLabel(moMChange, qoQChange),
+        momText: formatSigned(moMChange),
+        qoqText: formatSigned(qoQChange),
+      };
     };
 
     const evaluateBenchmark = (valueNumeric, benchmarkRaw) => {
@@ -1640,6 +1691,22 @@
       });
 
       const hasCategories = Array.isArray(categoryBreakdown) && categoryBreakdown.length > 0;
+
+      if (hasCategories) {
+        const calculated = calculateCustomerSuccessScore(categoryBreakdown);
+        if (calculated) {
+          const normalizedTitle = normalizeKey(calculated.title);
+          const replacementIndex = summaries.findIndex((summary) => {
+            const summaryTitle = normalizeKey(summary.title);
+            return summaryTitle === normalizedTitle || summaryTitle === 'overall';
+          });
+          if (replacementIndex >= 0) {
+            summaries[replacementIndex] = { ...summaries[replacementIndex], ...calculated };
+          } else {
+            summaries.unshift(calculated);
+          }
+        }
+      }
 
       if (!summaries.length && !hasCategories) {
         container.innerHTML = '<p class="empty-state">No overall scores available for the current selection.</p>';
