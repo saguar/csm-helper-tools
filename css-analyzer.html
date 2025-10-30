@@ -912,35 +912,48 @@
       },
     ];
 
-    const TECH_HEALTH_CAPABILITY_LOOKUP = (() => {
+    const TECH_HEALTH_INFORMATIONAL_SUBCATEGORY = 'Informational Signals';
+
+    const { capabilityMap: TECH_HEALTH_CAPABILITY_LOOKUP, signalMap: TECH_HEALTH_SIGNAL_LOOKUP } = (() => {
       const capabilityMap = new Map();
+      const signalMap = new Map();
+
+      const registerSignal = (entry, signalName) => {
+        const key = normalizeKey(signalName);
+        if (!key) return;
+        if (!signalMap.has(key)) {
+          signalMap.set(key, {
+            capabilityName: entry.name,
+            subcategoryName: entry.subcategoryName,
+            subcategoryWeight: entry.subcategoryWeight,
+          });
+        }
+      };
+
       TECH_HEALTH_SCORED_STRUCTURE.forEach((subcategory) => {
         subcategory.capabilities.forEach((capability) => {
           const capabilityKey = normalizeKey(capability.name);
           if (!capabilityKey) return;
-          if (!capabilityMap.has(capabilityKey)) {
-            capabilityMap.set(capabilityKey, {
-              name: capability.name,
-              subcategoryName: subcategory.name,
-              subcategoryWeight: subcategory.weight,
-              signals: new Set(),
-            });
-          }
-          const entry = capabilityMap.get(capabilityKey);
+
+          const baseEntry = {
+            name: capability.name,
+            subcategoryName: subcategory.name,
+            subcategoryWeight: subcategory.weight,
+          };
+
+          capabilityMap.set(capabilityKey, baseEntry);
+
           capability.signals.forEach((signal) => {
             const descriptor = typeof signal === 'string' ? { name: signal } : signal;
-            const primary = normalizeKey(descriptor.name);
-            if (primary) entry.signals.add(primary);
+            registerSignal(baseEntry, descriptor.name);
             if (Array.isArray(descriptor.aliases)) {
-              descriptor.aliases.forEach((alias) => {
-                const normalizedAlias = normalizeKey(alias);
-                if (normalizedAlias) entry.signals.add(normalizedAlias);
-              });
+              descriptor.aliases.forEach((alias) => registerSignal(baseEntry, alias));
             }
           });
         });
       });
-      return capabilityMap;
+
+      return { capabilityMap, signalMap };
     })();
 
     const classifySignal = (row) => {
@@ -949,29 +962,39 @@
         return { type: 'scored' };
       }
 
-      const fallbackClassification = {
-        type: 'scored',
-        subcategoryName: row.subcategoryName,
-        capabilityName: row.capabilityName,
-      };
-
       const capabilityKey = normalizeKey(row.capabilityName);
-      if (!capabilityKey) {
-        return fallbackClassification;
+      const signalKey = normalizeKey(row.signalName);
+
+      let capability = null;
+
+      if (capabilityKey && TECH_HEALTH_CAPABILITY_LOOKUP.has(capabilityKey)) {
+        capability = TECH_HEALTH_CAPABILITY_LOOKUP.get(capabilityKey);
+      } else if (signalKey && TECH_HEALTH_SIGNAL_LOOKUP.has(signalKey)) {
+        const match = TECH_HEALTH_SIGNAL_LOOKUP.get(signalKey);
+        capability = {
+          name: match.capabilityName,
+          subcategoryName: match.subcategoryName,
+          subcategoryWeight: match.subcategoryWeight,
+        };
       }
 
-      const capability = TECH_HEALTH_CAPABILITY_LOOKUP.get(capabilityKey);
-      if (!capability) {
-        return fallbackClassification;
+      if (capability) {
+        return {
+          type: 'scored',
+          subcategoryName: capability.subcategoryName || row.subcategoryName,
+          subcategoryWeight: capability.subcategoryWeight,
+          capabilityName: capability.name || row.capabilityName,
+        };
       }
 
-      const classification = {
-        type: 'scored',
-        subcategoryName: capability.subcategoryName || row.subcategoryName,
-        subcategoryWeight: capability.subcategoryWeight,
-        capabilityName: capability.name || row.capabilityName,
+      return {
+        type: 'informational',
+        subcategoryName: TECH_HEALTH_INFORMATIONAL_SUBCATEGORY,
+        capabilityName:
+          row.capabilityName ||
+          row.subcategoryName ||
+          TECH_HEALTH_INFORMATIONAL_SUBCATEGORY,
       };
-      return classification;
     };
 
     const normalizeDateValue = (value) => {
