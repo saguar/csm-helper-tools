@@ -682,8 +682,12 @@
         <h2>All scored signals</h2>
         <button class="export-button" type="button" id="exportSignalsJson" disabled>Export to JSON</button>
       </div>
-      <p class="helper-text">Every scored signal for the selected snapshot is listed below and respects the filters above.</p>
+      <p class="helper-text">Use the filters to explore scored or informational signals for the selected snapshot.</p>
       <div class="filters all-signals-controls">
+        <select id="signalTypeFilter">
+          <option value="scored" selected>Signal type: scored</option>
+          <option value="informational">Signal type: informational</option>
+        </select>
         <input type="search" class="signal-search" id="allSignalsSearch" placeholder="Search a signal..." />
         <select id="allSignalsCategoryFilter" class="category-filter">
           <option value="all">Category: all</option>
@@ -2065,6 +2069,7 @@
     const accountFilterSelect = document.getElementById('accountFilter');
     const scoreUploadInput = document.getElementById('scoreUpload');
     const loadScoreBtn = document.getElementById('loadScoreBtn');
+    const signalTypeFilter = document.getElementById('signalTypeFilter');
     const allSignalsSearchInput = document.getElementById('allSignalsSearch');
     const searchInputs = [allSignalsSearchInput].filter(Boolean);
     const allSignalsCategoryFilter = document.getElementById('allSignalsCategoryFilter');
@@ -2075,8 +2080,12 @@
     const exportOverallButton = document.getElementById('exportOverallJson');
     const exportSignalsButton = document.getElementById('exportSignalsJson');
 
+    if (signalTypeFilter) {
+      signalTypeFilter.disabled = true;
+    }
+
     let parsedDataset = null;
-    let allScoredSignals = [];
+    let allSignalsByType = { scored: [], informational: [] };
 
     const initialAccountContext = () => ({
       entries: [],
@@ -2097,6 +2106,7 @@
       category: 'all',
       subcategory: 'all',
       capability: 'all',
+      signalType: 'scored',
     };
 
     const resetSignalsFiltersState = () => {
@@ -2105,11 +2115,12 @@
         category: 'all',
         subcategory: 'all',
         capability: 'all',
+        signalType: 'scored',
       };
     };
 
     const clearVisualizations = (message) => {
-      allScoredSignals = [];
+      allSignalsByType = { scored: [], informational: [] };
       currentOverallSummaryData = { summaries: [], categoryBreakdown: [] };
       currentFilteredSignals = [];
       currentAccountContext = initialAccountContext();
@@ -2117,6 +2128,11 @@
 
       if (exportOverallButton) exportOverallButton.disabled = true;
       if (exportSignalsButton) exportSignalsButton.disabled = true;
+
+      if (signalTypeFilter) {
+        signalTypeFilter.value = 'scored';
+        signalTypeFilter.disabled = true;
+      }
 
       const accountOverview = document.getElementById('accountOverview');
       if (accountOverview) accountOverview.innerHTML = '';
@@ -2226,6 +2242,19 @@
       applyFilters();
     };
 
+    const getSelectedSignalType = () => {
+      if (!signalTypeFilter) return 'scored';
+      return signalTypeFilter.value || 'scored';
+    };
+
+    const getActiveSignals = () => {
+      const type = getSelectedSignalType();
+      if (type === 'informational') {
+        return allSignalsByType.informational;
+      }
+      return allSignalsByType.scored;
+    };
+
     const applyFilters = () => {
       if (!allSignalsListContainer) return;
       const rawSearchTerm = searchInputs[0]?.value || '';
@@ -2254,16 +2283,18 @@
         return matchesSearch && matchesCategory && matchesSubcategory && matchesCapability;
       };
 
-      const filteredSignals = allScoredSignals.filter(matchesFilters);
+      const sourceSignals = getActiveSignals();
+      const filteredSignals = sourceSignals.filter(matchesFilters);
       currentFilteredSignals = cloneForExport(filteredSignals);
       currentAllSignalsFilters = {
         searchTerm: rawSearchTerm,
         category: categoryValue,
         subcategory: subcategoryValue,
         capability: capabilityValue,
+        signalType: getSelectedSignalType(),
       };
       if (exportSignalsButton) {
-        exportSignalsButton.disabled = allScoredSignals.length === 0;
+        exportSignalsButton.disabled = sourceSignals.length === 0;
       }
       populateGroupedSignals(filteredSignals, allSignalsListContainer);
     };
@@ -2272,10 +2303,11 @@
       if (!allSignalsSubcategoryFilter || !allSignalsCapabilityFilter) return;
 
       const categoryValue = allSignalsCategoryFilter ? allSignalsCategoryFilter.value : 'all';
+      const baseSignals = getActiveSignals();
       const relevantSignals =
         categoryValue === 'all'
-          ? allScoredSignals
-          : allScoredSignals.filter((signal) => signal.categoryName === categoryValue);
+          ? baseSignals
+          : baseSignals.filter((signal) => signal.categoryName === categoryValue);
 
       const previousSubValue = resetSubcategory ? 'all' : allSignalsSubcategoryFilter.value || 'all';
       const subcategories = new Set();
@@ -2330,7 +2362,7 @@
       const newCapValue = sortedCaps.includes(previousCapValue) ? previousCapValue : 'all';
       allSignalsCapabilityFilter.value = newCapValue;
 
-      const hasSignals = allScoredSignals.length > 0;
+      const hasSignals = baseSignals.length > 0;
       allSignalsSubcategoryFilter.disabled = !hasSignals;
       allSignalsCapabilityFilter.disabled = !hasSignals;
     };
@@ -2465,6 +2497,9 @@
 
       const processed = signalRows.map(transformSignalRow);
       const scoredSignals = processed.filter((signal) => signal.isScored);
+      const informationalSignals = processed.filter(
+        (signal) => signal.isInformational || (!signal.isScored && !signal.isInformational)
+      );
       const accountInfo = signalRows[0] || categoryRows[0] || subcategoryRows[0] || overallRows[0] || {};
 
       selectedMonthLabel.textContent = snapshotDate ? formatSnapshotMonth(snapshotDate) : 'Not selected';
@@ -2475,11 +2510,20 @@
       const categories = buildCategoryHierarchy(scoredSignals, categoryRows, subcategoryRows);
       populateOverallScores(overallRows, categories);
 
-      allScoredSignals = scoredSignals;
+      allSignalsByType = { scored: scoredSignals, informational: informationalSignals };
+
+      const defaultSignalType = scoredSignals.length || !informationalSignals.length ? 'scored' : 'informational';
+
+      if (signalTypeFilter) {
+        signalTypeFilter.disabled = processed.length === 0;
+        signalTypeFilter.value = defaultSignalType;
+      }
+
+      currentAllSignalsFilters.signalType = defaultSignalType;
 
       const categoryNames = [
         ...new Set([
-          ...scoredSignals.map((signal) => signal.categoryName),
+          ...processed.map((signal) => signal.categoryName),
           ...categoryRows.map((row) => row.categoryName),
         ].filter(Boolean)),
       ];
@@ -2668,6 +2712,14 @@
     if (allSignalsSubcategoryFilter) {
       allSignalsSubcategoryFilter.addEventListener('change', () => {
         updateAllSignalsFilterOptions({ resetCapability: true });
+        applyFilters();
+      });
+    }
+
+    if (signalTypeFilter) {
+      signalTypeFilter.addEventListener('change', () => {
+        currentAllSignalsFilters.signalType = getSelectedSignalType();
+        updateAllSignalsFilterOptions({ resetSubcategory: true, resetCapability: true });
         applyFilters();
       });
     }
