@@ -87,6 +87,47 @@
       color: var(--text);
     }
 
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 1.35rem;
+      color: var(--text);
+    }
+
+    .export-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .export-button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+    }
+
+    .export-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+      box-shadow: none;
+    }
+
     .data-loader {
       display: grid;
       gap: 1.25rem;
@@ -629,12 +670,18 @@
     </section>
 
     <section class="panel" id="overall-scores">
-      <h2>Overall score summary</h2>
+      <div class="panel-header">
+        <h2>Overall score summary</h2>
+        <button class="export-button" type="button" id="exportOverallJson" disabled>Export to JSON</button>
+      </div>
       <div class="score-summary-grid" id="overallScoreGrid"></div>
     </section>
 
     <section class="panel" id="all-scored-signals">
-      <h2>All scored signals</h2>
+      <div class="panel-header">
+        <h2>All scored signals</h2>
+        <button class="export-button" type="button" id="exportSignalsJson" disabled>Export to JSON</button>
+      </div>
       <p class="helper-text">Every scored signal for the selected snapshot is listed below and respects the filters above.</p>
       <div class="filters all-signals-controls">
         <input type="search" class="signal-search" id="allSignalsSearch" placeholder="Search a signal..." />
@@ -716,6 +763,29 @@
         ...options,
       });
       return formatter.format(value);
+    };
+
+    const cloneForExport = (value) => {
+      if (value === null || value === undefined) return value;
+      if (typeof structuredClone === 'function') {
+        try {
+          return structuredClone(value);
+        } catch (error) {
+          // structuredClone may throw for unsupported types; fall back to JSON cloning.
+        }
+      }
+      return JSON.parse(JSON.stringify(value));
+    };
+
+    const slugify = (value) => {
+      if (value === null || value === undefined) return '';
+      return String(value)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60);
     };
 
     const parseNumber = (value) => {
@@ -1468,27 +1538,50 @@
       const container = document.getElementById('accountOverview');
       container.innerHTML = '';
       const details = info || {};
-      const cards = [
-        createInfoCard('Company', details.companyName || 'N/A'),
-        createInfoCard('Account name', accountName || details.accountName || 'N/A'),
-      ];
+      const overviewEntries = [];
+      const appendEntry = (label, value, subtitle) => {
+        let normalizedValue = value;
+        if (normalizedValue === undefined || normalizedValue === null) {
+          normalizedValue = 'N/A';
+        } else if (typeof normalizedValue === 'string' && normalizedValue.trim() === '') {
+          normalizedValue = 'N/A';
+        }
+        const entry = { label, value: normalizedValue };
+        if (subtitle) entry.subtitle = subtitle;
+        overviewEntries.push(entry);
+        container.appendChild(createInfoCard(label, normalizedValue, subtitle));
+      };
+
+      const primaryAccountName = accountName || details.accountName || 'N/A';
+      appendEntry('Company', details.companyName || 'N/A');
+      appendEntry('Account name', primaryAccountName);
 
       const localName = details.accountLocalName;
-      if (localName && localName !== (accountName || details.accountName)) {
-        cards.push(createInfoCard('Account local name', localName));
+      if (localName && localName !== primaryAccountName) {
+        appendEntry('Account local name', localName);
       }
 
-      cards.push(createInfoCard('Snapshot date', formatSnapshotMonth(snapshotDate)));
+      const formattedSnapshot = formatSnapshotMonth(snapshotDate);
+      appendEntry('Snapshot date', formattedSnapshot);
 
       if (details.successPlan) {
-        cards.push(createInfoCard('Success plan', details.successPlan));
+        appendEntry('Success plan', details.successPlan);
       }
 
       if (details.tenantType) {
-        cards.push(createInfoCard('Tenant type', details.tenantType));
+        appendEntry('Tenant type', details.tenantType);
       }
 
-      cards.forEach((card) => container.appendChild(card));
+      currentAccountContext = {
+        entries: overviewEntries,
+        accountName: primaryAccountName,
+        accountLocalName: localName || '',
+        companyName: details.companyName || 'N/A',
+        snapshotDateRaw: snapshotDate || '',
+        snapshotDateFormatted: formattedSnapshot,
+        successPlan: details.successPlan || '',
+        tenantType: details.tenantType || '',
+      };
     };
 
     const createMetricPill = (label, value) => {
@@ -1679,8 +1772,18 @@
       const hasCategories = Array.isArray(categoryBreakdown) && categoryBreakdown.length > 0;
 
       if (!summaries.length && !hasCategories) {
+        currentOverallSummaryData = { summaries: [], categoryBreakdown: [] };
+        if (exportOverallButton) exportOverallButton.disabled = true;
         container.innerHTML = '<p class="empty-state">No overall scores available for the current selection.</p>';
         return;
+      }
+
+      currentOverallSummaryData = {
+        summaries: cloneForExport(summaries),
+        categoryBreakdown: hasCategories ? cloneForExport(categoryBreakdown) : [],
+      };
+      if (exportOverallButton) {
+        exportOverallButton.disabled = false;
       }
 
       const cardsToRender = summaries.length ? summaries : [{ title: 'Category breakdown' }];
@@ -1790,8 +1893,66 @@
       });
     };
 
+    const selectedMonthLabel = document.getElementById('selectedMonth');
+    const selectedAccountLabel = document.getElementById('selectedAccount');
+    const referenceMonthSelect = document.getElementById('referenceMonth');
+    const tenantTypeFilterSelect = document.getElementById('tenantTypeFilter');
+    const accountFilterSelect = document.getElementById('accountFilter');
+    const scoreUploadInput = document.getElementById('scoreUpload');
+    const loadScoreBtn = document.getElementById('loadScoreBtn');
+    const allSignalsSearchInput = document.getElementById('allSignalsSearch');
+    const searchInputs = [allSignalsSearchInput].filter(Boolean);
+    const allSignalsCategoryFilter = document.getElementById('allSignalsCategoryFilter');
+    const allSignalsSubcategoryFilter = document.getElementById('allSignalsSubcategoryFilter');
+    const allSignalsCapabilityFilter = document.getElementById('allSignalsCapabilityFilter');
+    const categoryFilters = [allSignalsCategoryFilter].filter(Boolean);
+    const allSignalsListContainer = document.getElementById('allSignalsList');
+    const exportOverallButton = document.getElementById('exportOverallJson');
+    const exportSignalsButton = document.getElementById('exportSignalsJson');
+
+    let parsedDataset = null;
+    let allScoredSignals = [];
+
+    const initialAccountContext = () => ({
+      entries: [],
+      accountName: '',
+      accountLocalName: '',
+      companyName: '',
+      snapshotDateRaw: '',
+      snapshotDateFormatted: '',
+      successPlan: '',
+      tenantType: '',
+    });
+
+    let currentAccountContext = initialAccountContext();
+    let currentOverallSummaryData = { summaries: [], categoryBreakdown: [] };
+    let currentFilteredSignals = [];
+    let currentAllSignalsFilters = {
+      searchTerm: '',
+      category: 'all',
+      subcategory: 'all',
+      capability: 'all',
+    };
+
+    const resetSignalsFiltersState = () => {
+      currentAllSignalsFilters = {
+        searchTerm: '',
+        category: 'all',
+        subcategory: 'all',
+        capability: 'all',
+      };
+    };
+
     const clearVisualizations = (message) => {
       allScoredSignals = [];
+      currentOverallSummaryData = { summaries: [], categoryBreakdown: [] };
+      currentFilteredSignals = [];
+      currentAccountContext = initialAccountContext();
+      resetSignalsFiltersState();
+
+      if (exportOverallButton) exportOverallButton.disabled = true;
+      if (exportSignalsButton) exportSignalsButton.disabled = true;
+
       const accountOverview = document.getElementById('accountOverview');
       if (accountOverview) accountOverview.innerHTML = '';
       const overallGrid = document.getElementById('overallScoreGrid');
@@ -1818,6 +1979,40 @@
       });
     };
 
+    const buildAccountOverviewPayload = () => {
+      const { entries, ...meta } = currentAccountContext;
+      const sanitizedMeta = {};
+      Object.entries(meta).forEach(([key, value]) => {
+        if (value === null || value === undefined) return;
+        if (typeof value === 'string' && value.trim() === '') return;
+        sanitizedMeta[key] = value;
+      });
+      return {
+        ...sanitizedMeta,
+        entries: cloneForExport(entries),
+      };
+    };
+
+    const buildExportFilename = (base) => {
+      const accountSlug = slugify(currentAccountContext.accountName) || 'account';
+      const snapshotSource =
+        currentAccountContext.snapshotDateRaw || currentAccountContext.snapshotDateFormatted || 'snapshot';
+      const snapshotSlug = slugify(snapshotSource) || 'snapshot';
+      return `${base}-${accountSlug}-${snapshotSlug}.json`;
+    };
+
+    const triggerJsonDownload = (filename, payload) => {
+      const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    };
+
     const populateReferenceOptions = (dates) => {
       referenceMonthSelect.innerHTML = '';
       const placeholder = document.createElement('option');
@@ -1833,24 +2028,6 @@
         referenceMonthSelect.appendChild(option);
       }
     };
-
-    const selectedMonthLabel = document.getElementById('selectedMonth');
-    const selectedAccountLabel = document.getElementById('selectedAccount');
-    const referenceMonthSelect = document.getElementById('referenceMonth');
-    const tenantTypeFilterSelect = document.getElementById('tenantTypeFilter');
-    const accountFilterSelect = document.getElementById('accountFilter');
-    const scoreUploadInput = document.getElementById('scoreUpload');
-    const loadScoreBtn = document.getElementById('loadScoreBtn');
-    const allSignalsSearchInput = document.getElementById('allSignalsSearch');
-    const searchInputs = [allSignalsSearchInput].filter(Boolean);
-    const allSignalsCategoryFilter = document.getElementById('allSignalsCategoryFilter');
-    const allSignalsSubcategoryFilter = document.getElementById('allSignalsSubcategoryFilter');
-    const allSignalsCapabilityFilter = document.getElementById('allSignalsCapabilityFilter');
-    const categoryFilters = [allSignalsCategoryFilter].filter(Boolean);
-    const allSignalsListContainer = document.getElementById('allSignalsList');
-
-    let parsedDataset = null;
-    let allScoredSignals = [];
 
     const resetTenantTypeSelect = (message) => {
       if (!tenantTypeFilterSelect) return;
@@ -1886,7 +2063,8 @@
 
     const applyFilters = () => {
       if (!allSignalsListContainer) return;
-      const searchTerm = (searchInputs[0]?.value || '').toLowerCase();
+      const rawSearchTerm = searchInputs[0]?.value || '';
+      const searchTerm = rawSearchTerm.toLowerCase();
       const categoryValue = categoryFilters[0]?.value || 'all';
       const subcategoryValue =
         allSignalsSubcategoryFilter && !allSignalsSubcategoryFilter.disabled
@@ -1912,6 +2090,16 @@
       };
 
       const filteredSignals = allScoredSignals.filter(matchesFilters);
+      currentFilteredSignals = cloneForExport(filteredSignals);
+      currentAllSignalsFilters = {
+        searchTerm: rawSearchTerm,
+        category: categoryValue,
+        subcategory: subcategoryValue,
+        capability: capabilityValue,
+      };
+      if (exportSignalsButton) {
+        exportSignalsButton.disabled = allScoredSignals.length === 0;
+      }
       populateGroupedSignals(filteredSignals, allSignalsListContainer);
     };
 
@@ -2321,6 +2509,32 @@
 
     if (allSignalsCapabilityFilter) {
       allSignalsCapabilityFilter.addEventListener('change', applyFilters);
+    }
+
+    if (exportOverallButton) {
+      exportOverallButton.addEventListener('click', () => {
+        if (exportOverallButton.disabled) return;
+        const payload = {
+          accountOverview: buildAccountOverviewPayload(),
+          overallSummary: cloneForExport(currentOverallSummaryData.summaries),
+        };
+        if (currentOverallSummaryData.categoryBreakdown.length) {
+          payload.categoryBreakdown = cloneForExport(currentOverallSummaryData.categoryBreakdown);
+        }
+        triggerJsonDownload(buildExportFilename('overall-score-summary'), payload);
+      });
+    }
+
+    if (exportSignalsButton) {
+      exportSignalsButton.addEventListener('click', () => {
+        if (exportSignalsButton.disabled) return;
+        const payload = {
+          accountOverview: buildAccountOverviewPayload(),
+          filters: { ...currentAllSignalsFilters },
+          signals: cloneForExport(currentFilteredSignals),
+        };
+        triggerJsonDownload(buildExportFilename('all-scored-signals'), payload);
+      });
     }
 
     resetDashboard();
