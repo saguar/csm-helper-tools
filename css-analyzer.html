@@ -150,14 +150,42 @@
       line-height: 1.5;
     }
 
-    .grid-3 {
+    .account-overview-list {
       display: grid;
-      gap: 1.5rem;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      padding: 0;
+      margin: 0;
     }
 
-    .grid-3 > * {
-      min-width: 0;
+    .account-overview-item {
+      display: grid;
+      gap: 0.35rem;
+      padding: 0 0 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .account-overview-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .account-overview-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .account-overview-value {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .account-overview-subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
     }
 
     .key-metric {
@@ -597,7 +625,7 @@
 
     <section class="panel" id="account-overview">
       <h2>Account overview</h2>
-      <div class="grid-3" id="accountCards"></div>
+      <div class="account-overview-list" id="accountOverview"></div>
     </section>
 
     <section class="panel" id="overall-scores">
@@ -1424,20 +1452,27 @@
     };
 
     const createInfoCard = (title, main, subtitle) => {
-      const card = document.createElement('article');
-      card.className = 'key-metric';
-      const h3 = document.createElement('h3');
-      h3.textContent = title;
-      const strong = document.createElement('strong');
-      strong.textContent = main;
-      card.append(h3, strong);
+      const wrapper = document.createElement('div');
+      wrapper.className = 'account-overview-item';
+
+      const label = document.createElement('span');
+      label.className = 'account-overview-label';
+      label.textContent = title;
+
+      const value = document.createElement('span');
+      value.className = 'account-overview-value';
+      value.textContent = main;
+
+      wrapper.append(label, value);
+
       if (subtitle) {
-        const span = document.createElement('span');
-        span.className = 'badge';
-        span.textContent = subtitle;
-        card.appendChild(span);
+        const subtitleEl = document.createElement('span');
+        subtitleEl.className = 'account-overview-subtitle';
+        subtitleEl.textContent = subtitle;
+        wrapper.appendChild(subtitleEl);
       }
-      return card;
+
+      return wrapper;
     };
 
     const formatSnapshotMonth = (snapshotDate) => {
@@ -1481,7 +1516,7 @@
     };
 
     const populateAccountOverview = (info, snapshotDate, accountName) => {
-      const container = document.getElementById('accountCards');
+      const container = document.getElementById('accountOverview');
       container.innerHTML = '';
       const details = info || {};
       const cards = [
@@ -1824,8 +1859,8 @@
 
     const clearVisualizations = (message) => {
       allScoredSignals = [];
-      const accountCards = document.getElementById('accountCards');
-      if (accountCards) accountCards.innerHTML = '';
+      const accountOverview = document.getElementById('accountOverview');
+      if (accountOverview) accountOverview.innerHTML = '';
       const overallGrid = document.getElementById('overallScoreGrid');
       if (overallGrid) overallGrid.innerHTML = `<p class="empty-state">${message}</p>`;
       if (allSignalsListContainer) {
