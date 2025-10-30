@@ -508,6 +508,12 @@
       margin-top: 0.5rem;
     }
 
+    .technical-health-tree-wrapper {
+      grid-column: 1 / -1;
+      display: grid;
+      gap: 0.75rem;
+    }
+
     #technicalHealthTreeMount {
       margin-top: 1.5rem;
     }
@@ -2041,9 +2047,7 @@
         exportOverallButton.disabled = false;
       }
 
-      const cardsToRender = summaries.length ? summaries : [{ title: 'Category breakdown' }];
-
-      cardsToRender.forEach((row, index) => {
+      summaries.forEach((row) => {
         const card = document.createElement('article');
         card.className = 'score-summary';
 
@@ -2087,25 +2091,38 @@
           card.appendChild(metrics);
         }
 
-        if (hasCategories && index === 0) {
-          if (technicalHealthTreeData) {
-            const treeLabel = document.createElement('p');
-            treeLabel.className = 'score-tree-heading';
-            treeLabel.textContent = 'Technical health calculation breakdown';
-            card.appendChild(treeLabel);
-
-            const treeMount = document.createElement('div');
-            treeMount.id = TECHNICAL_HEALTH_TREE_MOUNT_ID;
-            card.appendChild(treeMount);
-          }
-        }
-
         container.appendChild(card);
-
-        if (technicalHealthTreeData && index === 0) {
-          renderTechnicalHealthTree(technicalHealthTreeData);
-        }
       });
+
+      if (!summaries.length && hasCategories) {
+        const placeholderCard = document.createElement('article');
+        placeholderCard.className = 'score-summary';
+        const placeholderHeader = document.createElement('div');
+        placeholderHeader.className = 'score-summary-header';
+        const placeholderTitle = document.createElement('h3');
+        placeholderTitle.textContent = 'Category breakdown';
+        placeholderHeader.appendChild(placeholderTitle);
+        placeholderCard.appendChild(placeholderHeader);
+        container.appendChild(placeholderCard);
+      }
+
+      if (technicalHealthTreeData) {
+        const treeWrapper = document.createElement('div');
+        treeWrapper.className = 'technical-health-tree-wrapper';
+
+        const treeLabel = document.createElement('p');
+        treeLabel.className = 'score-tree-heading';
+        treeLabel.textContent = 'Technical health calculation breakdown';
+        treeWrapper.appendChild(treeLabel);
+
+        const treeMount = document.createElement('div');
+        treeMount.id = TECHNICAL_HEALTH_TREE_MOUNT_ID;
+        treeWrapper.appendChild(treeMount);
+
+        container.appendChild(treeWrapper);
+
+        renderTechnicalHealthTree(technicalHealthTreeData);
+      }
     };
 
     const populateCategoryOptions = (categories) => {
