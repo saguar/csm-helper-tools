@@ -1,7 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { hierarchy, tree } from "d3-hierarchy";
-import { linkHorizontal } from "d3-shape";
-import { motion, AnimatePresence } from "framer-motion";
+if (!window.React || !window.d3 || !window.framerMotion) {
+  throw new Error(
+    "TechnicalHealthTreeDiagram requires React, d3, and Framer Motion to be loaded before this script."
+  );
+}
+
+const { useEffect, useMemo, useRef, useState } = window.React;
+const { hierarchy, tree, linkHorizontal } = window.d3;
+const { motion, AnimatePresence } = window.framerMotion;
 
 // -----------------------------------------------------------------------------
 // Example hierarchical dataset following the required schema. This can be
@@ -348,34 +353,24 @@ const TechnicalHealthTreeDiagram = ({ data = exampleTechnicalHealthData }) => {
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full rounded-3xl bg-white shadow-xl ring-1 ring-slate-200/80 p-6 md:p-8"
-    >
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div ref={containerRef} className="technical-health-tree-card">
+      <div className="technical-health-tree-header">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">Technical Health Tree Diagram</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="technical-health-tree-title">Technical Health Tree Diagram</h2>
+          <p className="technical-health-tree-subtitle">
             Interactive visualization of the weighted Technical Health Score calculation.
           </p>
         </div>
         <button
           onClick={handleVisualAidToggle}
-          className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 ${
-            showVisualAid ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-700"
-          }`}
+          className={`technical-health-tree-toggle${showVisualAid ? " is-active" : ""}`}
         >
           {showVisualAid ? "Collapse Visual Aid" : "Show Visual Aid"}
         </button>
       </div>
 
-      <div className="relative mt-6 overflow-x-auto">
-        <svg
-          ref={svgRef}
-          width={layout.width}
-          height={layout.height}
-          className="mx-auto block"
-        >
+      <div className="technical-health-tree-canvas">
+        <svg ref={svgRef} width={layout.width} height={layout.height} className="technical-health-tree-svg">
           {/* Connector paths */}
           <g fill="none" stroke="#cbd5f5" strokeWidth={1.5}>
             {layout.links.map((link) => {
@@ -403,6 +398,7 @@ const TechnicalHealthTreeDiagram = ({ data = exampleTechnicalHealthData }) => {
 
               return (
                 <motion.g
+                  className="technical-health-tree-node"
                   key={node.data.id}
                   initial={{ opacity: 0, transform: `translate(${node.y}px, ${node.x}px)` }}
                   animate={{ opacity: 1, transform: `translate(${node.y}px, ${node.x}px)` }}
@@ -410,7 +406,7 @@ const TechnicalHealthTreeDiagram = ({ data = exampleTechnicalHealthData }) => {
                   transition={{ duration: 0.35, ease: "easeOut" }}
                 >
                   <g
-                    className="cursor-pointer"
+                    className="technical-health-tree-node-group"
                     onClick={() => handleNodeToggle(node)}
                     onMouseMove={(event) => handlePointerMove(event, node)}
                     onMouseLeave={hideTooltip}
@@ -454,21 +450,13 @@ const TechnicalHealthTreeDiagram = ({ data = exampleTechnicalHealthData }) => {
                     />
 
                     {/* Node title */}
-                    <text
-                      x={16}
-                      y={20}
-                      className="text-sm font-semibold text-slate-800"
-                    >
+                    <text x={16} y={20} className="technical-health-tree-node-title">
                       {node.data.name}
                     </text>
 
                     {/* Weight indicator */}
                     {node.depth > 0 && (
-                      <text
-                        x={16}
-                        y={BAR_HEIGHT - 10}
-                        className="text-xs font-medium text-slate-500"
-                      >
+                      <text x={16} y={BAR_HEIGHT - 10} className="technical-health-tree-node-weight">
                         Weight {formatPercent(node.data.weightPercent)}
                       </text>
                     )}
@@ -482,11 +470,7 @@ const TechnicalHealthTreeDiagram = ({ data = exampleTechnicalHealthData }) => {
                       stroke="#0f172a"
                       strokeWidth={0.5}
                     />
-                    <text
-                      x={barWidth + 32}
-                      y={BAR_HEIGHT / 2 + 4}
-                      className="text-sm font-semibold text-slate-800"
-                    >
+                    <text x={barWidth + 32} y={BAR_HEIGHT / 2 + 4} className="technical-health-tree-node-score">
                       {getScoreLabel(node.data.score)}
                     </text>
                   </g>
@@ -505,18 +489,17 @@ const TechnicalHealthTreeDiagram = ({ data = exampleTechnicalHealthData }) => {
         </svg>
 
         {tooltip?.visible && tooltip.node && (
-          <div
-            className="pointer-events-none absolute z-20 max-w-sm rounded-xl border border-slate-200 bg-white/95 p-4 text-xs shadow-xl backdrop-blur"
-            style={{ left: tooltip.x, top: tooltip.y }}
-          >
-            <p className="text-sm font-semibold text-slate-900">{tooltip.node.name}</p>
-            <p className="mt-1 text-slate-500">
-              Weight: <span className="font-medium text-slate-700">{formatPercent(tooltip.node.weightPercent)}</span>
+          <div className="technical-health-tree-tooltip" style={{ left: tooltip.x, top: tooltip.y }}>
+            <p className="technical-health-tree-tooltip-title">{tooltip.node.name}</p>
+            <p className="technical-health-tree-tooltip-line">
+              Weight: <span className="technical-health-tree-tooltip-value">{formatPercent(tooltip.node.weightPercent)}</span>
             </p>
-            <p className="text-slate-500">
-              Score: <span className="font-medium text-slate-700">{tooltip.node.score.toFixed(1)}</span>
+            <p className="technical-health-tree-tooltip-line">
+              Score: <span className="technical-health-tree-tooltip-value">{tooltip.node.score.toFixed(1)}</span>
             </p>
-            <p className="mt-1 text-slate-500">{tooltip.node.formula}</p>
+            <p className="technical-health-tree-tooltip-line technical-health-tree-tooltip-formula">
+              {tooltip.node.formula}
+            </p>
           </div>
         )}
       </div>
@@ -524,4 +507,7 @@ const TechnicalHealthTreeDiagram = ({ data = exampleTechnicalHealthData }) => {
   );
 };
 
-export default TechnicalHealthTreeDiagram;
+window.TechnicalHealthTreeDiagram = TechnicalHealthTreeDiagram;
+if (typeof window.dispatchEvent === "function") {
+  window.dispatchEvent(new Event("technical-health-tree-ready"));
+}
