@@ -514,6 +514,22 @@
       gap: 0.75rem;
     }
 
+    .score-tree-container {
+      grid-column: 1 / -1;
+      border-radius: 1.25rem;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      padding: 1.5rem;
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    @media (min-width: 768px) {
+      .score-tree-container {
+        padding: 2rem;
+      }
+    }
+
     #technicalHealthTreeMount {
       margin-top: 1.5rem;
     }
@@ -1963,6 +1979,171 @@
       return pill;
     };
 
+    const createChangeBadge = (changeText, momChange, qoQChange) => {
+      if (!changeText) return null;
+      const direction =
+        (Number.isFinite(momChange) && momChange > 0) || (Number.isFinite(qoQChange) && qoQChange > 0)
+          ? 'up'
+          : (Number.isFinite(momChange) && momChange < 0) || (Number.isFinite(qoQChange) && qoQChange < 0)
+          ? 'down'
+          : '';
+      const badge = document.createElement('span');
+      badge.className = ['badge', direction].filter(Boolean).join(' ');
+      badge.textContent = changeText;
+      return badge;
+    };
+
+    const buildTreeMetrics = (entry) => {
+      const metrics = document.createElement('div');
+      metrics.className = 'score-tree-metrics';
+      const parts = [];
+
+      if (Number.isFinite(entry.score)) {
+        parts.push(createScoreBadge(entry.score));
+      }
+
+      if (entry.rating) {
+        const ratingBadge = document.createElement('span');
+        ratingBadge.className = 'badge';
+        ratingBadge.textContent = entry.rating;
+        parts.push(ratingBadge);
+      }
+
+      const changeBadge = createChangeBadge(entry.changeText, entry.momChange, entry.qoQChange);
+      if (changeBadge) {
+        parts.push(changeBadge);
+      }
+
+      const momLabel = entry.momText ?? formatSigned(entry.momChange);
+      const momPill = createMetricPill('MoM', momLabel);
+      if (momPill) {
+        parts.push(momPill);
+      }
+
+      const qoqLabel = entry.qoqText ?? formatSigned(entry.qoQChange);
+      const qoqPill = createMetricPill('QoQ', qoqLabel);
+      if (qoqPill) {
+        parts.push(qoqPill);
+      }
+
+      if (!parts.length) return null;
+      parts.forEach((part) => metrics.appendChild(part));
+      return metrics;
+    };
+
+    const createTreeNodeWrapper = (entry, level) => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'score-tree-node';
+      if (level === 'category') {
+        wrapper.classList.add('score-tree-category');
+      } else if (level === 'subcategory') {
+        wrapper.classList.add('score-tree-subcategory');
+      }
+      if (!Number.isFinite(entry.score)) {
+        wrapper.classList.add('score-tree-placeholder');
+      }
+
+      const label = document.createElement('span');
+      label.className = 'score-tree-label';
+      if (entry && entry.name) {
+        label.textContent = entry.name;
+      } else if (level === 'category') {
+        label.textContent = 'Category';
+      } else if (level === 'subcategory') {
+        label.textContent = 'Subcategory';
+      } else {
+        label.textContent = 'Capability';
+      }
+      wrapper.appendChild(label);
+
+      const metrics = buildTreeMetrics(entry || {});
+      if (metrics) {
+        wrapper.appendChild(metrics);
+      }
+
+      return wrapper;
+    };
+
+    const createSignalTreeItem = (signal) => {
+      const item = document.createElement('li');
+      const wrapper = document.createElement('div');
+      wrapper.className = 'score-tree-node score-tree-placeholder';
+
+      const label = document.createElement('span');
+      label.className = 'score-tree-label';
+      label.textContent =
+        (signal && (signal.signalName || signal.name || signal.metricName || signal.title)) || 'Signal';
+      wrapper.appendChild(label);
+
+      if (Number.isFinite(signal?.score)) {
+        const metrics = document.createElement('div');
+        metrics.className = 'score-tree-metrics';
+        metrics.appendChild(createScoreBadge(signal.score));
+        wrapper.appendChild(metrics);
+      }
+
+      item.appendChild(wrapper);
+      return item;
+    };
+
+    const createCapabilityTreeItem = (capability) => {
+      const item = document.createElement('li');
+      item.appendChild(createTreeNodeWrapper(capability || {}, 'capability'));
+
+      if (Array.isArray(capability?.signals) && capability.signals.length) {
+        const signalsList = document.createElement('ul');
+        signalsList.className = 'score-tree-children';
+        capability.signals.forEach((signal) => {
+          signalsList.appendChild(createSignalTreeItem(signal));
+        });
+        item.appendChild(signalsList);
+      }
+
+      return item;
+    };
+
+    const createSubcategoryTreeItem = (subcategory) => {
+      const item = document.createElement('li');
+      item.appendChild(createTreeNodeWrapper(subcategory || {}, 'subcategory'));
+
+      if (Array.isArray(subcategory?.capabilities) && subcategory.capabilities.length) {
+        const capabilitiesList = document.createElement('ul');
+        capabilitiesList.className = 'score-tree-children';
+        subcategory.capabilities.forEach((capability) => {
+          capabilitiesList.appendChild(createCapabilityTreeItem(capability));
+        });
+        item.appendChild(capabilitiesList);
+      }
+
+      return item;
+    };
+
+    const createCategoryTreeItem = (category) => {
+      const item = document.createElement('li');
+      item.appendChild(createTreeNodeWrapper(category || {}, 'category'));
+
+      if (Array.isArray(category?.subcategories) && category.subcategories.length) {
+        const subcategoryList = document.createElement('ul');
+        subcategoryList.className = 'score-tree-children';
+        category.subcategories.forEach((subcategory) => {
+          subcategoryList.appendChild(createSubcategoryTreeItem(subcategory));
+        });
+        item.appendChild(subcategoryList);
+      }
+
+      return item;
+    };
+
+    const createScoreTree = (categories = []) => {
+      if (!Array.isArray(categories) || !categories.length) return null;
+      const tree = document.createElement('ul');
+      tree.className = 'score-tree';
+      categories.forEach((category) => {
+        tree.appendChild(createCategoryTreeItem(category));
+      });
+      return tree;
+    };
+
     const createSignalItem = (item) => {
       const clone = document.getElementById('signalTemplate').content.firstElementChild.cloneNode(true);
       clone.querySelector('[data-field="signal"]').textContent = item.signalName;
@@ -2176,6 +2357,28 @@
         placeholderHeader.appendChild(placeholderTitle);
         placeholderCard.appendChild(placeholderHeader);
         container.appendChild(placeholderCard);
+      }
+
+      if (hasCategories) {
+        const scoreTreeContainer = document.createElement('div');
+        scoreTreeContainer.className = 'score-tree-container';
+
+        const scoreTreeLabel = document.createElement('p');
+        scoreTreeLabel.className = 'score-tree-heading';
+        scoreTreeLabel.textContent = 'Score breakdown by category';
+        scoreTreeContainer.appendChild(scoreTreeLabel);
+
+        const scoreTree = createScoreTree(categoryBreakdown);
+        if (scoreTree) {
+          scoreTreeContainer.appendChild(scoreTree);
+        } else {
+          const emptyTreeMessage = document.createElement('p');
+          emptyTreeMessage.className = 'empty-state';
+          emptyTreeMessage.textContent = 'Category score breakdown is unavailable.';
+          scoreTreeContainer.appendChild(emptyTreeMessage);
+        }
+
+        container.appendChild(scoreTreeContainer);
       }
 
       if (technicalHealthTreeData) {
