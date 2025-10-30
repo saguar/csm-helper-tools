@@ -455,49 +455,6 @@
       color: var(--muted);
     }
 
-    .scored-signal-list {
-      margin-top: 1.5rem;
-      padding: 1.25rem;
-      border-radius: 1rem;
-      background: var(--surface-alt);
-      border: 1px solid var(--border);
-      display: grid;
-      gap: 0.75rem;
-    }
-
-    .scored-signal-list-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-    }
-
-    .scored-signal-list-header h3 {
-      margin: 0;
-      font-size: 1.05rem;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .signal-name-list {
-      list-style: none;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      padding: 0;
-      margin: 0;
-    }
-
-    .signal-name-list li {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 0.35rem 0.75rem;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--text);
-    }
-
     .empty-state {
       padding: 1rem;
       color: var(--muted);
@@ -726,16 +683,6 @@
         <button class="export-button" type="button" id="exportSignalsJson" disabled>Export to JSON</button>
       </div>
       <p class="helper-text">Use the filters to explore scored or informational signals for the selected snapshot.</p>
-      <div class="scored-signal-list" id="scoredSignalListContainer">
-        <div class="scored-signal-list-header">
-          <h3>Scored signals in snapshot</h3>
-          <span class="badge" id="scoredSignalCount">0</span>
-        </div>
-        <p class="helper-text" id="scoredSignalListEmpty">
-          Load a dataset to view scored signals for the current selection.
-        </p>
-        <ul class="signal-name-list" id="scoredSignalNameList" hidden></ul>
-      </div>
       <div class="filters all-signals-controls">
         <select id="signalTypeFilter">
           <option value="scored" selected>Signal type: scored</option>
@@ -832,33 +779,6 @@
         }
       }
       return JSON.parse(JSON.stringify(value));
-    };
-
-    const resolveSignalType = (signal) => {
-      if (!signal || typeof signal !== 'object') return 'unknown';
-      if (signal.signalType === 'scored' || signal.signalType === 'informational') {
-        return signal.signalType;
-      }
-      if (signal.isScored) return 'scored';
-      if (signal.isInformational) return 'informational';
-      return 'unknown';
-    };
-
-    const partitionSignalsByType = (signals) => {
-      return (signals || []).reduce(
-        (accumulator, signal) => {
-          const type = resolveSignalType(signal);
-          if (type === 'scored') {
-            accumulator.scored.push(signal);
-          } else if (type === 'informational') {
-            accumulator.informational.push(signal);
-          } else {
-            accumulator.unknown.push(signal);
-          }
-          return accumulator;
-        },
-        { scored: [], informational: [], unknown: [] }
-      );
     };
 
     const slugify = (value) => {
@@ -2008,47 +1928,6 @@
       }
     };
 
-    const updateScoredSignalList = (signals, { showDefaultMessage = false } = {}) => {
-      if (!scoredSignalListContainer || !scoredSignalCountLabel || !scoredSignalEmptyState || !scoredSignalNameList) {
-        return;
-      }
-
-      const names = Array.from(
-        new Set(
-          (signals || [])
-            .map((signal) => {
-              if (!signal) return '';
-              if (typeof signal.signalName === 'string') return signal.signalName.trim();
-              return '';
-            })
-            .filter((name) => name.length)
-        )
-      ).sort((a, b) => a.localeCompare(b));
-
-      scoredSignalCountLabel.textContent = names.length;
-      scoredSignalNameList.innerHTML = '';
-
-      if (!names.length) {
-        scoredSignalNameList.hidden = true;
-        scoredSignalEmptyState.hidden = false;
-        scoredSignalEmptyState.textContent = showDefaultMessage
-          ? scoredSignalEmptyDefaultMessage
-          : 'No scored signals are available for the current selection.';
-      } else {
-        scoredSignalEmptyState.hidden = true;
-        scoredSignalNameList.hidden = false;
-        names.forEach((name) => {
-          const listItem = document.createElement('li');
-          listItem.textContent = name;
-          scoredSignalNameList.appendChild(listItem);
-        });
-      }
-
-      if (typeof window !== 'undefined') {
-        window.cssAnalyzerScoredSignalNames = names;
-      }
-    };
-
     const populateOverallScores = (overallRows, categoryBreakdown = []) => {
       const container = document.getElementById('overallScoreGrid');
       container.innerHTML = '';
@@ -2200,18 +2079,13 @@
     const allSignalsListContainer = document.getElementById('allSignalsList');
     const exportOverallButton = document.getElementById('exportOverallJson');
     const exportSignalsButton = document.getElementById('exportSignalsJson');
-    const scoredSignalListContainer = document.getElementById('scoredSignalListContainer');
-    const scoredSignalCountLabel = document.getElementById('scoredSignalCount');
-    const scoredSignalEmptyState = document.getElementById('scoredSignalListEmpty');
-    const scoredSignalNameList = document.getElementById('scoredSignalNameList');
-    const scoredSignalEmptyDefaultMessage = scoredSignalEmptyState ? scoredSignalEmptyState.textContent : '';
 
     if (signalTypeFilter) {
       signalTypeFilter.disabled = true;
     }
 
     let parsedDataset = null;
-    let allSignalsByType = { scored: [], informational: [], unknown: [] };
+    let allSignalsByType = { scored: [], informational: [] };
 
     const initialAccountContext = () => ({
       entries: [],
@@ -2246,12 +2120,11 @@
     };
 
     const clearVisualizations = (message) => {
-      allSignalsByType = { scored: [], informational: [], unknown: [] };
+      allSignalsByType = { scored: [], informational: [] };
       currentOverallSummaryData = { summaries: [], categoryBreakdown: [] };
       currentFilteredSignals = [];
       currentAccountContext = initialAccountContext();
       resetSignalsFiltersState();
-      updateScoredSignalList([], { showDefaultMessage: true });
 
       if (exportOverallButton) exportOverallButton.disabled = true;
       if (exportSignalsButton) exportSignalsButton.disabled = true;
@@ -2623,9 +2496,10 @@
       const signalRows = (dataset.signals || []).filter(filterBySelection);
 
       const processed = signalRows.map(transformSignalRow);
-      const partitionedSignals = partitionSignalsByType(processed);
-      const scoredSignals = partitionedSignals.scored;
-      const informationalSignals = partitionedSignals.informational;
+      const scoredSignals = processed.filter((signal) => signal.isScored);
+      const informationalSignals = processed.filter(
+        (signal) => signal.isInformational || (!signal.isScored && !signal.isInformational)
+      );
       const accountInfo = signalRows[0] || categoryRows[0] || subcategoryRows[0] || overallRows[0] || {};
 
       selectedMonthLabel.textContent = snapshotDate ? formatSnapshotMonth(snapshotDate) : 'Not selected';
@@ -2636,19 +2510,9 @@
       const categories = buildCategoryHierarchy(scoredSignals, categoryRows, subcategoryRows);
       populateOverallScores(overallRows, categories);
 
-      allSignalsByType = {
-        scored: scoredSignals,
-        informational: informationalSignals,
-        unknown: partitionedSignals.unknown,
-      };
+      allSignalsByType = { scored: scoredSignals, informational: informationalSignals };
 
-      const defaultSignalType = scoredSignals.length
-        ? 'scored'
-        : informationalSignals.length
-        ? 'informational'
-        : 'scored';
-
-      updateScoredSignalList(scoredSignals);
+      const defaultSignalType = scoredSignals.length || !informationalSignals.length ? 'scored' : 'informational';
 
       if (signalTypeFilter) {
         signalTypeFilter.disabled = processed.length === 0;
