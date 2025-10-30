@@ -1165,24 +1165,29 @@
         return { type: 'scored' };
       }
 
+      const fallbackClassification = {
+        type: 'scored',
+        subcategoryName: row.subcategoryName,
+        capabilityName: row.capabilityName,
+      };
+
       const capabilityKey = normalizeKey(row.capabilityName);
-      const signalKey = normalizeKey(row.signalName);
-      if (!capabilityKey || !signalKey) {
-        return { type: 'informational' };
+      if (!capabilityKey) {
+        return fallbackClassification;
       }
 
       const capability = TECH_HEALTH_CAPABILITY_LOOKUP.get(capabilityKey);
       if (!capability) {
-        return { type: 'informational' };
+        return fallbackClassification;
       }
 
-      const isScored = capability.signals.has(signalKey);
-      return {
-        type: isScored ? 'scored' : 'informational',
-        subcategoryName: capability.subcategoryName,
+      const classification = {
+        type: 'scored',
+        subcategoryName: capability.subcategoryName || row.subcategoryName,
         subcategoryWeight: capability.subcategoryWeight,
-        capabilityName: capability.name,
+        capabilityName: capability.name || row.capabilityName,
       };
+      return classification;
     };
 
     const normalizeDateValue = (value) => {
