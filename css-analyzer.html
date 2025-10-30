@@ -1649,6 +1649,36 @@
       return metrics;
     };
 
+    const createScoreTreeNode = (entry = {}, level = 'category') => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'score-tree-node';
+
+      if (level === 'category') {
+        wrapper.classList.add('score-tree-category');
+      } else if (level === 'subcategory') {
+        wrapper.classList.add('score-tree-subcategory');
+      }
+
+      const label = document.createElement('span');
+      label.className = 'score-tree-label';
+      const fallbackLabel =
+        level === 'category' ? 'Category' : level === 'subcategory' ? 'Subcategory' : 'Capability';
+      label.textContent = entry.title || entry.name || fallbackLabel;
+      wrapper.appendChild(label);
+
+      const metrics = buildTreeMetrics(entry);
+      if (metrics) {
+        wrapper.appendChild(metrics);
+      }
+
+      const hasMetrics = Boolean(metrics);
+      if (!hasMetrics || entry.isPlaceholder || entry.placeholder) {
+        wrapper.classList.add('score-tree-placeholder');
+      }
+
+      return wrapper;
+    };
+
     const createTreeNodeWrapper = (entry, level) => {
       const wrapper = document.createElement('div');
       wrapper.className = 'score-tree-node';
