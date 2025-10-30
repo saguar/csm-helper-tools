@@ -8,6 +8,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.umd.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel" data-presets="react" src="js/TechnicalHealthTreeDiagram.jsx"></script>
   <style>
     :root {
       color-scheme: light;
@@ -502,6 +508,156 @@
       margin-top: 0.5rem;
     }
 
+    #technicalHealthTreeMount {
+      margin-top: 1.5rem;
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-card {
+      width: 100%;
+      border-radius: 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      #technicalHealthTreeMount .technical-health-tree-card {
+        padding: 2rem;
+      }
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-header {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      #technicalHealthTreeMount .technical-health-tree-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-subtitle {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: none;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      background: rgba(148, 163, 184, 0.18);
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-toggle.is-active {
+      background: #0f172a;
+      color: #ffffff;
+      box-shadow: 0 18px 32px rgba(15, 23, 42, 0.25);
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-toggle:not(.is-active):hover {
+      background: rgba(148, 163, 184, 0.3);
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-toggle:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.35);
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-canvas {
+      margin-top: 1.5rem;
+      overflow-x: auto;
+      position: relative;
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-svg {
+      display: block;
+      margin: 0 auto;
+      min-width: 520px;
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-node text {
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-node-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      fill: #0f172a;
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-node-weight {
+      font-size: 0.75rem;
+      font-weight: 500;
+      fill: #64748b;
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-node-score {
+      font-size: 0.95rem;
+      font-weight: 600;
+      fill: #0f172a;
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-node-group {
+      cursor: pointer;
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-tooltip {
+      position: absolute;
+      pointer-events: none;
+      z-index: 20;
+      max-width: 320px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      border-radius: 0.9rem;
+      padding: 1rem;
+      box-shadow: 0 18px 38px rgba(15, 23, 42, 0.2);
+      backdrop-filter: blur(6px);
+      font-size: 0.8rem;
+      color: #475569;
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-tooltip-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 0.35rem;
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-tooltip-line {
+      margin: 0.25rem 0;
+      color: #475569;
+      line-height: 1.45;
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-tooltip-value {
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    #technicalHealthTreeMount .technical-health-tree-tooltip-formula {
+      font-style: italic;
+    }
+
     .score-tree {
       list-style: none;
       padding: 0;
@@ -747,6 +903,60 @@
       }
       if (typeof score === 'string' && score.trim()) return score.trim();
       return '-';
+    };
+
+    const TECHNICAL_HEALTH_TREE_MOUNT_ID = 'technicalHealthTreeMount';
+    let technicalHealthTreeRoot = null;
+    let technicalHealthTreeMount = null;
+    let pendingTechnicalHealthTreeData = null;
+
+    window.addEventListener('technical-health-tree-ready', () => {
+      if (pendingTechnicalHealthTreeData) {
+        const dataToRender = pendingTechnicalHealthTreeData;
+        pendingTechnicalHealthTreeData = null;
+        renderTechnicalHealthTree(dataToRender);
+      }
+    });
+
+    const unmountTechnicalHealthTree = () => {
+      if (technicalHealthTreeRoot && typeof technicalHealthTreeRoot.unmount === 'function') {
+        technicalHealthTreeRoot.unmount();
+      } else if (technicalHealthTreeMount && window.ReactDOM?.unmountComponentAtNode) {
+        window.ReactDOM.unmountComponentAtNode(technicalHealthTreeMount);
+      }
+      technicalHealthTreeRoot = null;
+      technicalHealthTreeMount = null;
+    };
+
+    const renderTechnicalHealthTree = (data) => {
+      if (!window.React || !window.ReactDOM || !data) {
+        return;
+      }
+      const mount = document.getElementById(TECHNICAL_HEALTH_TREE_MOUNT_ID);
+      if (!mount) {
+        return;
+      }
+      if (!window.TechnicalHealthTreeDiagram) {
+        pendingTechnicalHealthTreeData = data;
+        return;
+      }
+      if (!technicalHealthTreeRoot || technicalHealthTreeMount !== mount) {
+        unmountTechnicalHealthTree();
+        if (typeof window.ReactDOM.createRoot === 'function') {
+          technicalHealthTreeRoot = window.ReactDOM.createRoot(mount);
+        } else if (typeof window.ReactDOM.render === 'function') {
+          technicalHealthTreeRoot = {
+            render: (element) => window.ReactDOM.render(element, mount),
+            unmount: () => window.ReactDOM.unmountComponentAtNode(mount),
+          };
+        } else {
+          console.warn('ReactDOM is not available to render the TechnicalHealthTreeDiagram.');
+          return;
+        }
+        technicalHealthTreeMount = mount;
+      }
+      const element = window.React.createElement(window.TechnicalHealthTreeDiagram, { data });
+      technicalHealthTreeRoot.render(element);
     };
 
     const createScoreBadge = (score, fallback) => {
@@ -1291,6 +1501,105 @@
       return valid.reduce((sum, value) => sum + value, 0) / valid.length;
     };
 
+    const buildTechnicalHealthTreeDataset = (overallRows, categoryBreakdown = []) => {
+      if (!Array.isArray(categoryBreakdown) || !categoryBreakdown.length) {
+        return null;
+      }
+
+      const categoryWeightMap = new Map();
+      TECH_HEALTH_SCORED_STRUCTURE.forEach((entry) => {
+        const key = normalizeKey(entry.name);
+        if (key) {
+          categoryWeightMap.set(key, Number(entry.weight) * 100);
+        }
+      });
+
+      const fallbackCategoryWeight = categoryBreakdown.length ? 100 / categoryBreakdown.length : 0;
+
+      const categoryNodes = categoryBreakdown.map((category) => {
+        const normalizedName = normalizeKey(category.name);
+        const baseSubcategories = Array.isArray(category.subcategories) ? category.subcategories : [];
+        let subcategories = baseSubcategories;
+        if (!subcategories.length && Array.isArray(category.capabilities) && category.capabilities.length) {
+          subcategories = category.capabilities.map((capability) => ({
+            name: capability.name,
+            score: capability.score,
+            capabilities: [capability],
+          }));
+        }
+        const subcategoryWeight = subcategories.length ? 100 / subcategories.length : 100;
+
+        const subcategoryNodes = subcategories.map((subcategory) => {
+          const capabilities = Array.isArray(subcategory.capabilities) ? subcategory.capabilities : [];
+          const capabilityWeight = capabilities.length ? 100 / capabilities.length : 100;
+
+          const capabilityNodes = capabilities.map((capability) => {
+            const signals = Array.isArray(capability.signals) ? capability.signals : [];
+            const capabilityScore = Number.isFinite(capability.score)
+              ? capability.score
+              : average(signals.map((signal) => signal.score));
+
+            const signalNodes = signals.map((signal) => ({
+              name: signal.signalName || signal.name || signal.metricName || signal.title || 'Signal',
+              score: Number.isFinite(signal.score) ? signal.score : 0,
+            }));
+
+            return {
+              name: capability.name || 'Capability',
+              weight: capabilityWeight,
+              score: Number.isFinite(capabilityScore) ? capabilityScore : 0,
+              signals: signalNodes,
+            };
+          });
+
+          const subcategoryScore = Number.isFinite(subcategory.score)
+            ? subcategory.score
+            : average(capabilityNodes.map((node) => node.score));
+
+          return {
+            name: subcategory.name || 'Subcategory',
+            weight: subcategoryWeight,
+            score: Number.isFinite(subcategoryScore) ? subcategoryScore : 0,
+            children: capabilityNodes,
+          };
+        });
+
+        const categoryScore = Number.isFinite(category.score)
+          ? category.score
+          : average(subcategoryNodes.map((node) => node.score));
+
+        return {
+          name: category.name || 'Category',
+          weight: categoryWeightMap.get(normalizedName) ?? fallbackCategoryWeight,
+          score: Number.isFinite(categoryScore) ? categoryScore : 0,
+          children: subcategoryNodes,
+        };
+      });
+
+      const technicalHealthScoreRow = (overallRows || []).find((row) => {
+        const key = normalizeKey(row.scoreName || row.categoryName || row.name || '');
+        return key.includes('technical health');
+      });
+
+      const overallScoreCandidates = [];
+      if (technicalHealthScoreRow && Number.isFinite(technicalHealthScoreRow.score)) {
+        overallScoreCandidates.push(technicalHealthScoreRow.score);
+      }
+      const categoryAverage = average(categoryNodes.map((node) => node.score));
+      if (Number.isFinite(categoryAverage)) {
+        overallScoreCandidates.push(categoryAverage);
+      }
+
+      const overallScore = overallScoreCandidates.length ? overallScoreCandidates[0] : 0;
+
+      return {
+        category: 'Technical Health',
+        weight: 100,
+        score: Number.isFinite(overallScore) ? overallScore : 0,
+        children: categoryNodes,
+      };
+    };
+
     const buildCategoryHierarchy = (signals, categorySummaries = [], subcategorySummaries = []) => {
       const categoryMap = new Map();
 
@@ -1701,66 +2010,9 @@
       }
     };
 
-    const createScoreTreeNode = (item, level) => {
-      const node = document.createElement('div');
-      node.className = `score-tree-node score-tree-${level}`;
-
-      const label = document.createElement('span');
-      label.className = 'score-tree-label';
-      label.textContent = item.title || item.name || item.categoryName || item.subcategoryName || 'Untitled';
-      node.appendChild(label);
-
-      const scoreText = formatScore(item.score, item.scoreRaw);
-      if (scoreText && scoreText !== '-') {
-        if (Number.isFinite(item.score)) {
-          node.appendChild(createScoreBadge(item.score));
-        } else {
-          const badge = document.createElement('span');
-          badge.className = `score-pill ${scoreClass(item.score)}`;
-          badge.textContent = `Score ${scoreText}`;
-          node.appendChild(badge);
-        }
-      }
-
-      if (item.rating) {
-        const ratingBadge = document.createElement('span');
-        ratingBadge.className = 'badge';
-        ratingBadge.textContent = item.rating;
-        node.appendChild(ratingBadge);
-      }
-
-      if (item.changeText) {
-        const momChangeValue = Number.isFinite(item.moMChange) ? item.moMChange : item.momChange;
-        const qoqChangeValue = Number.isFinite(item.qoQChange) ? item.qoQChange : item.qoqChange;
-        const direction =
-          (Number.isFinite(momChangeValue) && momChangeValue > 0) ||
-          (Number.isFinite(qoqChangeValue) && qoqChangeValue > 0)
-            ? 'up'
-            : (Number.isFinite(momChangeValue) && momChangeValue < 0) ||
-              (Number.isFinite(qoqChangeValue) && qoqChangeValue < 0)
-            ? 'down'
-            : '';
-        const changeBadge = document.createElement('span');
-        changeBadge.className = `badge ${direction}`.trim();
-        changeBadge.textContent = item.changeText;
-        node.appendChild(changeBadge);
-      }
-
-      const metrics = document.createElement('div');
-      metrics.className = 'score-tree-metrics';
-      const momPill = createMetricPill('MoM', item.momText);
-      if (momPill) metrics.appendChild(momPill);
-      const qoqPill = createMetricPill('QoQ', item.qoqText);
-      if (qoqPill) metrics.appendChild(qoqPill);
-      if (metrics.children.length) {
-        node.appendChild(metrics);
-      }
-
-      return node;
-    };
-
     const populateOverallScores = (overallRows, categoryBreakdown = []) => {
       const container = document.getElementById('overallScoreGrid');
+      unmountTechnicalHealthTree();
       container.innerHTML = '';
 
       const summaries = [];
@@ -1770,6 +2022,9 @@
       });
 
       const hasCategories = Array.isArray(categoryBreakdown) && categoryBreakdown.length > 0;
+      const technicalHealthTreeData = hasCategories
+        ? buildTechnicalHealthTreeDataset(overallRows, categoryBreakdown)
+        : null;
 
       if (!summaries.length && !hasCategories) {
         currentOverallSummaryData = { summaries: [], categoryBreakdown: [] };
@@ -1833,49 +2088,23 @@
         }
 
         if (hasCategories && index === 0) {
-          const treeLabel = document.createElement('p');
-          treeLabel.className = 'score-tree-heading';
-          treeLabel.textContent = 'Categories & subcategories';
-          card.appendChild(treeLabel);
+          if (technicalHealthTreeData) {
+            const treeLabel = document.createElement('p');
+            treeLabel.className = 'score-tree-heading';
+            treeLabel.textContent = 'Technical health calculation breakdown';
+            card.appendChild(treeLabel);
 
-          const tree = document.createElement('ul');
-          tree.className = 'score-tree';
-
-          categoryBreakdown.forEach((category) => {
-            const categoryItem = document.createElement('li');
-            const categoryNode = createScoreTreeNode({ ...category, title: category.name }, 'category');
-            categoryItem.appendChild(categoryNode);
-
-            const subcategories = Array.isArray(category.subcategories) ? category.subcategories : [];
-            const subList = document.createElement('ul');
-            subList.className = 'score-tree-children';
-
-            if (!subcategories.length) {
-              const placeholderItem = document.createElement('li');
-              const placeholderNode = createScoreTreeNode(
-                { title: 'No subcategory scores available' },
-                'subcategory'
-              );
-              placeholderNode.classList.add('score-tree-placeholder');
-              placeholderItem.appendChild(placeholderNode);
-              subList.appendChild(placeholderItem);
-            } else {
-              subcategories.forEach((subcategory) => {
-                const subItem = document.createElement('li');
-                const subNode = createScoreTreeNode({ ...subcategory, title: subcategory.name }, 'subcategory');
-                subItem.appendChild(subNode);
-                subList.appendChild(subItem);
-              });
-            }
-
-            categoryItem.appendChild(subList);
-            tree.appendChild(categoryItem);
-          });
-
-          card.appendChild(tree);
+            const treeMount = document.createElement('div');
+            treeMount.id = TECHNICAL_HEALTH_TREE_MOUNT_ID;
+            card.appendChild(treeMount);
+          }
         }
 
         container.appendChild(card);
+
+        if (technicalHealthTreeData && index === 0) {
+          renderTechnicalHealthTree(technicalHealthTreeData);
+        }
       });
     };
 
@@ -1949,6 +2178,8 @@
       currentFilteredSignals = [];
       currentAccountContext = initialAccountContext();
       resetSignalsFiltersState();
+
+      unmountTechnicalHealthTree();
 
       if (exportOverallButton) exportOverallButton.disabled = true;
       if (exportSignalsButton) exportSignalsButton.disabled = true;
