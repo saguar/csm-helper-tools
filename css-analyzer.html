@@ -1315,12 +1315,6 @@
       return decorated;
     };
 
-    const average = (values) => {
-      const valid = values.filter((value) => Number.isFinite(value));
-      if (!valid.length) return null;
-      return valid.reduce((sum, value) => sum + value, 0) / valid.length;
-    };
-
     const buildCategoryHierarchy = (signals, categorySummaries = [], subcategorySummaries = []) => {
       const categoryMap = new Map();
 
@@ -1339,9 +1333,6 @@
             rating: '',
             momText: '',
             qoqText: '',
-            scores: [],
-            moms: [],
-            qoqs: [],
             subcategories: new Map(),
           });
         }
@@ -1363,9 +1354,6 @@
             rating: '',
             momText: '',
             qoqText: '',
-            scores: [],
-            moms: [],
-            qoqs: [],
             capabilities: new Map(),
           });
         }
@@ -1377,9 +1365,16 @@
         if (!subcategory.capabilities.has(key)) {
           subcategory.capabilities.set(key, {
             name: key,
-            scores: [],
-            moms: [],
-            qoqs: [],
+            score: null,
+            scoreRaw: null,
+            moMChange: null,
+            moMChangeRaw: null,
+            qoQChange: null,
+            qoQChangeRaw: null,
+            changeText: '',
+            rating: '',
+            momText: '',
+            qoqText: '',
             signals: [],
           });
         }
@@ -1391,17 +1386,6 @@
         const subcategory = ensureSubcategory(category, signal.subcategoryName);
         const capability = ensureCapability(subcategory, signal.capabilityName);
         capability.signals.push(signal);
-        if (Number.isFinite(signal.score)) capability.scores.push(signal.score);
-        if (Number.isFinite(signal.moMChange)) capability.moms.push(signal.moMChange);
-        if (Number.isFinite(signal.qoQChange)) capability.qoqs.push(signal.qoQChange);
-
-        if (Number.isFinite(signal.score)) subcategory.scores.push(signal.score);
-        if (Number.isFinite(signal.moMChange)) subcategory.moms.push(signal.moMChange);
-        if (Number.isFinite(signal.qoQChange)) subcategory.qoqs.push(signal.qoQChange);
-
-        if (Number.isFinite(signal.score)) category.scores.push(signal.score);
-        if (Number.isFinite(signal.moMChange)) category.moms.push(signal.moMChange);
-        if (Number.isFinite(signal.qoQChange)) category.qoqs.push(signal.qoQChange);
       });
 
       categorySummaries.forEach((summary) => {
@@ -1437,9 +1421,6 @@
 
       const categories = [];
       for (const category of categoryMap.values()) {
-        if (!Number.isFinite(category.score)) category.score = average(category.scores);
-        if (!Number.isFinite(category.moMChange)) category.moMChange = average(category.moms);
-        if (!Number.isFinite(category.qoQChange)) category.qoQChange = average(category.qoqs);
         category.rating = category.rating || ratingFromScore(category.score);
         category.changeText = category.changeText || buildChangeLabel(category.moMChange, category.qoQChange);
         category.momText = category.momText || formatSigned(category.moMChange);
@@ -1447,9 +1428,6 @@
 
         const subcategories = [];
         for (const subcategory of category.subcategories.values()) {
-          if (!Number.isFinite(subcategory.score)) subcategory.score = average(subcategory.scores);
-          if (!Number.isFinite(subcategory.moMChange)) subcategory.moMChange = average(subcategory.moms);
-          if (!Number.isFinite(subcategory.qoQChange)) subcategory.qoQChange = average(subcategory.qoqs);
           subcategory.rating = subcategory.rating || ratingFromScore(subcategory.score);
           subcategory.changeText = subcategory.changeText || buildChangeLabel(subcategory.moMChange, subcategory.qoQChange);
           subcategory.momText = subcategory.momText || formatSigned(subcategory.moMChange);
@@ -1457,16 +1435,27 @@
 
           const capabilities = [];
           for (const capability of subcategory.capabilities.values()) {
-            const score = average(capability.scores);
-            const mom = average(capability.moms);
-            const qoq = average(capability.qoqs);
+            const representativeSignal = capability.signals.find((signal) => signal.isScored) || capability.signals[0];
+            const score = Number.isFinite(capability.score)
+              ? capability.score
+              : representativeSignal?.score ?? null;
+            const scoreRaw = capability.scoreRaw ?? representativeSignal?.scoreRaw ?? null;
+            const mom = Number.isFinite(capability.moMChange)
+              ? capability.moMChange
+              : representativeSignal?.moMChange ?? null;
+            const qoq = Number.isFinite(capability.qoQChange)
+              ? capability.qoQChange
+              : representativeSignal?.qoQChange ?? null;
             capabilities.push({
               name: capability.name,
               score,
-              rating: ratingFromScore(score),
-              changeText: buildChangeLabel(mom, qoq),
+              scoreRaw,
+              rating: capability.rating || ratingFromScore(score),
+              changeText: capability.changeText || representativeSignal?.changeText || '',
               momChange: mom,
               qoQChange: qoq,
+              momText: capability.momText || representativeSignal?.momText || '',
+              qoqText: capability.qoqText || representativeSignal?.qoqText || '',
               signals: capability.signals,
             });
           }
@@ -1474,6 +1463,7 @@
           subcategories.push({
             name: subcategory.name,
             score: subcategory.score,
+            scoreRaw: subcategory.scoreRaw,
             rating: subcategory.rating,
             changeText: subcategory.changeText,
             momChange: subcategory.moMChange,
@@ -1487,6 +1477,7 @@
         categories.push({
           name: category.name,
           score: category.score,
+          scoreRaw: category.scoreRaw,
           rating: category.rating,
           changeText: category.changeText,
           momChange: category.moMChange,
@@ -1641,8 +1632,8 @@
       metrics.className = 'score-tree-metrics';
       const parts = [];
 
-      if (Number.isFinite(entry.score)) {
-        parts.push(createScoreBadge(entry.score));
+      if (Number.isFinite(entry.score) || (entry.scoreRaw && `${entry.scoreRaw}`.trim())) {
+        parts.push(createScoreBadge(entry.score, entry.scoreRaw ?? entry.score));
       }
 
       if (entry.rating) {
@@ -1712,7 +1703,7 @@
       } else if (level === 'subcategory') {
         wrapper.classList.add('score-tree-subcategory');
       }
-      if (!Number.isFinite(entry.score)) {
+      if (!Number.isFinite(entry.score) && !(entry.scoreRaw && `${entry.scoreRaw}`.trim())) {
         wrapper.classList.add('score-tree-placeholder');
       }
 
@@ -1751,7 +1742,7 @@
       if (Number.isFinite(signal?.score)) {
         const metrics = document.createElement('div');
         metrics.className = 'score-tree-metrics';
-        metrics.appendChild(createScoreBadge(signal.score));
+        metrics.appendChild(createScoreBadge(signal.score, signal.scoreRaw));
         wrapper.appendChild(metrics);
       }
 
@@ -1912,7 +1903,13 @@
         title.className = 'accordion-title';
         title.textContent = category;
         summary.appendChild(title);
-        summary.appendChild(createScoreBadge(average(items.map((item) => item.score))));
+        const categorySummary = currentCategorySummaries.get(category);
+        const representativeSignal =
+          items.find((item) => Number.isFinite(item.score)) || items.find((item) => item.scoreRaw);
+        const badgeScore = categorySummary?.score ?? representativeSignal?.score ?? null;
+        const badgeFallback =
+          categorySummary?.scoreRaw ?? representativeSignal?.scoreRaw ?? categorySummary?.score ?? representativeSignal?.score;
+        summary.appendChild(createScoreBadge(badgeScore, badgeFallback));
         accordion.appendChild(summary);
 
         const content = document.createElement('div');
@@ -1964,8 +1961,8 @@
         const title = document.createElement('h3');
         title.textContent = row.title;
         header.appendChild(title);
-        if (Number.isFinite(row.score)) {
-          header.appendChild(createScoreBadge(row.score));
+        if (Number.isFinite(row.score) || (row.scoreRaw && `${row.scoreRaw}`.trim())) {
+          header.appendChild(createScoreBadge(row.score, row.scoreRaw ?? row.score));
         }
         card.appendChild(header);
 
@@ -2083,6 +2080,7 @@
     }
 
     let parsedDataset = null;
+    let currentCategorySummaries = new Map();
     let allSignalsByType = { scored: [], informational: [] };
 
     const initialAccountContext = () => ({
@@ -2121,6 +2119,7 @@
       allSignalsByType = { scored: [], informational: [] };
       currentOverallSummaryData = { summaries: [], categoryBreakdown: [] };
       currentFilteredSignals = [];
+      currentCategorySummaries = new Map();
       currentAccountContext = initialAccountContext();
       resetSignalsFiltersState();
 
@@ -2502,6 +2501,12 @@
       selectedAccountLabel.textContent = accountName || accountInfo.accountName || 'Not selected';
 
       populateAccountOverview({ ...accountInfo, accountName: accountInfo.accountName || accountName }, snapshotDate, accountName);
+
+      currentCategorySummaries = new Map();
+      categoryRows.forEach((row) => {
+        if (!row.categoryName) return;
+        currentCategorySummaries.set(row.categoryName, decorateSummaryRow(row));
+      });
 
       const categories = buildCategoryHierarchy(scoredSignals, categoryRows, subcategoryRows);
       populateOverallScores(overallRows, categories);
