@@ -969,22 +969,20 @@
       const capabilityKey = normalizeKey(row.capabilityName);
       const signalKey = normalizeKey(row.signalName);
 
-      let capability = null;
-
-      if (capabilityKey && TECH_HEALTH_CAPABILITY_LOOKUP.has(capabilityKey)) {
-        capability = TECH_HEALTH_CAPABILITY_LOOKUP.get(capabilityKey);
-      } else if (signalKey && TECH_HEALTH_SIGNAL_LOOKUP.has(signalKey)) {
+      if (signalKey && TECH_HEALTH_SIGNAL_LOOKUP.has(signalKey)) {
         const match = TECH_HEALTH_SIGNAL_LOOKUP.get(signalKey);
-        capability = {
-          name: match.capabilityName,
-          subcategoryName: match.subcategoryName,
+        return {
+          type: 'scored',
+          subcategoryName: match.subcategoryName || row.subcategoryName,
           subcategoryWeight: match.subcategoryWeight,
+          capabilityName: match.capabilityName || row.capabilityName,
         };
       }
 
-      if (capability) {
+      if (capabilityKey && TECH_HEALTH_CAPABILITY_LOOKUP.has(capabilityKey)) {
+        const capability = TECH_HEALTH_CAPABILITY_LOOKUP.get(capabilityKey);
         return {
-          type: 'scored',
+          type: 'informational',
           subcategoryName: capability.subcategoryName || row.subcategoryName,
           subcategoryWeight: capability.subcategoryWeight,
           capabilityName: capability.name || row.capabilityName,
@@ -2497,9 +2495,7 @@
 
       const processed = signalRows.map(transformSignalRow);
       const scoredSignals = processed.filter((signal) => signal.isScored);
-      const informationalSignals = processed.filter(
-        (signal) => signal.isInformational || (!signal.isScored && !signal.isInformational)
-      );
+      const informationalSignals = processed.filter((signal) => signal.isInformational);
       const accountInfo = signalRows[0] || categoryRows[0] || subcategoryRows[0] || overallRows[0] || {};
 
       selectedMonthLabel.textContent = snapshotDate ? formatSnapshotMonth(snapshotDate) : 'Not selected';
