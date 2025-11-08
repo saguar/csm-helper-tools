@@ -2182,6 +2182,61 @@
       };
     };
 
+    const extractScoreValue = (summary) => {
+      if (Number.isFinite(summary?.score)) {
+        return summary.score;
+      }
+      const raw = summary?.scoreRaw;
+      if (raw !== null && raw !== undefined) {
+        if (typeof raw === 'string') {
+          const trimmed = raw.trim();
+          if (trimmed) return trimmed;
+        } else {
+          return raw;
+        }
+      }
+      const fallback = summary?.score;
+      if (fallback !== null && fallback !== undefined) {
+        if (typeof fallback === 'string') {
+          const trimmed = fallback.trim();
+          if (trimmed) return trimmed;
+        } else {
+          return fallback;
+        }
+      }
+      return null;
+    };
+
+    const buildOverallScoreSnapshot = () => {
+      const summaries = currentOverallSummaryData?.summaries;
+      if (!Array.isArray(summaries) || !summaries.length) {
+        return null;
+      }
+
+      const desiredTitles = new Map([
+        ['overall score', 'Overall'],
+        ['overall', 'Overall'],
+        ['customer expertise', 'Customer Expertise'],
+        ['product adoption', 'Product Adoption'],
+        ['technical health', 'Technical Health'],
+      ]);
+
+      const snapshot = {};
+      summaries.forEach((summary) => {
+        const rawTitle = (summary?.title || summary?.scoreName || '').trim();
+        if (!rawTitle) return;
+        const normalized = rawTitle.toLowerCase();
+        const exportKey = desiredTitles.get(normalized);
+        if (!exportKey) return;
+        const value = extractScoreValue(summary);
+        if (value !== null && value !== '') {
+          snapshot[exportKey] = value;
+        }
+      });
+
+      return Object.keys(snapshot).length ? snapshot : null;
+    };
+
     const buildExportFilename = (base) => {
       const accountSlug = slugify(currentAccountContext.accountName) || 'account';
       const snapshotSource =
@@ -2800,9 +2855,15 @@
         if (exportSignalsButton.disabled) return;
         const payload = {
           accountOverview: buildAccountOverviewPayload(),
-          filters: { ...currentAllSignalsFilters },
-          signals: cloneForExport(currentFilteredSignals),
         };
+
+        const overallScoreSnapshot = buildOverallScoreSnapshot();
+        if (overallScoreSnapshot) {
+          payload['Overall score'] = overallScoreSnapshot;
+        }
+
+        payload.filters = { ...currentAllSignalsFilters };
+        payload.signals = cloneForExport(currentFilteredSignals);
         triggerJsonDownload(buildExportFilename('all-scored-signals'), payload);
       });
     }
