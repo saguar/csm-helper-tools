@@ -698,6 +698,9 @@
         <select id="allSignalsCapabilityFilter" disabled>
           <option value="all">Capability: all</option>
         </select>
+        <select id="allSignalsRatingFilter" disabled>
+          <option value="all">Rating: all</option>
+        </select>
       </div>
       <div id="allSignalsList"></div>
     </section>
@@ -2070,6 +2073,7 @@
     const allSignalsCategoryFilter = document.getElementById('allSignalsCategoryFilter');
     const allSignalsSubcategoryFilter = document.getElementById('allSignalsSubcategoryFilter');
     const allSignalsCapabilityFilter = document.getElementById('allSignalsCapabilityFilter');
+    const allSignalsRatingFilter = document.getElementById('allSignalsRatingFilter');
     const categoryFilters = [allSignalsCategoryFilter].filter(Boolean);
     const allSignalsListContainer = document.getElementById('allSignalsList');
     const exportOverallButton = document.getElementById('exportOverallJson');
@@ -2102,6 +2106,7 @@
       category: 'all',
       subcategory: 'all',
       capability: 'all',
+      rating: 'all',
       signalType: 'scored',
     };
 
@@ -2111,6 +2116,7 @@
         category: 'all',
         subcategory: 'all',
         capability: 'all',
+        rating: 'all',
         signalType: 'scored',
       };
     };
@@ -2150,6 +2156,11 @@
         allSignalsCapabilityFilter.innerHTML = '<option value="all">Capability: all</option>';
         allSignalsCapabilityFilter.value = 'all';
         allSignalsCapabilityFilter.disabled = true;
+      }
+      if (allSignalsRatingFilter) {
+        allSignalsRatingFilter.innerHTML = '<option value="all">Rating: all</option>';
+        allSignalsRatingFilter.value = 'all';
+        allSignalsRatingFilter.disabled = true;
       }
       document.querySelectorAll('.category-filter').forEach((select) => {
         select.innerHTML = '<option value="all">Category: all</option>';
@@ -2265,6 +2276,10 @@
         allSignalsCapabilityFilter && !allSignalsCapabilityFilter.disabled
           ? allSignalsCapabilityFilter.value
           : 'all';
+      const ratingValue =
+        allSignalsRatingFilter && !allSignalsRatingFilter.disabled
+          ? allSignalsRatingFilter.value
+          : 'all';
 
       const matchesFilters = (signal) => {
         const matchesSearch =
@@ -2277,7 +2292,8 @@
           signal.categoryDescription?.startsWith(`${categoryValue}`);
         const matchesSubcategory = subcategoryValue === 'all' || signal.subcategoryName === subcategoryValue;
         const matchesCapability = capabilityValue === 'all' || signal.capabilityName === capabilityValue;
-        return matchesSearch && matchesCategory && matchesSubcategory && matchesCapability;
+        const matchesRating = ratingValue === 'all' || (signal.rating || '') === ratingValue;
+        return matchesSearch && matchesCategory && matchesSubcategory && matchesCapability && matchesRating;
       };
 
       const sourceSignals = getActiveSignals();
@@ -2288,6 +2304,7 @@
         category: categoryValue,
         subcategory: subcategoryValue,
         capability: capabilityValue,
+        rating: ratingValue,
         signalType: getSelectedSignalType(),
       };
       if (exportSignalsButton) {
@@ -2296,7 +2313,11 @@
       populateGroupedSignals(filteredSignals, allSignalsListContainer);
     };
 
-    const updateAllSignalsFilterOptions = ({ resetSubcategory = false, resetCapability = false } = {}) => {
+    const updateAllSignalsFilterOptions = ({
+      resetSubcategory = false,
+      resetCapability = false,
+      resetRating = false,
+    } = {}) => {
       if (!allSignalsSubcategoryFilter || !allSignalsCapabilityFilter) return;
 
       const categoryValue = allSignalsCategoryFilter ? allSignalsCategoryFilter.value : 'all';
@@ -2362,6 +2383,33 @@
       const hasSignals = baseSignals.length > 0;
       allSignalsSubcategoryFilter.disabled = !hasSignals;
       allSignalsCapabilityFilter.disabled = !hasSignals;
+
+      if (allSignalsRatingFilter) {
+        const previousRatingValue = resetRating ? 'all' : allSignalsRatingFilter.value || 'all';
+        const ratings = new Set();
+        baseSignals.forEach((signal) => {
+          if (signal.rating) {
+            ratings.add(signal.rating);
+          }
+        });
+        const sortedRatings = Array.from(ratings).sort((a, b) => a.localeCompare(b));
+
+        allSignalsRatingFilter.innerHTML = '';
+        const defaultRating = document.createElement('option');
+        defaultRating.value = 'all';
+        defaultRating.textContent = 'Rating: all';
+        allSignalsRatingFilter.appendChild(defaultRating);
+        sortedRatings.forEach((name) => {
+          const option = document.createElement('option');
+          option.value = name;
+          option.textContent = name;
+          allSignalsRatingFilter.appendChild(option);
+        });
+
+        const newRatingValue = sortedRatings.includes(previousRatingValue) ? previousRatingValue : 'all';
+        allSignalsRatingFilter.value = newRatingValue;
+        allSignalsRatingFilter.disabled = !hasSignals || sortedRatings.length === 0;
+      }
     };
 
     const populateAccountOptions = (snapshotDate, tenantTypeValue = 'all') => {
@@ -2530,7 +2578,7 @@
       ];
 
       populateCategoryOptions(categoryNames);
-      updateAllSignalsFilterOptions({ resetSubcategory: true, resetCapability: true });
+      updateAllSignalsFilterOptions({ resetSubcategory: true, resetCapability: true, resetRating: true });
       applyFilters();
     };
 
@@ -2720,13 +2768,17 @@
     if (signalTypeFilter) {
       signalTypeFilter.addEventListener('change', () => {
         currentAllSignalsFilters.signalType = getSelectedSignalType();
-        updateAllSignalsFilterOptions({ resetSubcategory: true, resetCapability: true });
+        updateAllSignalsFilterOptions({ resetSubcategory: true, resetCapability: true, resetRating: true });
         applyFilters();
       });
     }
 
     if (allSignalsCapabilityFilter) {
       allSignalsCapabilityFilter.addEventListener('change', applyFilters);
+    }
+
+    if (allSignalsRatingFilter) {
+      allSignalsRatingFilter.addEventListener('change', applyFilters);
     }
 
     if (exportOverallButton) {
