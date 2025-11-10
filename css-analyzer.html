@@ -2406,10 +2406,23 @@
       scoreValue.textContent = formattedScore;
       scoreWrapper.appendChild(scoreValue);
 
-      if (Number.isFinite(signal.score)) {
+      const valueText = (() => {
+        if (signal.valueDisplay && `${signal.valueDisplay}`.trim()) {
+          return `${signal.valueDisplay}`.trim();
+        }
+        if (signal.value && `${signal.value}`.trim()) {
+          return `${signal.value}`.trim();
+        }
+        if (Number.isFinite(signal.valueNumeric)) {
+          return formatNumber(signal.valueNumeric);
+        }
+        return '';
+      })();
+
+      if (valueText) {
         const unit = document.createElement('span');
         unit.className = 'technical-health-unit';
-        unit.textContent = '%';
+        unit.textContent = valueText;
         scoreWrapper.appendChild(unit);
       }
 
@@ -2442,7 +2455,6 @@
       const subcategory = signal.technicalHealthSubcategory || signal.subcategoryName;
       if (capability) metaPieces.push(capability);
       if (subcategory) metaPieces.push(subcategory);
-      if (signal.valueDisplay) metaPieces.push(signal.valueDisplay);
 
       if (metaPieces.length) {
         const meta = document.createElement('p');
