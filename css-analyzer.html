@@ -577,6 +577,12 @@
       border-color: rgba(21, 128, 61, 0.3);
     }
 
+    .technical-health-card.high .technical-health-score {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
     .technical-health-card.medium {
       border-color: rgba(234, 179, 8, 0.35);
     }
@@ -2637,6 +2643,17 @@
       label.textContent = signal.signalName || signal.metricName || 'Technical health metric';
       card.appendChild(label);
 
+      const metaPieces = [];
+      const capability = signal.technicalHealthCapability || signal.capabilityName;
+      if (capability) metaPieces.push(capability);
+
+      if (metaPieces.length) {
+        const meta = document.createElement('p');
+        meta.className = 'technical-health-meta';
+        meta.textContent = metaPieces.join(' • ');
+        card.appendChild(meta);
+      }
+
       const scoreWrapper = document.createElement('div');
       scoreWrapper.className = 'technical-health-score';
 
@@ -2689,17 +2706,6 @@
       }
 
       card.appendChild(scoreWrapper);
-
-      const metaPieces = [];
-      const capability = signal.technicalHealthCapability || signal.capabilityName;
-      if (capability) metaPieces.push(capability);
-
-      if (metaPieces.length) {
-        const meta = document.createElement('p');
-        meta.className = 'technical-health-meta';
-        meta.textContent = metaPieces.join(' • ');
-        card.appendChild(meta);
-      }
 
       const deepDiveLink = document.createElement('button');
       deepDiveLink.type = 'button';
