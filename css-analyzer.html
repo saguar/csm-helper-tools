@@ -517,6 +517,38 @@
       gap: 1.25rem;
     }
 
+    .technical-health-actions {
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .technical-health-add-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 1.4rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .technical-health-add-button:hover,
+    .technical-health-add-button:focus-visible {
+      background: var(--primary-dark, #2563eb);
+      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.35);
+      color: #fff;
+    }
+
+    .technical-health-add-button:focus-visible {
+      outline: 2px solid rgba(37, 99, 235, 0.65);
+      outline-offset: 2px;
+    }
+
     .technical-health-title {
       font-size: 1.1rem;
       font-weight: 600;
@@ -796,6 +828,112 @@
     .technical-health-modal-button:focus-visible {
       outline: 2px solid rgba(37, 99, 235, 0.65);
       outline-offset: 2px;
+    }
+
+    .technical-health-custom-form {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .technical-health-form-description {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .technical-health-form-error {
+      margin: 0;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      background: rgba(185, 28, 28, 0.12);
+      color: var(--danger);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .technical-health-form-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .technical-health-form-group {
+      display: grid;
+      gap: 0.4rem;
+    }
+
+    .technical-health-form-group--full {
+      grid-column: 1 / -1;
+    }
+
+    .technical-health-form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .technical-health-form-group input,
+    .technical-health-form-group select,
+    .technical-health-form-group textarea {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .technical-health-form-group textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .technical-health-form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    .technical-health-form-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.6rem 1.5rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .technical-health-form-button.primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .technical-health-form-button.primary:hover,
+    .technical-health-form-button.primary:focus-visible {
+      background: var(--primary-dark, #2563eb);
+      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.35);
+      color: #fff;
+    }
+
+    .technical-health-form-button.secondary {
+      background: transparent;
+      color: var(--muted);
+      border-color: var(--border);
+    }
+
+    .technical-health-form-button.secondary:hover,
+    .technical-health-form-button.secondary:focus-visible {
+      color: var(--text);
+      border-color: var(--primary);
     }
 
     body.technical-health-modal-open {
@@ -1115,6 +1253,15 @@
               </a>
               to get futher details on the THS signals and the scoring calculation logic.
             </p>
+            <div class="technical-health-actions">
+              <button
+                type="button"
+                class="technical-health-add-button"
+                id="addCustomTechnicalHealthSignalButton"
+              >
+                Add custom Signal
+              </button>
+            </div>
             <div class="technical-health-grid" id="technicalHealthGrid" aria-live="polite"></div>
             <p class="empty-state" id="technicalHealthEmpty">Upload a file to begin the analysis.</p>
           </div>
@@ -1144,6 +1291,114 @@
       <div class="technical-health-modal-body" id="technicalHealthDeepDiveBody">
         <p>Specific deep dive instructions for this metric will appear here.</p>
       </div>
+    </div>
+  </div>
+
+  <div
+    class="technical-health-modal"
+    id="customTechnicalHealthModal"
+    role="dialog"
+    aria-modal="true"
+    aria-hidden="true"
+    aria-labelledby="customTechnicalHealthModalTitle"
+    tabindex="-1"
+  >
+    <div class="technical-health-modal-overlay" data-custom-modal-close></div>
+    <div class="technical-health-modal-dialog" role="document">
+      <form class="technical-health-custom-form" id="customTechnicalHealthForm">
+        <div class="technical-health-modal-header">
+          <h2 class="technical-health-modal-title" id="customTechnicalHealthModalTitle">
+            Add custom technical health signal
+          </h2>
+          <button
+            class="technical-health-modal-close"
+            type="button"
+            data-custom-modal-close
+            aria-label="Close custom technical health signal dialog"
+          >
+            ×
+          </button>
+        </div>
+
+        <p class="technical-health-form-description">
+          Provide the same data points that appear on standard technical health cards. All fields are optional except for the
+          signal name.
+        </p>
+
+        <p class="technical-health-form-error" id="customTechnicalHealthError" role="alert" hidden></p>
+
+        <div class="technical-health-form-grid">
+          <div class="technical-health-form-group">
+            <label for="customSignalName">Signal name<span aria-hidden="true">*</span></label>
+            <input type="text" id="customSignalName" name="customSignalName" required />
+          </div>
+
+          <div class="technical-health-form-group">
+            <label for="customSignalSubcategory">Subcategory</label>
+            <input type="text" id="customSignalSubcategory" name="customSignalSubcategory" placeholder="e.g., Adoption" />
+          </div>
+
+          <div class="technical-health-form-group">
+            <label for="customSignalCapability">Capability</label>
+            <input type="text" id="customSignalCapability" name="customSignalCapability" placeholder="e.g., Usage depth" />
+          </div>
+
+          <div class="technical-health-form-group">
+            <label for="customSignalScore">Score</label>
+            <input type="text" id="customSignalScore" name="customSignalScore" placeholder="e.g., 75" />
+          </div>
+
+          <div class="technical-health-form-group">
+            <label for="customSignalValue">Value (displayed next to the score)</label>
+            <input type="text" id="customSignalValue" name="customSignalValue" placeholder="e.g., 250 active users" />
+          </div>
+
+          <div class="technical-health-form-group">
+            <label for="customSignalBenchmark">Benchmark</label>
+            <input type="text" id="customSignalBenchmark" name="customSignalBenchmark" placeholder="e.g., Target ≥ 200" />
+          </div>
+
+          <div class="technical-health-form-group">
+            <label for="customSignalMoM">Month-over-month change</label>
+            <input type="text" id="customSignalMoM" name="customSignalMoM" placeholder="e.g., +5" />
+          </div>
+
+          <div class="technical-health-form-group">
+            <label for="customSignalQoQ">Quarter-over-quarter change</label>
+            <input type="text" id="customSignalQoQ" name="customSignalQoQ" placeholder="e.g., -2" />
+          </div>
+
+          <div class="technical-health-form-group">
+            <label for="customSignalChangeDirection">Change direction override</label>
+            <select id="customSignalChangeDirection" name="customSignalChangeDirection">
+              <option value="auto" selected>Automatic (based on MoM/QoQ)</option>
+              <option value="up">Up</option>
+              <option value="down">Down</option>
+              <option value="flat">Flat</option>
+            </select>
+          </div>
+
+          <div class="technical-health-form-group technical-health-form-group--full">
+            <label for="customSignalChangeText">Change description</label>
+            <input type="text" id="customSignalChangeText" name="customSignalChangeText" placeholder="e.g., ▲ 5 MoM" />
+          </div>
+        </div>
+
+        <div class="technical-health-form-group technical-health-form-group--full">
+          <label for="customSignalDefinition">Definition / notes</label>
+          <textarea
+            id="customSignalDefinition"
+            name="customSignalDefinition"
+            rows="3"
+            placeholder="Add context that will appear in the deep dive dialog"
+          ></textarea>
+        </div>
+
+        <div class="technical-health-form-actions">
+          <button type="button" class="technical-health-form-button secondary" data-custom-modal-close>Cancel</button>
+          <button type="submit" class="technical-health-form-button primary">Save signal</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -2527,10 +2782,27 @@
     const technicalHealthDeepDiveCloseElements = technicalHealthDeepDiveModal
       ? Array.from(technicalHealthDeepDiveModal.querySelectorAll('[data-modal-close]'))
       : [];
+    const addCustomTechnicalHealthSignalButton = document.getElementById('addCustomTechnicalHealthSignalButton');
+    const customTechnicalHealthModal = document.getElementById('customTechnicalHealthModal');
+    const customTechnicalHealthForm = document.getElementById('customTechnicalHealthForm');
+    const customTechnicalHealthError = document.getElementById('customTechnicalHealthError');
+    const customTechnicalHealthModalCloseElements = customTechnicalHealthModal
+      ? Array.from(customTechnicalHealthModal.querySelectorAll('[data-custom-modal-close]'))
+      : [];
     let lastTechnicalHealthDeepDiveTrigger = null;
+    let lastCustomTechnicalHealthTrigger = null;
     const TECHNICAL_HEALTH_NO_DATA_MESSAGE = 'No Technical Health scores available for the current selection.';
     const tabButtons = Array.from(document.querySelectorAll('[data-tab-target]'));
     const tabPanels = Array.from(document.querySelectorAll('.tab-panel-section'));
+
+    const syncTechnicalHealthModalState = () => {
+      if (!document.body) return;
+      const isAnyModalOpen = Boolean(
+        (technicalHealthDeepDiveModal && technicalHealthDeepDiveModal.classList.contains('is-open')) ||
+          (customTechnicalHealthModal && customTechnicalHealthModal.classList.contains('is-open'))
+      );
+      document.body.classList.toggle('technical-health-modal-open', isAnyModalOpen);
+    };
 
     const activateTab = (targetId) => {
       tabButtons.forEach((button) => {
@@ -2607,6 +2879,31 @@
       if (score > 80) return 'high';
       if (score >= 60) return 'medium';
       return 'low';
+    };
+
+    const customTechnicalHealthSignalsByContext = new Map();
+
+    const getTechnicalHealthContextKey = (context) => {
+      const targetContext = context || currentAccountContext || {};
+      const snapshot = targetContext.snapshotDateRaw || '';
+      const tenant = targetContext.tenantType || '';
+      const account = targetContext.accountName || '';
+      return [snapshot, tenant, account].join('::');
+    };
+
+    const getCustomTechnicalHealthSignalsForContext = (context) => {
+      const key = getTechnicalHealthContextKey(context);
+      const stored = customTechnicalHealthSignalsByContext.get(key);
+      return stored ? stored.slice() : [];
+    };
+
+    const setCustomTechnicalHealthSignalsForContext = (signals, context) => {
+      const key = getTechnicalHealthContextKey(context);
+      if (Array.isArray(signals) && signals.length) {
+        customTechnicalHealthSignalsByContext.set(key, signals.slice());
+      } else {
+        customTechnicalHealthSignalsByContext.delete(key);
+      }
     };
 
     const updateTechnicalHealthDeepDiveContent = (signal) => {
@@ -2688,9 +2985,7 @@
       if (!technicalHealthDeepDiveModal) return;
       technicalHealthDeepDiveModal.classList.remove('is-open');
       technicalHealthDeepDiveModal.setAttribute('aria-hidden', 'true');
-      if (document.body) {
-        document.body.classList.remove('technical-health-modal-open');
-      }
+      syncTechnicalHealthModalState();
       if (
         lastTechnicalHealthDeepDiveTrigger &&
         typeof lastTechnicalHealthDeepDiveTrigger.focus === 'function' &&
@@ -2709,9 +3004,7 @@
       }
       technicalHealthDeepDiveModal.classList.add('is-open');
       technicalHealthDeepDiveModal.setAttribute('aria-hidden', 'false');
-      if (document.body) {
-        document.body.classList.add('technical-health-modal-open');
-      }
+      syncTechnicalHealthModalState();
       const closeButton = technicalHealthDeepDiveModal.querySelector('.technical-health-modal-close');
       if (closeButton) {
         closeButton.focus();
@@ -2732,6 +3025,183 @@
           event.preventDefault();
           closeTechnicalHealthDeepDive();
         });
+      });
+    }
+
+    const resetCustomTechnicalHealthForm = () => {
+      if (customTechnicalHealthForm) {
+        customTechnicalHealthForm.reset();
+      }
+      if (customTechnicalHealthError) {
+        customTechnicalHealthError.textContent = '';
+        customTechnicalHealthError.hidden = true;
+      }
+    };
+
+    const closeCustomTechnicalHealthModal = () => {
+      if (!customTechnicalHealthModal) return;
+      customTechnicalHealthModal.classList.remove('is-open');
+      customTechnicalHealthModal.setAttribute('aria-hidden', 'true');
+      syncTechnicalHealthModalState();
+      const fallbackTrigger =
+        addCustomTechnicalHealthSignalButton &&
+        typeof addCustomTechnicalHealthSignalButton.focus === 'function' &&
+        document.contains(addCustomTechnicalHealthSignalButton)
+          ? addCustomTechnicalHealthSignalButton
+          : null;
+      const targetToFocus =
+        (lastCustomTechnicalHealthTrigger &&
+          typeof lastCustomTechnicalHealthTrigger.focus === 'function' &&
+          document.contains(lastCustomTechnicalHealthTrigger)
+          ? lastCustomTechnicalHealthTrigger
+          : null) || fallbackTrigger;
+      if (targetToFocus) {
+        targetToFocus.focus();
+      }
+      lastCustomTechnicalHealthTrigger = null;
+    };
+
+    const openCustomTechnicalHealthModal = (trigger) => {
+      if (!customTechnicalHealthModal) return;
+      if (trigger) {
+        lastCustomTechnicalHealthTrigger = trigger;
+      } else {
+        lastCustomTechnicalHealthTrigger = addCustomTechnicalHealthSignalButton;
+      }
+      resetCustomTechnicalHealthForm();
+      customTechnicalHealthModal.classList.add('is-open');
+      customTechnicalHealthModal.setAttribute('aria-hidden', 'false');
+      syncTechnicalHealthModalState();
+      const firstField = customTechnicalHealthForm
+        ? customTechnicalHealthForm.querySelector('input, select, textarea')
+        : null;
+      if (firstField && typeof firstField.focus === 'function') {
+        firstField.focus();
+      } else {
+        customTechnicalHealthModal.focus();
+      }
+    };
+
+    if (addCustomTechnicalHealthSignalButton) {
+      addCustomTechnicalHealthSignalButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        openCustomTechnicalHealthModal(addCustomTechnicalHealthSignalButton);
+      });
+    }
+
+    if (customTechnicalHealthModal) {
+      customTechnicalHealthModal.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && customTechnicalHealthModal.classList.contains('is-open')) {
+          event.preventDefault();
+          closeCustomTechnicalHealthModal();
+        }
+      });
+    }
+
+    customTechnicalHealthModalCloseElements.forEach((element) => {
+      element.addEventListener('click', (event) => {
+        event.preventDefault();
+        closeCustomTechnicalHealthModal();
+      });
+    });
+
+    if (customTechnicalHealthForm) {
+      customTechnicalHealthForm.addEventListener('input', () => {
+        if (customTechnicalHealthError && !customTechnicalHealthError.hidden) {
+          customTechnicalHealthError.textContent = '';
+          customTechnicalHealthError.hidden = true;
+        }
+      });
+
+      customTechnicalHealthForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (!customTechnicalHealthForm) return;
+        const formData = new FormData(customTechnicalHealthForm);
+        const name = `${formData.get('customSignalName') || ''}`.trim();
+        if (!name) {
+          if (customTechnicalHealthError) {
+            customTechnicalHealthError.textContent = 'Provide a signal name to create the custom card.';
+            customTechnicalHealthError.hidden = false;
+          }
+          const nameInput = customTechnicalHealthForm.querySelector('#customSignalName');
+          if (nameInput && typeof nameInput.focus === 'function') {
+            nameInput.focus();
+          }
+          return;
+        }
+
+        const subcategory = `${formData.get('customSignalSubcategory') || ''}`.trim();
+        const capability = `${formData.get('customSignalCapability') || ''}`.trim();
+        const scoreRaw = `${formData.get('customSignalScore') || ''}`.trim();
+        const scoreNumeric = parseNumber(scoreRaw);
+        const valueRaw = `${formData.get('customSignalValue') || ''}`.trim();
+        const valueNumeric = parseNumber(valueRaw);
+        const benchmarkRaw = `${formData.get('customSignalBenchmark') || ''}`.trim();
+        const momRaw = `${formData.get('customSignalMoM') || ''}`.trim();
+        const momNumeric = parseNumber(momRaw);
+        const qoqRaw = `${formData.get('customSignalQoQ') || ''}`.trim();
+        const qoqNumeric = parseNumber(qoqRaw);
+        const changeDirectionSelection = `${formData.get('customSignalChangeDirection') || 'auto'}`.trim();
+        const manualChangeText = `${formData.get('customSignalChangeText') || ''}`.trim();
+        const definition = `${formData.get('customSignalDefinition') || ''}`.trim();
+
+        const effectiveChangeDirection = (() => {
+          if (changeDirectionSelection === 'up' || changeDirectionSelection === 'down' || changeDirectionSelection === 'flat') {
+            return changeDirectionSelection;
+          }
+          if ((Number.isFinite(momNumeric) && momNumeric > 0) || (Number.isFinite(qoqNumeric) && qoqNumeric > 0)) {
+            return 'up';
+          }
+          if ((Number.isFinite(momNumeric) && momNumeric < 0) || (Number.isFinite(qoqNumeric) && qoqNumeric < 0)) {
+            return 'down';
+          }
+          return 'flat';
+        })();
+
+        const autoChangeText = buildChangeLabel(momNumeric, qoqNumeric);
+        const changeText = manualChangeText || autoChangeText;
+        const benchmarkStatus = evaluateBenchmark(Number.isFinite(valueNumeric) ? valueNumeric : null, benchmarkRaw);
+
+        const customSignal = {
+          id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          signalName: name,
+          metricName: name,
+          categoryName: 'Technical Health',
+          technicalHealthSubcategory: subcategory || 'Custom',
+          subcategoryName: subcategory || 'Custom',
+          technicalHealthCapability: capability || '',
+          capabilityName: capability || '',
+          score: Number.isFinite(scoreNumeric) ? scoreNumeric : null,
+          scoreRaw: scoreRaw || '',
+          valueDisplay: valueRaw || '',
+          value: valueRaw || '',
+          valueNumeric: Number.isFinite(valueNumeric) ? valueNumeric : null,
+          benchmark: benchmarkRaw || '',
+          benchmarkDisplay: benchmarkRaw
+            ? `${benchmarkRaw}${benchmarkStatus ? ` • ${benchmarkStatus}` : ''}`
+            : '',
+          benchmarkStatus: benchmarkStatus || '',
+          moMChange: Number.isFinite(momNumeric) ? momNumeric : null,
+          moMChangeRaw: momRaw || '',
+          qoQChange: Number.isFinite(qoqNumeric) ? qoqNumeric : null,
+          qoQChangeRaw: qoqRaw || '',
+          momText: formatChangeDisplay(Number.isFinite(momNumeric) ? momNumeric : null, momRaw),
+          qoqText: formatChangeDisplay(Number.isFinite(qoqNumeric) ? qoqNumeric : null, qoqRaw),
+          changeText: changeText || '',
+          changeDirection: effectiveChangeDirection,
+          signalDefinition: definition || '',
+          isCustomTechnicalHealth: true,
+          signalType: 'scored',
+          isScored: true,
+          rating: Number.isFinite(scoreNumeric) ? ratingFromScore(scoreNumeric) : '',
+          categoryDescription: [subcategory || '', capability || ''].filter(Boolean).join(' • '),
+        };
+
+        const existing = getCustomTechnicalHealthSignalsForContext();
+        existing.push(customSignal);
+        setCustomTechnicalHealthSignalsForContext(existing);
+        renderTechnicalHealthDashboard(allSignalsByType.scored);
+        closeCustomTechnicalHealthModal();
       });
     }
 
@@ -2820,9 +3290,11 @@
 
     const renderTechnicalHealthDashboard = (signals = []) => {
       if (!technicalHealthGrid || !technicalHealthEmpty) return;
-      const technicalSignals = Array.isArray(signals)
+      const baseSignals = Array.isArray(signals)
         ? signals.filter((signal) => normalizeKey(signal.categoryName) === 'technical health')
         : [];
+      const customSignals = getCustomTechnicalHealthSignalsForContext();
+      const technicalSignals = [...baseSignals, ...customSignals];
 
       technicalHealthGrid.innerHTML = '';
 
@@ -3445,6 +3917,7 @@
 
     const resetDashboard = () => {
       parsedDataset = null;
+      customTechnicalHealthSignalsByContext.clear();
       selectedMonthLabel.textContent = 'Not selected';
       selectedAccountLabel.textContent = 'Not selected';
       populateReferenceOptions([]);
