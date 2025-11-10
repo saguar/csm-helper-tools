@@ -512,6 +512,114 @@
       font-style: italic;
     }
 
+    .technical-health-overview {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .technical-health-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .technical-health-grid {
+      display: grid;
+      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .technical-health-card {
+      background: var(--surface-alt);
+      border-radius: 1rem;
+      padding: 1.25rem 1.35rem;
+      border: 1px solid var(--border);
+      box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+      display: grid;
+      gap: 0.75rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .technical-health-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 22px 40px rgba(15, 23, 42, 0.12);
+    }
+
+    .technical-health-card.high {
+      border-color: rgba(21, 128, 61, 0.3);
+    }
+
+    .technical-health-card.medium {
+      border-color: rgba(234, 179, 8, 0.35);
+    }
+
+    .technical-health-card.low {
+      border-color: rgba(185, 28, 28, 0.3);
+    }
+
+    .technical-health-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: none;
+    }
+
+    .technical-health-score {
+      display: flex;
+      align-items: baseline;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+
+    .technical-health-value {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .technical-health-card.high .technical-health-value {
+      color: var(--success);
+    }
+
+    .technical-health-card.medium .technical-health-value {
+      color: #b45309;
+    }
+
+    .technical-health-card.low .technical-health-value {
+      color: var(--danger);
+    }
+
+    .technical-health-unit {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .technical-health-trend {
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .technical-health-trend.up {
+      color: var(--success);
+    }
+
+    .technical-health-trend.down {
+      color: var(--danger);
+    }
+
+    .technical-health-trend.flat {
+      color: var(--muted);
+    }
+
+    .technical-health-meta {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
     .score-summary-grid {
       display: grid;
       gap: 1.5rem;
@@ -809,7 +917,16 @@
           aria-labelledby="tab-technical-health"
           hidden
         >
-          <div class="empty-state">Technical Health Analysis content will be displayed here.</div>
+          <div class="panel-header">
+            <h2 class="technical-health-title">Technical Health Overview</h2>
+          </div>
+          <div class="technical-health-overview" id="technicalHealthOverview">
+            <p class="helper-text">
+              Technical Health Score metrics for the selected account and snapshot.
+            </p>
+            <div class="technical-health-grid" id="technicalHealthGrid" aria-live="polite"></div>
+            <p class="empty-state" id="technicalHealthEmpty">Upload a file to begin the analysis.</p>
+          </div>
         </section>
       </div>
     </section>
@@ -2187,6 +2304,10 @@
     const allSignalsListContainer = document.getElementById('allSignalsList');
     const exportOverallButton = document.getElementById('exportOverallJson');
     const exportSignalsButton = document.getElementById('exportSignalsJson');
+    const technicalHealthGrid = document.getElementById('technicalHealthGrid');
+    const technicalHealthEmpty = document.getElementById('technicalHealthEmpty');
+    const technicalHealthEmptyDefault = technicalHealthEmpty ? technicalHealthEmpty.textContent : '';
+    const TECHNICAL_HEALTH_NO_DATA_MESSAGE = 'No Technical Health scores available for the current selection.';
     const tabButtons = Array.from(document.querySelectorAll('[data-tab-target]'));
     const tabPanels = Array.from(document.querySelectorAll('.tab-panel-section'));
 
@@ -2260,6 +2381,103 @@
       signalTypeFilter.disabled = true;
     }
 
+    const technicalHealthScoreBand = (score) => {
+      if (!Number.isFinite(score)) return 'medium';
+      if (score > 80) return 'high';
+      if (score >= 60) return 'medium';
+      return 'low';
+    };
+
+    const createTechnicalHealthCard = (signal) => {
+      const card = document.createElement('article');
+      card.className = `technical-health-card ${technicalHealthScoreBand(signal.score)}`;
+
+      const label = document.createElement('p');
+      label.className = 'technical-health-label';
+      label.textContent = signal.signalName || signal.metricName || 'Technical health metric';
+      card.appendChild(label);
+
+      const scoreWrapper = document.createElement('div');
+      scoreWrapper.className = 'technical-health-score';
+
+      const scoreValue = document.createElement('span');
+      scoreValue.className = 'technical-health-value';
+      const formattedScore = formatScore(signal.score, signal.scoreRaw ?? signal.score);
+      scoreValue.textContent = formattedScore;
+      scoreWrapper.appendChild(scoreValue);
+
+      if (Number.isFinite(signal.score)) {
+        const unit = document.createElement('span');
+        unit.className = 'technical-health-unit';
+        unit.textContent = '%';
+        scoreWrapper.appendChild(unit);
+      }
+
+      const trendValue = Number.isFinite(signal.moMChange)
+        ? signal.moMChange
+        : Number.isFinite(signal.qoQChange)
+        ? signal.qoQChange
+        : null;
+
+      if (Number.isFinite(trendValue) && trendValue !== 0) {
+        const trend = document.createElement('span');
+        const direction = trendValue > 0 ? 'up' : 'down';
+        trend.className = `technical-health-trend ${direction}`;
+        const arrow = direction === 'up' ? '▲' : '▼';
+        const labelText = Number.isFinite(signal.moMChange) ? 'MoM' : 'QoQ';
+        trend.textContent = `${arrow} ${formatNumber(Math.abs(trendValue))} ${labelText}`.trim();
+        scoreWrapper.appendChild(trend);
+      } else if (signal.changeDirection && signal.changeDirection !== 'flat' && signal.changeText) {
+        const trend = document.createElement('span');
+        trend.className = `technical-health-trend ${signal.changeDirection}`;
+        const arrow = signal.changeDirection === 'up' ? '▲' : '▼';
+        trend.textContent = `${arrow} ${signal.changeText}`;
+        scoreWrapper.appendChild(trend);
+      }
+
+      card.appendChild(scoreWrapper);
+
+      const metaPieces = [];
+      const capability = signal.technicalHealthCapability || signal.capabilityName;
+      const subcategory = signal.technicalHealthSubcategory || signal.subcategoryName;
+      if (capability) metaPieces.push(capability);
+      if (subcategory) metaPieces.push(subcategory);
+      if (signal.valueDisplay) metaPieces.push(signal.valueDisplay);
+
+      if (metaPieces.length) {
+        const meta = document.createElement('p');
+        meta.className = 'technical-health-meta';
+        meta.textContent = metaPieces.join(' • ');
+        card.appendChild(meta);
+      }
+
+      return card;
+    };
+
+    const renderTechnicalHealthDashboard = (signals = []) => {
+      if (!technicalHealthGrid || !technicalHealthEmpty) return;
+      const technicalSignals = Array.isArray(signals)
+        ? signals.filter((signal) => normalizeKey(signal.categoryName) === 'technical health')
+        : [];
+
+      technicalHealthGrid.innerHTML = '';
+
+      if (!technicalSignals.length) {
+        technicalHealthEmpty.textContent = TECHNICAL_HEALTH_NO_DATA_MESSAGE;
+        technicalHealthEmpty.hidden = false;
+        return;
+      }
+
+      technicalHealthEmpty.hidden = true;
+
+      technicalSignals
+        .slice()
+        .sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity))
+        .forEach((signal) => {
+          technicalHealthGrid.appendChild(createTechnicalHealthCard(signal));
+        });
+    };
+
     let parsedDataset = null;
     let currentCategorySummaries = new Map();
     let allSignalsByType = { scored: [], informational: [] };
@@ -2320,6 +2538,13 @@
       if (overallGrid) overallGrid.innerHTML = `<p class="empty-state">${message}</p>`;
       if (allSignalsListContainer) {
         allSignalsListContainer.innerHTML = `<p class="empty-state">${message}</p>`;
+      }
+      if (technicalHealthGrid) {
+        technicalHealthGrid.innerHTML = '';
+      }
+      if (technicalHealthEmpty) {
+        technicalHealthEmpty.textContent = message || technicalHealthEmptyDefault || TECHNICAL_HEALTH_NO_DATA_MESSAGE;
+        technicalHealthEmpty.hidden = false;
       }
       document.querySelectorAll('.signal-search').forEach((input) => {
         input.value = '';
@@ -2790,6 +3015,8 @@
 
       const categories = buildCategoryHierarchy(scoredSignals, categoryRows, subcategoryRows);
       populateOverallScores(overallRows, categories);
+
+      renderTechnicalHealthDashboard(scoredSignals);
 
       allSignalsByType = { scored: scoredSignals, informational: informationalSignals };
 
