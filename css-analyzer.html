@@ -669,6 +669,7 @@
       gap: 0.35rem;
       margin-top: 0;
       width: fit-content;
+      justify-self: end;
       background: none;
       border: none;
       padding: 0;
@@ -2710,7 +2711,7 @@
       const deepDiveLink = document.createElement('button');
       deepDiveLink.type = 'button';
       deepDiveLink.className = 'technical-health-deep-dive-link';
-      deepDiveLink.textContent = 'how to deep dive';
+      deepDiveLink.textContent = '?';
       deepDiveLink.addEventListener('click', () => openTechnicalHealthDeepDive(signal, deepDiveLink));
       card.appendChild(deepDiveLink);
 
