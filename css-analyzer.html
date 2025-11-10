@@ -524,6 +524,35 @@
 
     .technical-health-grid {
       display: grid;
+      gap: 2rem;
+    }
+
+    .technical-health-subcategory-group {
+      display: grid;
+      gap: 1rem;
+      grid-column: 1 / -1;
+    }
+
+    .technical-health-subcategory-heading {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .technical-health-subcategory-heading::after {
+      content: '';
+      height: 1px;
+      background: rgba(148, 163, 184, 0.35);
+      flex: 1;
+    }
+
+    .technical-health-subcategory-grid {
+      display: grid;
       gap: 1.25rem;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     }
@@ -589,9 +618,12 @@
     }
 
     .technical-health-unit {
-      font-size: 1rem;
+      font-size: 0.9rem;
       font-weight: 600;
       color: var(--muted);
+      flex-basis: 100%;
+      display: block;
+      margin-top: 0.35rem;
     }
 
     .technical-health-trend {
@@ -618,6 +650,104 @@
       font-size: 0.8rem;
       color: var(--muted);
       line-height: 1.4;
+    }
+
+    .technical-health-deep-dive-link {
+      font-size: 0.8rem;
+      color: var(--primary);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0;
+      width: fit-content;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .technical-health-deep-dive-link::after {
+      content: '↗';
+      font-size: 0.9em;
+    }
+
+    .technical-health-deep-dive-link:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    .technical-health-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .technical-health-modal.is-open {
+      display: flex;
+    }
+
+    .technical-health-modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+    }
+
+    .technical-health-modal-dialog {
+      position: relative;
+      background: var(--surface);
+      border-radius: 1rem;
+      padding: 2rem;
+      width: min(90vw, 520px);
+      box-shadow: 0 20px 55px rgba(15, 23, 42, 0.3);
+      display: grid;
+      gap: 1.25rem;
+      z-index: 1;
+    }
+
+    .technical-health-modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .technical-health-modal-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .technical-health-modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      line-height: 1;
+      cursor: pointer;
+      color: var(--muted);
+    }
+
+    .technical-health-modal-body {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .technical-health-modal-context {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    body.technical-health-modal-open {
+      overflow: hidden;
     }
 
     .score-summary-grid {
@@ -932,6 +1062,29 @@
     </section>
 
   </main>
+
+  <div
+    class="technical-health-modal"
+    id="technicalHealthDeepDiveModal"
+    role="dialog"
+    aria-modal="true"
+    aria-hidden="true"
+    aria-labelledby="technicalHealthDeepDiveTitle"
+    tabindex="-1"
+  >
+    <div class="technical-health-modal-overlay" data-modal-close></div>
+    <div class="technical-health-modal-dialog" role="document">
+      <div class="technical-health-modal-header">
+        <h2 class="technical-health-modal-title" id="technicalHealthDeepDiveTitle">Deep dive guidance</h2>
+        <button class="technical-health-modal-close" type="button" data-modal-close aria-label="Close deep dive">
+          ×
+        </button>
+      </div>
+      <div class="technical-health-modal-body" id="technicalHealthDeepDiveBody">
+        <p>Specific deep dive instructions for this metric will appear here.</p>
+      </div>
+    </div>
+  </div>
 
   <template id="signalTemplate">
     <article class="signal-item">
@@ -2307,6 +2460,13 @@
     const technicalHealthGrid = document.getElementById('technicalHealthGrid');
     const technicalHealthEmpty = document.getElementById('technicalHealthEmpty');
     const technicalHealthEmptyDefault = technicalHealthEmpty ? technicalHealthEmpty.textContent : '';
+    const technicalHealthDeepDiveModal = document.getElementById('technicalHealthDeepDiveModal');
+    const technicalHealthDeepDiveTitle = document.getElementById('technicalHealthDeepDiveTitle');
+    const technicalHealthDeepDiveBody = document.getElementById('technicalHealthDeepDiveBody');
+    const technicalHealthDeepDiveCloseElements = technicalHealthDeepDiveModal
+      ? Array.from(technicalHealthDeepDiveModal.querySelectorAll('[data-modal-close]'))
+      : [];
+    let lastTechnicalHealthDeepDiveTrigger = null;
     const TECHNICAL_HEALTH_NO_DATA_MESSAGE = 'No Technical Health scores available for the current selection.';
     const tabButtons = Array.from(document.querySelectorAll('[data-tab-target]'));
     const tabPanels = Array.from(document.querySelectorAll('.tab-panel-section'));
@@ -2388,6 +2548,86 @@
       return 'low';
     };
 
+    const updateTechnicalHealthDeepDiveContent = (signal) => {
+      if (!technicalHealthDeepDiveModal) return;
+      const metricName = signal.signalName || signal.metricName || 'Technical health metric';
+      if (technicalHealthDeepDiveTitle) {
+        technicalHealthDeepDiveTitle.textContent = `${metricName} – Deep dive guidance`;
+      }
+      if (technicalHealthDeepDiveBody) {
+        technicalHealthDeepDiveBody.innerHTML = '';
+        const contextPieces = [];
+        const capability = signal.technicalHealthCapability || signal.capabilityName;
+        const subcategory = signal.technicalHealthSubcategory || signal.subcategoryName;
+        if (capability) {
+          contextPieces.push(`Capability: ${capability}`);
+        }
+        if (subcategory) {
+          contextPieces.push(`Subcategory: ${subcategory}`);
+        }
+        if (contextPieces.length) {
+          const context = document.createElement('p');
+          context.className = 'technical-health-modal-context';
+          context.textContent = contextPieces.join(' • ');
+          technicalHealthDeepDiveBody.appendChild(context);
+        }
+        const placeholder = document.createElement('p');
+        placeholder.textContent = 'Specific deep dive instructions for this metric will appear here.';
+        technicalHealthDeepDiveBody.appendChild(placeholder);
+      }
+    };
+
+    const closeTechnicalHealthDeepDive = () => {
+      if (!technicalHealthDeepDiveModal) return;
+      technicalHealthDeepDiveModal.classList.remove('is-open');
+      technicalHealthDeepDiveModal.setAttribute('aria-hidden', 'true');
+      if (document.body) {
+        document.body.classList.remove('technical-health-modal-open');
+      }
+      if (
+        lastTechnicalHealthDeepDiveTrigger &&
+        typeof lastTechnicalHealthDeepDiveTrigger.focus === 'function' &&
+        document.contains(lastTechnicalHealthDeepDiveTrigger)
+      ) {
+        lastTechnicalHealthDeepDiveTrigger.focus();
+      }
+      lastTechnicalHealthDeepDiveTrigger = null;
+    };
+
+    const openTechnicalHealthDeepDive = (signal, trigger) => {
+      if (!technicalHealthDeepDiveModal) return;
+      updateTechnicalHealthDeepDiveContent(signal);
+      if (trigger) {
+        lastTechnicalHealthDeepDiveTrigger = trigger;
+      }
+      technicalHealthDeepDiveModal.classList.add('is-open');
+      technicalHealthDeepDiveModal.setAttribute('aria-hidden', 'false');
+      if (document.body) {
+        document.body.classList.add('technical-health-modal-open');
+      }
+      const closeButton = technicalHealthDeepDiveModal.querySelector('.technical-health-modal-close');
+      if (closeButton) {
+        closeButton.focus();
+      } else {
+        technicalHealthDeepDiveModal.focus();
+      }
+    };
+
+    if (technicalHealthDeepDiveModal) {
+      technicalHealthDeepDiveModal.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && technicalHealthDeepDiveModal.classList.contains('is-open')) {
+          event.preventDefault();
+          closeTechnicalHealthDeepDive();
+        }
+      });
+      technicalHealthDeepDiveCloseElements.forEach((element) => {
+        element.addEventListener('click', (event) => {
+          event.preventDefault();
+          closeTechnicalHealthDeepDive();
+        });
+      });
+    }
+
     const createTechnicalHealthCard = (signal) => {
       const card = document.createElement('article');
       card.className = `technical-health-card ${technicalHealthScoreBand(signal.score)}`;
@@ -2422,7 +2662,7 @@
       if (valueText) {
         const unit = document.createElement('span');
         unit.className = 'technical-health-unit';
-        unit.textContent = valueText;
+        unit.textContent = `(${valueText})`;
         scoreWrapper.appendChild(unit);
       }
 
@@ -2452,9 +2692,7 @@
 
       const metaPieces = [];
       const capability = signal.technicalHealthCapability || signal.capabilityName;
-      const subcategory = signal.technicalHealthSubcategory || signal.subcategoryName;
       if (capability) metaPieces.push(capability);
-      if (subcategory) metaPieces.push(subcategory);
 
       if (metaPieces.length) {
         const meta = document.createElement('p');
@@ -2462,6 +2700,13 @@
         meta.textContent = metaPieces.join(' • ');
         card.appendChild(meta);
       }
+
+      const deepDiveLink = document.createElement('button');
+      deepDiveLink.type = 'button';
+      deepDiveLink.className = 'technical-health-deep-dive-link';
+      deepDiveLink.textContent = 'how to deep dive';
+      deepDiveLink.addEventListener('click', () => openTechnicalHealthDeepDive(signal, deepDiveLink));
+      card.appendChild(deepDiveLink);
 
       return card;
     };
@@ -2482,12 +2727,46 @@
 
       technicalHealthEmpty.hidden = true;
 
-      technicalSignals
-        .slice()
-        .sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity))
-        .forEach((signal) => {
-          technicalHealthGrid.appendChild(createTechnicalHealthCard(signal));
-        });
+      const groupedBySubcategory = technicalSignals.reduce((map, signal) => {
+        const subcategoryName = signal.technicalHealthSubcategory || signal.subcategoryName || 'Uncategorized';
+        if (!map.has(subcategoryName)) {
+          map.set(subcategoryName, []);
+        }
+        map.get(subcategoryName).push(signal);
+        return map;
+      }, new Map());
+
+      const sortedSubcategories = Array.from(groupedBySubcategory.keys()).sort((a, b) => {
+        const isAUncategorized = a === 'Uncategorized';
+        const isBUncategorized = b === 'Uncategorized';
+        if (isAUncategorized && !isBUncategorized) return 1;
+        if (!isAUncategorized && isBUncategorized) return -1;
+        return a.localeCompare(b, undefined, { sensitivity: 'base' });
+      });
+
+      sortedSubcategories.forEach((subcategoryName) => {
+        const groupContainer = document.createElement('section');
+        groupContainer.className = 'technical-health-subcategory-group';
+
+        const heading = document.createElement('h3');
+        heading.className = 'technical-health-subcategory-heading';
+        heading.textContent = subcategoryName;
+        groupContainer.appendChild(heading);
+
+        const groupGrid = document.createElement('div');
+        groupGrid.className = 'technical-health-subcategory-grid';
+
+        groupedBySubcategory
+          .get(subcategoryName)
+          .slice()
+          .sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity))
+          .forEach((signal) => {
+            groupGrid.appendChild(createTechnicalHealthCard(signal));
+          });
+
+        groupContainer.appendChild(groupGrid);
+        technicalHealthGrid.appendChild(groupContainer);
+      });
     };
 
     let parsedDataset = null;
