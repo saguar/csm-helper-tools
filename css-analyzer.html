@@ -753,6 +753,45 @@
       margin-bottom: 0.5rem;
     }
 
+    .technical-health-modal-definition {
+      margin-bottom: 1.25rem;
+    }
+
+    .technical-health-modal-actions {
+      display: flex;
+      justify-content: center;
+      margin-top: 1.5rem;
+    }
+
+    .technical-health-modal-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.75rem;
+      border-radius: 999px;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: background 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+
+    .technical-health-modal-button:hover,
+    .technical-health-modal-button:focus-visible {
+      background: var(--primary-dark, #2563eb);
+      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.35);
+      color: #fff;
+    }
+
+    .technical-health-modal-button:focus-visible {
+      outline: 2px solid rgba(37, 99, 235, 0.65);
+      outline-offset: 2px;
+    }
+
     body.technical-health-modal-open {
       overflow: hidden;
     }
@@ -2578,9 +2617,56 @@
           context.textContent = contextPieces.join(' • ');
           technicalHealthDeepDiveBody.appendChild(context);
         }
-        const placeholder = document.createElement('p');
-        placeholder.textContent = 'Specific deep dive instructions for this metric will appear here.';
-        technicalHealthDeepDiveBody.appendChild(placeholder);
+        const definitionTextRaw =
+          signal.signalDefinition ?? signal.definition ?? signal.metricDefinition ?? '';
+        const definitionText = `${definitionTextRaw ?? ''}`.trim();
+        if (definitionText) {
+          const definition = document.createElement('p');
+          definition.className = 'technical-health-modal-definition';
+          definition.textContent = definitionText;
+          technicalHealthDeepDiveBody.appendChild(definition);
+        } else {
+          const placeholder = document.createElement('p');
+          placeholder.textContent = 'Specific deep dive instructions for this metric will appear here.';
+          technicalHealthDeepDiveBody.appendChild(placeholder);
+        }
+
+        const geminiActions = document.createElement('div');
+        geminiActions.className = 'technical-health-modal-actions';
+
+        const geminiLink = document.createElement('a');
+        geminiLink.className = 'technical-health-modal-button';
+        geminiLink.textContent = 'Ask Gemini';
+        geminiLink.target = '_blank';
+        geminiLink.rel = 'noopener noreferrer';
+
+        const signalCategory =
+          signal.technicalHealthSubcategory ||
+          signal.subcategoryName ||
+          signal.categoryDescription ||
+          signal.categoryName ||
+          '';
+        const signalName = signal.signalName || signal.metricName || 'Technical health metric';
+
+        const encodeQueryValue = (value) =>
+          encodeURIComponent(`${value}`.trim()).replace(/%20/g, '+');
+
+        const query = [
+          'salesforce',
+          'customer success score',
+          signalCategory,
+          signalName,
+          definitionText,
+        ]
+          .filter((segment) => segment && `${segment}`.trim().length)
+          .map(encodeQueryValue)
+          .join('+');
+
+        geminiLink.href = `https://www.google.com/search?udm=50&source=searchlabs&q=${query}`;
+        geminiLink.setAttribute('aria-label', 'Open Ask Gemini search in a new tab');
+
+        geminiActions.appendChild(geminiLink);
+        technicalHealthDeepDiveBody.appendChild(geminiActions);
       }
     };
 
