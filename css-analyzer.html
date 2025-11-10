@@ -198,6 +198,57 @@
       margin: 0;
     }
 
+    .tab-container {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .tab-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      background: var(--surface-alt);
+      border-radius: 0.85rem;
+      border: 1px solid var(--border);
+    }
+
+    .tab-button {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0.6rem 1.2rem;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .tab-button:hover,
+    .tab-button:focus-visible {
+      background: rgba(14, 165, 233, 0.12);
+      color: var(--text);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+      outline: none;
+    }
+
+    .tab-button.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
+    }
+
+    .tab-panel-section {
+      display: none;
+      gap: 1.5rem;
+    }
+
+    .tab-panel-section.active {
+      display: grid;
+    }
+
     .account-overview-item {
       display: grid;
       gap: 0.35rem;
@@ -669,40 +720,98 @@
       <div class="account-overview-list" id="accountOverview"></div>
     </section>
 
-    <section class="panel" id="overall-scores">
-      <div class="panel-header">
-        <h2>Overall score summary</h2>
-        <button class="export-button" type="button" id="exportOverallJson" disabled>Export to JSON</button>
-      </div>
-      <div class="score-summary-grid" id="overallScoreGrid"></div>
-    </section>
+    <section class="panel" id="analysis-tabs">
+      <div class="tab-container">
+        <div class="tab-list" role="tablist" aria-label="Score insights">
+          <button
+            type="button"
+            class="tab-button active"
+            role="tab"
+            aria-selected="true"
+            aria-controls="overall-scores"
+            id="tab-overall-scores"
+            data-tab-target="overall-scores"
+          >Overall score summary</button>
+          <button
+            type="button"
+            class="tab-button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="all-scored-signals"
+            id="tab-all-signals"
+            data-tab-target="all-scored-signals"
+          >All signals</button>
+          <button
+            type="button"
+            class="tab-button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="technical-health-analysis"
+            id="tab-technical-health"
+            data-tab-target="technical-health-analysis"
+          >Technical Health Analysis</button>
+        </div>
 
-    <section class="panel" id="all-scored-signals">
-      <div class="panel-header">
-        <h2>All scored signals</h2>
-        <button class="export-button" type="button" id="exportSignalsJson" disabled>Export to JSON</button>
+        <section
+          class="tab-panel-section active"
+          id="overall-scores"
+          role="tabpanel"
+          tabindex="0"
+          aria-labelledby="tab-overall-scores"
+        >
+          <div class="panel-header">
+            <h2>Overall score summary</h2>
+            <button class="export-button" type="button" id="exportOverallJson" disabled>Export to JSON</button>
+          </div>
+          <div class="score-summary-grid" id="overallScoreGrid"></div>
+        </section>
+
+        <section
+          class="tab-panel-section"
+          id="all-scored-signals"
+          role="tabpanel"
+          tabindex="0"
+          aria-labelledby="tab-all-signals"
+          hidden
+        >
+          <div class="panel-header">
+            <h2>All scored signals</h2>
+            <button class="export-button" type="button" id="exportSignalsJson" disabled>Export to JSON</button>
+          </div>
+          <p class="helper-text">Use the filters to explore scored or informational signals for the selected snapshot.</p>
+          <div class="filters all-signals-controls">
+            <select id="signalTypeFilter">
+              <option value="scored" selected>Signal type: scored</option>
+              <option value="informational">Signal type: informational</option>
+            </select>
+            <input type="search" class="signal-search" id="allSignalsSearch" placeholder="Search a signal..." />
+            <select id="allSignalsCategoryFilter" class="category-filter">
+              <option value="all">Category: all</option>
+            </select>
+            <select id="allSignalsSubcategoryFilter" disabled>
+              <option value="all">Subcategory: all</option>
+            </select>
+            <select id="allSignalsCapabilityFilter" disabled>
+              <option value="all">Capability: all</option>
+            </select>
+            <select id="allSignalsRatingFilter" disabled>
+              <option value="all">Rating: all</option>
+            </select>
+          </div>
+          <div id="allSignalsList"></div>
+        </section>
+
+        <section
+          class="tab-panel-section"
+          id="technical-health-analysis"
+          role="tabpanel"
+          tabindex="0"
+          aria-labelledby="tab-technical-health"
+          hidden
+        >
+          <div class="empty-state">Technical Health Analysis content will be displayed here.</div>
+        </section>
       </div>
-      <p class="helper-text">Use the filters to explore scored or informational signals for the selected snapshot.</p>
-      <div class="filters all-signals-controls">
-        <select id="signalTypeFilter">
-          <option value="scored" selected>Signal type: scored</option>
-          <option value="informational">Signal type: informational</option>
-        </select>
-        <input type="search" class="signal-search" id="allSignalsSearch" placeholder="Search a signal..." />
-        <select id="allSignalsCategoryFilter" class="category-filter">
-          <option value="all">Category: all</option>
-        </select>
-        <select id="allSignalsSubcategoryFilter" disabled>
-          <option value="all">Subcategory: all</option>
-        </select>
-        <select id="allSignalsCapabilityFilter" disabled>
-          <option value="all">Capability: all</option>
-        </select>
-        <select id="allSignalsRatingFilter" disabled>
-          <option value="all">Rating: all</option>
-        </select>
-      </div>
-      <div id="allSignalsList"></div>
     </section>
 
   </main>
@@ -2078,6 +2187,74 @@
     const allSignalsListContainer = document.getElementById('allSignalsList');
     const exportOverallButton = document.getElementById('exportOverallJson');
     const exportSignalsButton = document.getElementById('exportSignalsJson');
+    const tabButtons = Array.from(document.querySelectorAll('[data-tab-target]'));
+    const tabPanels = Array.from(document.querySelectorAll('.tab-panel-section'));
+
+    const activateTab = (targetId) => {
+      tabButtons.forEach((button) => {
+        const isActive = button.dataset.tabTarget === targetId;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        button.setAttribute('tabindex', isActive ? '0' : '-1');
+      });
+
+      tabPanels.forEach((panel) => {
+        const isActive = panel.id === targetId;
+        panel.classList.toggle('active', isActive);
+        panel.hidden = !isActive;
+        if (isActive) {
+          panel.setAttribute('tabindex', '0');
+        } else {
+          panel.setAttribute('tabindex', '-1');
+        }
+      });
+    };
+
+    const focusTabButton = (index) => {
+      const button = tabButtons[index];
+      if (button) {
+        button.focus();
+      }
+    };
+
+    const handleTabKeydown = (event, index) => {
+      const { key } = event;
+      if (key === 'Enter' || key === ' ') {
+        event.preventDefault();
+        const targetId = tabButtons[index]?.dataset.tabTarget;
+        if (targetId) {
+          activateTab(targetId);
+        }
+        return;
+      }
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key)) return;
+      event.preventDefault();
+      const lastIndex = tabButtons.length - 1;
+      if (key === 'Home') {
+        focusTabButton(0);
+        return;
+      }
+      if (key === 'End') {
+        focusTabButton(lastIndex);
+        return;
+      }
+      const increment = key === 'ArrowRight' ? 1 : -1;
+      let nextIndex = index + increment;
+      if (nextIndex < 0) nextIndex = lastIndex;
+      if (nextIndex > lastIndex) nextIndex = 0;
+      focusTabButton(nextIndex);
+    };
+
+    if (tabButtons.length && tabPanels.length) {
+      const initial = tabButtons.find((button) => button.classList.contains('active')) || tabButtons[0];
+      activateTab(initial.dataset.tabTarget);
+      tabButtons.forEach((button, index) => {
+        button.addEventListener('click', () => {
+          activateTab(button.dataset.tabTarget);
+        });
+        button.addEventListener('keydown', (event) => handleTabKeydown(event, index));
+      });
+    }
 
     if (signalTypeFilter) {
       signalTypeFilter.disabled = true;
