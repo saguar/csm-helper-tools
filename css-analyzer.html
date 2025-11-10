@@ -1467,6 +1467,28 @@
       return formatter.format(value);
     };
 
+    const isNumericLikeString = (value) => {
+      if (typeof value !== 'string') return false;
+      const trimmed = value.trim();
+      if (!trimmed) return false;
+      const sanitized = trimmed.replace(/,/g, '');
+      return /^[-+]?\d*(?:\.\d+)?$/.test(sanitized);
+    };
+
+    const formatNumberWithThousandSuffix = (value, options = {}) => {
+      if (!Number.isFinite(value)) return '';
+      const absolute = Math.abs(value);
+      if (absolute >= 1000) {
+        const formattedThousands = formatNumber(absolute / 1000, {
+          maximumFractionDigits: 1,
+          minimumFractionDigits: 0,
+        });
+        const sign = value < 0 ? '-' : '';
+        return `${sign}${formattedThousands} K`;
+      }
+      return formatNumber(value, options);
+    };
+
     const cloneForExport = (value) => {
       if (value === null || value === undefined) return value;
       if (typeof structuredClone === 'function') {
@@ -1990,12 +2012,19 @@
           : 'flat';
       processed.momText = formatChangeDisplay(row.moMChange, row.moMChangeRaw);
       processed.qoqText = formatChangeDisplay(row.qoQChange, row.qoQChangeRaw);
-      processed.valueDisplay =
-        row.value && `${row.value}`.length
-          ? row.value
-          : Number.isFinite(row.valueNumeric)
-          ? formatNumber(row.valueNumeric)
-          : '';
+      processed.valueDisplay = (() => {
+        const rawValue = row.value && `${row.value}`.trim();
+        if (rawValue) {
+          if (Number.isFinite(row.valueNumeric) && isNumericLikeString(rawValue)) {
+            return formatNumberWithThousandSuffix(row.valueNumeric);
+          }
+          return rawValue;
+        }
+        if (Number.isFinite(row.valueNumeric)) {
+          return formatNumberWithThousandSuffix(row.valueNumeric);
+        }
+        return '';
+      })();
       const benchmarkStatus = evaluateBenchmark(row.valueNumeric, row.benchmark);
       processed.benchmarkStatus = benchmarkStatus;
       processed.benchmarkDisplay = row.benchmark
@@ -3242,7 +3271,7 @@
           return `${signal.value}`.trim();
         }
         if (Number.isFinite(signal.valueNumeric)) {
-          return formatNumber(signal.valueNumeric);
+          return formatNumberWithThousandSuffix(signal.valueNumeric);
         }
         return '';
       })();
