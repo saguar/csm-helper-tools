@@ -196,65 +196,37 @@
     }
 
     .summary-grid {
-      display: grid;
-      gap: 1rem;
+      overflow-x: auto;
     }
 
-    @media (min-width: 720px) {
-      .summary-grid {
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      }
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
     }
 
-    .summary-card {
-      border-radius: 1.15rem;
-      border: 1px solid var(--border);
-      background: linear-gradient(160deg, rgba(14, 165, 233, 0.12), rgba(148, 163, 184, 0.08));
-      padding: 1.25rem;
-      display: grid;
-      gap: 0.65rem;
-    }
-
-    .summary-card strong {
-      font-size: 2rem;
-      font-weight: 700;
-    }
-
-    .summary-card span {
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .breakdown-grid {
-      display: grid;
-      gap: 1rem;
-    }
-
-    @media (min-width: 960px) {
-      .breakdown-grid {
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      }
-    }
-
-    .breakdown-card {
-      border-radius: 1rem;
-      border: 1px solid var(--border);
+    .summary-table thead {
       background: var(--surface-alt);
-      padding: 1.1rem 1.25rem;
-      display: grid;
-      gap: 0.35rem;
     }
 
-    .breakdown-card h3 {
-      font-size: 1rem;
-      font-weight: 600;
-    }
-
-    .breakdown-metric {
-      display: flex;
-      justify-content: space-between;
+    .summary-table th,
+    .summary-table td {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
       font-size: 0.9rem;
+    }
+
+    .summary-table th {
+      font-weight: 600;
       color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.8rem;
+    }
+
+    .summary-table tbody tr:hover {
+      background: rgba(14, 165, 233, 0.08);
     }
 
     .filters {
@@ -442,7 +414,6 @@
       </div>
       <p class="helper-text" id="summaryStatus">Upload an adoption workbook to begin the analysis.</p>
       <div class="summary-grid" id="summaryCards" hidden></div>
-      <div class="breakdown-grid" id="groupBreakdown" hidden></div>
     </section>
 
     <section class="panel">
@@ -565,6 +536,7 @@
       mcmuAll: [],
       core: [],
       coreAll: [],
+      coreHeaders: [],
       filters: { ...DEFAULT_FILTERS },
       selection: { snapshot: '', tenant: 'all', account: 'all' },
       datasetLoaded: false,
@@ -583,7 +555,6 @@
       snapshotPill: document.getElementById('snapshotPill'),
       summaryStatus: document.getElementById('summaryStatus'),
       summaryCards: document.getElementById('summaryCards'),
-      groupBreakdown: document.getElementById('groupBreakdown'),
       adoptionTableBody: document.querySelector('#adoptionTable tbody'),
       adoptionResultsLabel: document.getElementById('adoptionResultsLabel'),
       adoptionCountPill: document.getElementById('adoptionCountPill'),
@@ -637,25 +608,6 @@
       const normalized = sanitized.replace(/,/g, '.');
       const parsed = Number(normalized);
       return Number.isFinite(parsed) ? parsed : null;
-    };
-
-    const sumColumn = (rows, key) =>
-      rows.reduce((acc, row) => {
-        const value = normalizeNumber(row[key]);
-        return acc + (Number.isFinite(value) ? value : 0);
-      }, 0);
-
-    const averageColumn = (rows, key) => {
-      let total = 0;
-      let count = 0;
-      rows.forEach((row) => {
-        const value = normalizeNumber(row[key]);
-        if (Number.isFinite(value)) {
-          total += value;
-          count += 1;
-        }
-      });
-      return count > 0 ? total / count : null;
     };
 
     const formatNumber = (value, options = {}) => {
@@ -724,10 +676,6 @@
       if (dom.summaryCards) {
         dom.summaryCards.hidden = true;
         dom.summaryCards.innerHTML = '';
-      }
-      if (dom.groupBreakdown) {
-        dom.groupBreakdown.hidden = true;
-        dom.groupBreakdown.innerHTML = '';
       }
       if (dom.summaryStatus) {
         dom.summaryStatus.textContent = message;
@@ -1055,7 +1003,7 @@
         row.__tenant = tenant;
       });
 
-      return { adoptionRows, scorecardRows, mcmuRows, coreRows };
+      return { adoptionRows, scorecardRows, mcmuRows, coreRows, coreHeaders: coreSheet.headers };
     };
 
     const applySelection = (snapshot, tenant, account, labels = {}) => {
@@ -1098,154 +1046,84 @@
       updateSelectionLabels(labels);
     };
     const updateSummary = () => {
-      const rows = state.adoption;
+      const rows = state.core;
       if (!rows.length) {
         if (dom.summaryStatus) {
           dom.summaryStatus.textContent = state.datasetLoaded
-            ? 'No adoption metrics match the current selection.'
-            : 'No rows loaded from the “Adoption Metrics” sheet.';
+            ? 'No core records match the current selection.'
+            : 'No rows loaded from the “Core By OrgID” sheet.';
         }
-        if (dom.summaryCards) dom.summaryCards.hidden = true;
-        if (dom.groupBreakdown) dom.groupBreakdown.hidden = true;
+        if (dom.summaryCards) {
+          dom.summaryCards.hidden = true;
+          dom.summaryCards.innerHTML = '';
+        }
         return;
       }
 
       if (dom.summaryStatus) {
         dom.summaryStatus.textContent = '';
       }
-      if (dom.summaryCards) dom.summaryCards.hidden = false;
+      if (dom.summaryCards) {
+        dom.summaryCards.hidden = false;
+      }
 
-      const totalProvisioned = sumColumn(rows, 'PROVISIONED');
-      const totalActivated = sumColumn(rows, 'ACTIVATED');
-      const totalUsed = sumColumn(rows, 'USED');
-      const totalShelfware = sumColumn(rows, 'Shelfware');
-      const avgMauPenetration = averageColumn(rows, 'MAU Penetration');
-      const avgEu = averageColumn(rows, 'EU');
+      const headers = (state.coreHeaders && state.coreHeaders.length
+        ? state.coreHeaders
+        : Object.keys(rows[0] || {})).filter((header) => !isBlank(header) && !header.startsWith('__'));
 
-      const uniqueAccounts = new Set();
-      const uniqueOrgs = new Set();
+      if (!headers.length) {
+        if (dom.summaryStatus) {
+          dom.summaryStatus.textContent = 'No visible columns available for the "Core By OrgID" summary.';
+        }
+        if (dom.summaryCards) {
+          dom.summaryCards.hidden = true;
+          dom.summaryCards.innerHTML = '';
+        }
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.className = 'summary-table';
+
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      headers.forEach((header) => {
+        const th = document.createElement('th');
+        th.textContent = header;
+        headerRow.append(th);
+      });
+      thead.append(headerRow);
+      table.append(thead);
+
+      const tbody = document.createElement('tbody');
       rows.forEach((row) => {
-        if (!isBlank(row['Account ID'])) uniqueAccounts.add(row['Account ID']);
-        if (!isBlank(row['Org ID'])) uniqueOrgs.add(row['Org ID']);
+        const tr = document.createElement('tr');
+        headers.forEach((header) => {
+          const td = document.createElement('td');
+          let displayValue = '—';
+          const rawValue = row[header];
+          if (header === 'SNAPSHOT_DT') {
+            const dateValue = parseDate(rawValue) || row.__snapshotDate;
+            if (dateValue instanceof Date && !Number.isNaN(dateValue.getTime())) {
+              displayValue = formatDate(dateValue);
+            } else if (!isBlank(rawValue)) {
+              displayValue = String(rawValue);
+            }
+          } else if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
+            displayValue = String(rawValue);
+          }
+          td.textContent = displayValue;
+          tr.append(td);
+        });
+        tbody.append(tr);
       });
 
-      const activationRate = totalProvisioned > 0 ? totalActivated / totalProvisioned : null;
-      const utilizationRate = totalProvisioned > 0 ? totalUsed / totalProvisioned : null;
-
-      const summaryData = [
-        {
-          label: 'Provisioned licenses',
-          value: formatNumber(totalProvisioned),
-          meta: `${uniqueAccounts.size} accounts • ${uniqueOrgs.size} orgs`,
-        },
-        {
-          label: 'Activated licenses',
-          value: formatNumber(totalActivated),
-          meta: activationRate !== null ? `${formatPercent(activationRate)} activation rate` : '—',
-        },
-        {
-          label: 'Used licenses',
-          value: formatNumber(totalUsed),
-          meta: utilizationRate !== null ? `${formatPercent(utilizationRate)} utilization` : '—',
-        },
-        {
-          label: 'Total shelfware',
-          value: formatNumber(totalShelfware),
-          meta: 'Licenses not activated or not used',
-        },
-        {
-          label: 'Average EU',
-          value: formatEngagement(avgEu),
-          meta: 'EU = Entitlement Utilization',
-        },
-        {
-          label: 'Average MAU penetration',
-          value: formatEngagement(avgMauPenetration),
-          meta: 'Share of monthly active users',
-        },
-      ];
+      table.append(tbody);
 
       if (dom.summaryCards) {
         dom.summaryCards.innerHTML = '';
-        summaryData.forEach((item) => {
-          const card = document.createElement('div');
-          card.className = 'summary-card';
-          const label = document.createElement('span');
-          label.textContent = item.label;
-          const value = document.createElement('strong');
-          value.textContent = item.value;
-          const meta = document.createElement('span');
-          meta.textContent = item.meta;
-          card.append(label, value, meta);
-          dom.summaryCards.append(card);
-        });
+        dom.summaryCards.append(table);
       }
-
-      renderGroupBreakdown(rows);
-    };
-
-    const renderGroupBreakdown = (rows) => {
-      if (!dom.groupBreakdown) return;
-      if (!rows.length) {
-        dom.groupBreakdown.hidden = true;
-        dom.groupBreakdown.innerHTML = '';
-        return;
-      }
-      dom.groupBreakdown.hidden = false;
-      const groupMetrics = new Map();
-      rows.forEach((row) => {
-        const key = isBlank(row.Group) ? 'Not specified' : String(row.Group);
-        if (!groupMetrics.has(key)) {
-          groupMetrics.set(key, {
-            provisioned: 0,
-            activated: 0,
-            used: 0,
-            shelfware: 0,
-            types: new Set(),
-          });
-        }
-        const metrics = groupMetrics.get(key);
-        metrics.provisioned += normalizeNumber(row.PROVISIONED) || 0;
-        metrics.activated += normalizeNumber(row.ACTIVATED) || 0;
-        metrics.used += normalizeNumber(row.USED) || 0;
-        metrics.shelfware += normalizeNumber(row.Shelfware) || 0;
-        if (!isBlank(row.Type)) metrics.types.add(String(row.Type));
-      });
-
-      const sorted = Array.from(groupMetrics.entries())
-        .map(([group, metrics]) => ({ group, ...metrics }))
-        .sort((a, b) => b.used - a.used || b.activated - a.activated);
-
-      dom.groupBreakdown.innerHTML = '';
-      sorted.slice(0, 6).forEach((item) => {
-        const card = document.createElement('div');
-        card.className = 'breakdown-card';
-        const title = document.createElement('h3');
-        title.textContent = item.group;
-        const types = document.createElement('span');
-        types.className = 'helper-text';
-        types.textContent = `${item.types.size} SKUs`;
-
-        const metrics = [
-          { label: 'Provisioned', value: formatNumber(item.provisioned) },
-          { label: 'Activated', value: formatNumber(item.activated) },
-          { label: 'Used', value: formatNumber(item.used) },
-          { label: 'Shelfware', value: formatNumber(item.shelfware) },
-        ];
-
-        card.append(title, types);
-        metrics.forEach((metric) => {
-          const rowEl = document.createElement('div');
-          rowEl.className = 'breakdown-metric';
-          const label = document.createElement('span');
-          label.textContent = metric.label;
-          const value = document.createElement('span');
-          value.textContent = metric.value;
-          rowEl.append(label, value);
-          card.append(rowEl);
-        });
-        dom.groupBreakdown.append(card);
-      });
     };
 
     const updateTypeFilterOptions = () => {
@@ -1584,6 +1462,7 @@
       state.mcmuAll = [];
       state.core = [];
       state.coreAll = [];
+      state.coreHeaders = [];
       state.filters = { ...DEFAULT_FILTERS };
       state.selection = { snapshot: '', tenant: 'all', account: 'all' };
       state.datasetLoaded = false;
@@ -1631,6 +1510,7 @@
           state.scorecardAll = dataset.scorecardRows;
           state.mcmuAll = dataset.mcmuRows;
           state.coreAll = dataset.coreRows;
+          state.coreHeaders = Array.isArray(dataset.coreHeaders) ? dataset.coreHeaders.filter((header) => !isBlank(header)) : [];
           state.selection = { snapshot: '', tenant: 'all', account: 'all' };
           state.filters = { ...DEFAULT_FILTERS };
 
