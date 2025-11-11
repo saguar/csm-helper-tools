@@ -196,7 +196,86 @@
     }
 
     .summary-grid {
+      display: grid;
+      gap: 1rem;
       overflow-x: auto;
+    }
+
+    .summary-controls {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .summary-controls input[type="search"] {
+      width: min(100%, 320px);
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.55rem 1rem;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .summary-controls input[type="search"]::placeholder {
+      color: var(--muted);
+    }
+
+    .summary-accordion {
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 0.85rem 1rem;
+      background: var(--surface-alt);
+    }
+
+    .summary-accordion + .summary-accordion {
+      margin-top: 0.75rem;
+    }
+
+    .summary-accordion > summary {
+      cursor: pointer;
+      list-style: none;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .summary-accordion > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .summary-accordion > summary::after {
+      content: '▾';
+      font-size: 0.8rem;
+      color: var(--muted);
+      transition: transform 0.2s ease;
+    }
+
+    .summary-accordion[open] > summary::after {
+      transform: rotate(180deg);
+    }
+
+    .summary-accordion.level2 {
+      margin-top: 0.75rem;
+      background: var(--surface);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .summary-accordion.level2 > summary {
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+
+    .summary-count {
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .summary-accordion .summary-table {
+      margin-top: 0.75rem;
     }
 
     .summary-table {
@@ -412,6 +491,9 @@
         <h2>Snapshot summary</h2>
         <span class="pill" id="snapshotPill">Snapshot not selected</span>
       </div>
+      <div class="summary-controls">
+        <input type="search" id="summarySearch" placeholder="Search summary data" disabled />
+      </div>
       <p class="helper-text" id="summaryStatus">Upload an adoption workbook to begin the analysis.</p>
       <div class="summary-grid" id="summaryCards" hidden></div>
     </section>
@@ -525,6 +607,7 @@
       apm: 'all',
       scorecardSearch: '',
       cloud: 'all',
+      summarySearch: '',
     };
 
     const state = {
@@ -555,6 +638,7 @@
       snapshotPill: document.getElementById('snapshotPill'),
       summaryStatus: document.getElementById('summaryStatus'),
       summaryCards: document.getElementById('summaryCards'),
+      summarySearch: document.getElementById('summarySearch'),
       adoptionTableBody: document.querySelector('#adoptionTable tbody'),
       adoptionResultsLabel: document.getElementById('adoptionResultsLabel'),
       adoptionCountPill: document.getElementById('adoptionCountPill'),
@@ -666,6 +750,55 @@
       return date.toISOString();
     };
 
+    const SUMMARY_HIDDEN_COLUMNS = new Set(['Account Name', 'Account Name (Local)', 'ACCOUNT ID', 'ORG ID']);
+    const SUMMARY_LEVEL_COLUMNS = ['Level 1 Cloud', 'Level 2 Cloud'];
+
+    const getSummaryCellValue = (header, row) => {
+      if (header === 'SNAPSHOT_DT') {
+        const dateValue = parseDate(row[header]) || row.__snapshotDate;
+        if (dateValue instanceof Date && !Number.isNaN(dateValue.getTime())) {
+          return formatDate(dateValue);
+        }
+      }
+      const rawValue = row[header];
+      if (rawValue === null || rawValue === undefined || rawValue === '') {
+        return '';
+      }
+      return String(rawValue);
+    };
+
+    const createSummaryTable = (headers, rows) => {
+      if (!headers.length || !rows.length) return null;
+
+      const table = document.createElement('table');
+      table.className = 'summary-table';
+
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      headers.forEach((header) => {
+        const th = document.createElement('th');
+        th.textContent = header;
+        headerRow.append(th);
+      });
+      thead.append(headerRow);
+      table.append(thead);
+
+      const tbody = document.createElement('tbody');
+      rows.forEach((row) => {
+        const tr = document.createElement('tr');
+        headers.forEach((header) => {
+          const td = document.createElement('td');
+          const value = getSummaryCellValue(header, row);
+          td.textContent = value || '—';
+          tr.append(td);
+        });
+        tbody.append(tr);
+      });
+
+      table.append(tbody);
+      return table;
+    };
+
     const resetSelect = (select, placeholder) => {
       if (!select) return;
       select.innerHTML = `<option value="" disabled selected>${placeholder}</option>`;
@@ -676,6 +809,10 @@
       if (dom.summaryCards) {
         dom.summaryCards.hidden = true;
         dom.summaryCards.innerHTML = '';
+      }
+      if (dom.summarySearch) {
+        dom.summarySearch.value = '';
+        dom.summarySearch.disabled = true;
       }
       if (dom.summaryStatus) {
         dom.summaryStatus.textContent = message;
@@ -1012,6 +1149,7 @@
 
       if (dom.adoptionSearch) dom.adoptionSearch.value = '';
       if (dom.scorecardSearch) dom.scorecardSearch.value = '';
+      if (dom.summarySearch) dom.summarySearch.value = '';
       if (dom.cloudFilter) dom.cloudFilter.value = 'all';
 
       const matchesSelection = (row) => {
@@ -1048,6 +1186,9 @@
     const updateSummary = () => {
       const rows = state.core;
       if (!rows.length) {
+        if (dom.summarySearch) {
+          dom.summarySearch.disabled = true;
+        }
         if (dom.summaryStatus) {
           dom.summaryStatus.textContent = state.datasetLoaded
             ? 'No core records match the current selection.'
@@ -1060,18 +1201,13 @@
         return;
       }
 
-      if (dom.summaryStatus) {
-        dom.summaryStatus.textContent = '';
-      }
-      if (dom.summaryCards) {
-        dom.summaryCards.hidden = false;
-      }
-
-      const headers = (state.coreHeaders && state.coreHeaders.length
+      const rawHeaders = state.coreHeaders && state.coreHeaders.length
         ? state.coreHeaders
-        : Object.keys(rows[0] || {})).filter((header) => !isBlank(header) && !header.startsWith('__'));
+        : Object.keys(rows[0] || {});
+      const headers = rawHeaders.filter((header) => !isBlank(header) && !header.startsWith('__'));
+      const visibleHeaders = headers.filter((header) => !SUMMARY_HIDDEN_COLUMNS.has(header));
 
-      if (!headers.length) {
+      if (!visibleHeaders.length) {
         if (dom.summaryStatus) {
           dom.summaryStatus.textContent = 'No visible columns available for the "Core By OrgID" summary.';
         }
@@ -1079,50 +1215,150 @@
           dom.summaryCards.hidden = true;
           dom.summaryCards.innerHTML = '';
         }
+        if (dom.summarySearch) {
+          dom.summarySearch.disabled = true;
+        }
         return;
       }
 
-      const table = document.createElement('table');
-      table.className = 'summary-table';
+      const tableHeaders = visibleHeaders.filter((header) => !SUMMARY_LEVEL_COLUMNS.includes(header));
+      const searchableHeaders = new Set([
+        ...tableHeaders,
+        ...SUMMARY_LEVEL_COLUMNS.filter((header) => headers.includes(header)),
+      ]);
 
-      const thead = document.createElement('thead');
-      const headerRow = document.createElement('tr');
-      headers.forEach((header) => {
-        const th = document.createElement('th');
-        th.textContent = header;
-        headerRow.append(th);
-      });
-      thead.append(headerRow);
-      table.append(thead);
-
-      const tbody = document.createElement('tbody');
-      rows.forEach((row) => {
-        const tr = document.createElement('tr');
-        headers.forEach((header) => {
-          const td = document.createElement('td');
-          let displayValue = '—';
-          const rawValue = row[header];
-          if (header === 'SNAPSHOT_DT') {
-            const dateValue = parseDate(rawValue) || row.__snapshotDate;
-            if (dateValue instanceof Date && !Number.isNaN(dateValue.getTime())) {
-              displayValue = formatDate(dateValue);
-            } else if (!isBlank(rawValue)) {
-              displayValue = String(rawValue);
+      const query = state.filters.summarySearch.trim().toLowerCase();
+      const filteredRows = query
+        ? rows.filter((row) => {
+            if (!searchableHeaders.size) return false;
+            for (const header of searchableHeaders) {
+              let value = '';
+              if (SUMMARY_LEVEL_COLUMNS.includes(header)) {
+                value = !isBlank(row[header]) ? String(row[header]) : '';
+              } else {
+                value = getSummaryCellValue(header, row);
+              }
+              if (value && value.toLowerCase().includes(query)) {
+                return true;
+              }
             }
-          } else if (rawValue !== null && rawValue !== undefined && rawValue !== '') {
-            displayValue = String(rawValue);
-          }
-          td.textContent = displayValue;
-          tr.append(td);
-        });
-        tbody.append(tr);
+            return false;
+          })
+        : rows;
+
+      if (!filteredRows.length) {
+        if (dom.summaryStatus) {
+          dom.summaryStatus.textContent = 'No summary rows match the current search.';
+        }
+        if (dom.summaryCards) {
+          dom.summaryCards.hidden = true;
+          dom.summaryCards.innerHTML = '';
+        }
+        if (dom.summarySearch) {
+          dom.summarySearch.disabled = false;
+        }
+        return;
+      }
+
+      if (!tableHeaders.length) {
+        if (dom.summaryStatus) {
+          dom.summaryStatus.textContent = 'No visible columns available after applying summary exclusions.';
+        }
+        if (dom.summaryCards) {
+          dom.summaryCards.hidden = true;
+          dom.summaryCards.innerHTML = '';
+        }
+        if (dom.summarySearch) {
+          dom.summarySearch.disabled = false;
+        }
+        return;
+      }
+
+      if (dom.summaryStatus) {
+        dom.summaryStatus.textContent = '';
+      }
+      if (dom.summaryCards) {
+        dom.summaryCards.hidden = false;
+      }
+      if (dom.summarySearch) {
+        dom.summarySearch.disabled = false;
+        dom.summarySearch.value = state.filters.summarySearch;
+      }
+
+      const level1Key = SUMMARY_LEVEL_COLUMNS[0];
+      const level2Key = SUMMARY_LEVEL_COLUMNS[1];
+      const groupMap = new Map();
+
+      const getLabel = (value) => (!isBlank(value) ? String(value) : 'Not specified');
+
+      filteredRows.forEach((row) => {
+        const level1Label = headers.includes(level1Key) ? getLabel(row[level1Key]) : 'All records';
+        const level2Label = headers.includes(level2Key) ? getLabel(row[level2Key]) : 'All records';
+        if (!groupMap.has(level1Label)) {
+          groupMap.set(level1Label, new Map());
+        }
+        const level2Map = groupMap.get(level1Label);
+        if (!level2Map.has(level2Label)) {
+          level2Map.set(level2Label, []);
+        }
+        level2Map.get(level2Label).push(row);
       });
 
-      table.append(tbody);
+      const sortEntries = (entries) =>
+        entries.sort((a, b) => {
+          if (a[0] === b[0]) return 0;
+          if (a[0] === 'Not specified') return 1;
+          if (b[0] === 'Not specified') return -1;
+          return a[0].localeCompare(b[0], undefined, { sensitivity: 'base' });
+        });
+
+      const fragment = document.createDocumentFragment();
+      const level1Entries = sortEntries(Array.from(groupMap.entries()));
+
+      level1Entries.forEach(([level1Label, level2Map]) => {
+        const level1Details = document.createElement('details');
+        level1Details.className = 'summary-accordion level1';
+        level1Details.open = true;
+
+        const level1Summary = document.createElement('summary');
+        const level1Text = document.createElement('span');
+        level1Text.textContent = level1Label;
+        const level1Count = Array.from(level2Map.values()).reduce((total, rowsForLevel2) => total + rowsForLevel2.length, 0);
+        const level1CountEl = document.createElement('span');
+        level1CountEl.className = 'summary-count';
+        level1CountEl.textContent = `${level1Count} ${level1Count === 1 ? 'record' : 'records'}`;
+        level1Summary.append(level1Text, level1CountEl);
+        level1Details.append(level1Summary);
+
+        const level2Entries = sortEntries(Array.from(level2Map.entries()));
+        level2Entries.forEach(([level2Label, level2Rows]) => {
+          const level2Details = document.createElement('details');
+          level2Details.className = 'summary-accordion level2';
+          level2Details.open = true;
+
+          const level2Summary = document.createElement('summary');
+          const level2Text = document.createElement('span');
+          level2Text.textContent = level2Label;
+          const level2CountEl = document.createElement('span');
+          level2CountEl.className = 'summary-count';
+          level2CountEl.textContent = `${level2Rows.length} ${level2Rows.length === 1 ? 'record' : 'records'}`;
+          level2Summary.append(level2Text, level2CountEl);
+          level2Details.append(level2Summary);
+
+          const table = createSummaryTable(tableHeaders, level2Rows);
+          if (table) {
+            level2Details.append(table);
+          }
+
+          level1Details.append(level2Details);
+        });
+
+        fragment.append(level1Details);
+      });
 
       if (dom.summaryCards) {
         dom.summaryCards.innerHTML = '';
-        dom.summaryCards.append(table);
+        dom.summaryCards.append(fragment);
       }
     };
 
@@ -1609,6 +1845,13 @@
 
       if (dom.loadButton) {
         dom.loadButton.addEventListener('click', handleLoadClick);
+      }
+
+      if (dom.summarySearch) {
+        dom.summarySearch.addEventListener('input', (event) => {
+          state.filters.summarySearch = event.target.value;
+          updateSummary();
+        });
       }
 
       if (dom.adoptionSearch) {
