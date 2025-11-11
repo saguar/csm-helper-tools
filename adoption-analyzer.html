@@ -66,7 +66,13 @@
       font-size: 1rem;
     }
 
-    .reference-chip {
+    .status-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .status-chip {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
@@ -126,6 +132,67 @@
       color: var(--muted);
       font-size: 0.9rem;
       line-height: 1.5;
+    }
+
+    .data-loader {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 720px) {
+      .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: end;
+      }
+    }
+
+    .form-group {
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .form-group label {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .form-group select,
+    .form-group input[type="file"] {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+      padding: 0.65rem 1rem;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .form-group input[type="file"] {
+      padding: 0.55rem 1rem;
+    }
+
+    .load-button {
+      justify-self: start;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 10px 25px rgba(14, 165, 233, 0.25);
+    }
+
+    .load-button:disabled {
+      background: var(--surface-alt);
+      color: var(--muted);
+      cursor: not-allowed;
+      box-shadow: none;
     }
 
     .summary-grid {
@@ -304,50 +371,99 @@
     .timeline-table {
       min-width: 640px;
     }
+
+    @media (max-width: 640px) {
+      .page-header,
+      main {
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+      }
+    }
   </style>
 </head>
 <body>
   <header class="page-header">
-    <h1>Intesa Sanpaolo Adoption Analyzer</h1>
-    <p>
-      Questa pagina analizza automaticamente il file di adozione <strong>Oct 2025</strong> fornito dal team CSM
-      e mostra i principali indicatori di attivazione, utilizzo e messaggistica per tutti gli org Salesforce del gruppo.
-    </p>
-    <div class="reference-chip">
-      Fonte dati: <code>samples/INTESA SANPAOLO SPA__adoption_aBR300000004Ufd_Oct_2025.xlsx</code>
+    <div>
+      <h1>Intesa Sanpaolo Adoption Analyzer</h1>
+      <p>
+        Upload an adoption workbook exported from Customer Success Score to explore activation, usage, and messaging
+        metrics across every Salesforce organization. Use the selectors to focus on the snapshot, tenant, and account
+        you want to investigate.
+      </p>
+    </div>
+    <div class="status-chips">
+      <span class="status-chip">Snapshot: <strong id="selectedSnapshot">Not selected</strong></span>
+      <span class="status-chip">Tenant: <strong id="selectedTenant">Not selected</strong></span>
+      <span class="status-chip">Account: <strong id="selectedAccount">Not selected</strong></span>
     </div>
   </header>
 
   <main>
+    <section class="panel" id="dataLoaderPanel">
+      <h2>Load adoption workbook</h2>
+      <div class="data-loader">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="snapshotSelect">Snapshot date</label>
+            <select id="snapshotSelect" disabled>
+              <option value="" disabled selected>Upload a workbook to populate dates</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="tenantSelect">Tenant</label>
+            <select id="tenantSelect" disabled>
+              <option value="" disabled selected>Select a snapshot first</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="accountSelect">Account</label>
+            <select id="accountSelect" disabled>
+              <option value="" disabled selected>Select a snapshot first</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="adoptionUpload">Upload adoption workbook</label>
+            <input
+              type="file"
+              id="adoptionUpload"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            />
+          </div>
+        </div>
+        <button class="load-button" type="button" id="loadWorkbookBtn" disabled>Load data</button>
+        <p class="helper-text" id="uploadStatus">Upload an adoption workbook to begin the analysis.</p>
+      </div>
+    </section>
+
     <section class="panel" id="summarySection">
       <div class="panel-header">
-        <h2>Riepilogo snapshot</h2>
-        <span class="pill" id="snapshotPill">Caricamento…</span>
+        <h2>Snapshot summary</h2>
+        <span class="pill" id="snapshotPill">Snapshot not selected</span>
       </div>
-      <p class="helper-text" id="summaryStatus">Caricamento del workbook in corso…</p>
+      <p class="helper-text" id="summaryStatus">Upload an adoption workbook to begin the analysis.</p>
       <div class="summary-grid" id="summaryCards" hidden></div>
       <div class="breakdown-grid" id="groupBreakdown" hidden></div>
     </section>
 
     <section class="panel">
       <div class="panel-header">
-        <h2>Metriche di adozione per SKU</h2>
+        <h2>Adoption metrics by SKU</h2>
         <span class="pill" id="adoptionCountPill">--</span>
       </div>
       <p class="helper-text">
-        Visualizza le metriche di provisioning, attivazione e utilizzo per ciascun tipo di licenza e account. Usa i filtri
-        per concentrare l'analisi su gruppi o prodotti specifici.
+        Review provisioning, activation, and usage metrics for every license and account. Apply the filters to focus on
+        specific groups, product types, or APM levels.
       </p>
       <div class="filters">
-        <input type="search" id="adoptionSearch" placeholder="Cerca per account, org, gruppo o SKU" />
-        <select id="groupFilter">
-          <option value="all">Gruppo: tutti</option>
+        <input type="search" id="adoptionSearch" placeholder="Search by account, org, group, or SKU" />
+        <select id="groupFilter" disabled>
+          <option value="" disabled selected>No groups available</option>
         </select>
         <select id="typeFilter" disabled>
-          <option value="all">Tipo: tutti</option>
+          <option value="" disabled selected>No types available</option>
         </select>
         <select id="apmFilter" disabled>
-          <option value="all">APM Level 1: tutti</option>
+          <option value="" disabled selected>No APM levels available</option>
         </select>
       </div>
       <p class="helper-text" id="adoptionResultsLabel"></p>
@@ -357,8 +473,8 @@
             <tr>
               <th>Account</th>
               <th>Org ID</th>
-              <th>Gruppo</th>
-              <th>Tipo</th>
+              <th>Group</th>
+              <th>Type</th>
               <th>Provisioned</th>
               <th>Activated</th>
               <th>Used</th>
@@ -374,16 +490,17 @@
 
     <section class="panel">
       <div class="panel-header">
-        <h2>Scorecard di adozione</h2>
+        <h2>Adoption scorecard</h2>
         <span class="pill" id="scorecardCountPill">--</span>
       </div>
       <p class="helper-text">
-        La scorecard riassume i KPI raccolti dagli executive dashboard. Identifica i trend con variazione mese su mese.
+        The scorecard summarizes KPIs from the executive dashboards. Track trends and month-over-month changes across
+        each cloud.
       </p>
       <div class="filters">
-        <input type="search" id="scorecardSearch" placeholder="Cerca metriche o account" />
-        <select id="cloudFilter">
-          <option value="all">Cloud: tutti</option>
+        <input type="search" id="scorecardSearch" placeholder="Search metrics or accounts" />
+        <select id="cloudFilter" disabled>
+          <option value="all">Cloud: all</option>
         </select>
       </div>
       <div class="scorecard-highlights" id="scorecardHighlights" hidden></div>
@@ -405,12 +522,12 @@
 
     <section class="panel">
       <div class="panel-header">
-        <h2>Messaggistica MCMU</h2>
+        <h2>MCMU messaging</h2>
         <span class="pill" id="mcmuCountPill">--</span>
       </div>
       <p class="helper-text">
-        Dati storici per super messaggi e contatti con provisioning. Utilizza questo prospetto per correlare l'utilizzo di
-        Marketing Cloud con le metriche di adozione.
+        Review historical super message and contact provisioning to correlate Marketing Cloud activity with adoption
+        metrics.
       </p>
       <div class="table-wrapper">
         <table class="data-table timeline-table" id="mcmuTable">
@@ -430,25 +547,39 @@
   </main>
 
   <script>
-    const WORKBOOK_PATH = 'samples/INTESA SANPAOLO SPA__adoption_aBR300000004Ufd_Oct_2025.xlsx';
+    const DEFAULT_FILTERS = {
+      adoptionSearch: '',
+      group: 'all',
+      type: 'all',
+      apm: 'all',
+      scorecardSearch: '',
+      cloud: 'all',
+    };
 
     const state = {
       adoption: [],
-      adoptionByGroup: [],
+      adoptionAll: [],
       scorecard: [],
+      scorecardAll: [],
       mcmu: [],
+      mcmuAll: [],
       core: [],
-      filters: {
-        adoptionSearch: '',
-        group: 'all',
-        type: 'all',
-        apm: 'all',
-        scorecardSearch: '',
-        cloud: 'all',
-      },
+      coreAll: [],
+      filters: { ...DEFAULT_FILTERS },
+      selection: { snapshot: '', tenant: 'all', account: 'all' },
+      datasetLoaded: false,
     };
 
     const dom = {
+      selectedSnapshot: document.getElementById('selectedSnapshot'),
+      selectedTenant: document.getElementById('selectedTenant'),
+      selectedAccount: document.getElementById('selectedAccount'),
+      snapshotSelect: document.getElementById('snapshotSelect'),
+      tenantSelect: document.getElementById('tenantSelect'),
+      accountSelect: document.getElementById('accountSelect'),
+      uploadInput: document.getElementById('adoptionUpload'),
+      loadButton: document.getElementById('loadWorkbookBtn'),
+      uploadStatus: document.getElementById('uploadStatus'),
       snapshotPill: document.getElementById('snapshotPill'),
       summaryStatus: document.getElementById('summaryStatus'),
       summaryCards: document.getElementById('summaryCards'),
@@ -456,20 +587,21 @@
       adoptionTableBody: document.querySelector('#adoptionTable tbody'),
       adoptionResultsLabel: document.getElementById('adoptionResultsLabel'),
       adoptionCountPill: document.getElementById('adoptionCountPill'),
-      scorecardTableBody: document.querySelector('#scorecardTable tbody'),
-      scorecardHighlights: document.getElementById('scorecardHighlights'),
-      scorecardCountPill: document.getElementById('scorecardCountPill'),
-      mcmuTableBody: document.querySelector('#mcmuTable tbody'),
-      mcmuCountPill: document.getElementById('mcmuCountPill'),
+      adoptionSearch: document.getElementById('adoptionSearch'),
       groupFilter: document.getElementById('groupFilter'),
       typeFilter: document.getElementById('typeFilter'),
       apmFilter: document.getElementById('apmFilter'),
-      adoptionSearch: document.getElementById('adoptionSearch'),
+      scorecardTableBody: document.querySelector('#scorecardTable tbody'),
+      scorecardHighlights: document.getElementById('scorecardHighlights'),
+      scorecardCountPill: document.getElementById('scorecardCountPill'),
       scorecardSearch: document.getElementById('scorecardSearch'),
       cloudFilter: document.getElementById('cloudFilter'),
+      mcmuTableBody: document.querySelector('#mcmuTable tbody'),
+      mcmuCountPill: document.getElementById('mcmuCountPill'),
     };
 
-    const isBlank = (value) => value === null || value === undefined || (typeof value === 'string' && value.trim() === '');
+    const isBlank = (value) =>
+      value === null || value === undefined || (typeof value === 'string' && value.trim() === '');
 
     const parseSheet = (workbook, sheetName) => {
       const sheet = workbook.Sheets[sheetName];
@@ -499,7 +631,9 @@
       if (typeof value === 'number') {
         return Number.isFinite(value) ? value : null;
       }
-      const sanitized = String(value).replace(/[^0-9.,-]/g, '').replace(/,(?=\d{3}\b)/g, '');
+      const sanitized = String(value)
+        .replace(/[^0-9.,-]/g, '')
+        .replace(/,(?=\d{3}\b)/g, '');
       const normalized = sanitized.replace(/,/g, '.');
       const parsed = Number(normalized);
       return Number.isFinite(parsed) ? parsed : null;
@@ -526,7 +660,7 @@
 
     const formatNumber = (value, options = {}) => {
       if (!Number.isFinite(value)) return '—';
-      const formatter = new Intl.NumberFormat('it-IT', {
+      const formatter = new Intl.NumberFormat('en-US', {
         maximumFractionDigits: options.maximumFractionDigits ?? 0,
         minimumFractionDigits: options.minimumFractionDigits ?? 0,
       });
@@ -535,7 +669,7 @@
 
     const formatPercent = (value, options = {}) => {
       if (!Number.isFinite(value)) return '—';
-      const formatter = new Intl.NumberFormat('it-IT', {
+      const formatter = new Intl.NumberFormat('en-US', {
         style: 'percent',
         maximumFractionDigits: options.maximumFractionDigits ?? 1,
         minimumFractionDigits: options.minimumFractionDigits ?? 0,
@@ -568,21 +702,418 @@
     };
 
     const formatDate = (value) => {
+      if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+        return '';
+      }
       const options = { year: 'numeric', month: 'short', day: '2-digit' };
-      return new Intl.DateTimeFormat('it-IT', options).format(value);
+      return new Intl.DateTimeFormat('en-US', options).format(value);
     };
 
+    const toIsoString = (date) => {
+      if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
+      return date.toISOString();
+    };
+
+    const resetSelect = (select, placeholder) => {
+      if (!select) return;
+      select.innerHTML = `<option value="" disabled selected>${placeholder}</option>`;
+      select.disabled = true;
+    };
+
+    const clearVisualizations = (message) => {
+      if (dom.summaryCards) {
+        dom.summaryCards.hidden = true;
+        dom.summaryCards.innerHTML = '';
+      }
+      if (dom.groupBreakdown) {
+        dom.groupBreakdown.hidden = true;
+        dom.groupBreakdown.innerHTML = '';
+      }
+      if (dom.summaryStatus) {
+        dom.summaryStatus.textContent = message;
+      }
+      if (dom.adoptionTableBody) {
+        dom.adoptionTableBody.innerHTML = `<tr><td colspan="10" class="empty-state">${message}</td></tr>`;
+      }
+      if (dom.adoptionResultsLabel) {
+        dom.adoptionResultsLabel.textContent = '';
+      }
+      if (dom.adoptionCountPill) {
+        dom.adoptionCountPill.textContent = '--';
+      }
+      if (dom.scorecardTableBody) {
+        dom.scorecardTableBody.innerHTML = `<tr><td colspan="5" class="empty-state">${message}</td></tr>`;
+      }
+      if (dom.scorecardHighlights) {
+        dom.scorecardHighlights.hidden = true;
+        dom.scorecardHighlights.innerHTML = '';
+      }
+      if (dom.scorecardCountPill) {
+        dom.scorecardCountPill.textContent = '--';
+      }
+      if (dom.mcmuTableBody) {
+        dom.mcmuTableBody.innerHTML = `<tr><td colspan="5" class="empty-state">${message}</td></tr>`;
+      }
+      if (dom.mcmuCountPill) {
+        dom.mcmuCountPill.textContent = '--';
+      }
+      if (dom.snapshotPill) {
+        dom.snapshotPill.textContent = 'Snapshot not selected';
+      }
+    };
+
+    const updateSelectionLabels = ({ snapshotText, tenantText, accountText } = {}) => {
+      if (dom.selectedSnapshot) {
+        if (snapshotText) {
+          dom.selectedSnapshot.textContent = snapshotText;
+        } else if (state.selection.snapshot) {
+          const date = new Date(state.selection.snapshot);
+          dom.selectedSnapshot.textContent = formatDate(date) || state.selection.snapshot;
+        } else {
+          dom.selectedSnapshot.textContent = 'Not selected';
+        }
+      }
+      if (dom.selectedTenant) {
+        if (tenantText) {
+          dom.selectedTenant.textContent = tenantText;
+        } else if (state.selection.snapshot) {
+          dom.selectedTenant.textContent =
+            state.selection.tenant === 'all' ? 'All tenants' : state.selection.tenant || 'Not specified';
+        } else {
+          dom.selectedTenant.textContent = 'Not selected';
+        }
+      }
+      if (dom.selectedAccount) {
+        if (accountText) {
+          dom.selectedAccount.textContent = accountText;
+        } else if (state.selection.snapshot) {
+          if (state.selection.account === 'all') {
+            dom.selectedAccount.textContent = 'All accounts';
+          } else {
+            const match = state.adoptionAll.find((row) => row.__accountKey === state.selection.account);
+            dom.selectedAccount.textContent = match?.__accountLabel || state.selection.account;
+          }
+        } else {
+          dom.selectedAccount.textContent = 'Not selected';
+        }
+      }
+    };
+
+    const collectSnapshots = () => {
+      const snapshotMap = new Map();
+      const addSnapshot = (iso, date) => {
+        if (!iso) return;
+        if (!snapshotMap.has(iso)) {
+          const parsed = date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date(iso);
+          snapshotMap.set(iso, parsed);
+        }
+      };
+      [state.adoptionAll, state.scorecardAll, state.mcmuAll, state.coreAll].forEach((rows) => {
+        rows.forEach((row) => addSnapshot(row.__snapshot, row.__snapshotDate));
+      });
+      return Array.from(snapshotMap.entries())
+        .map(([iso, date]) => ({ iso, date }))
+        .sort((a, b) => {
+          const aTime = a.date instanceof Date && !Number.isNaN(a.date.getTime()) ? a.date.getTime() : 0;
+          const bTime = b.date instanceof Date && !Number.isNaN(b.date.getTime()) ? b.date.getTime() : 0;
+          return bTime - aTime;
+        });
+    };
+
+    const populateSnapshotOptions = () => {
+      if (!dom.snapshotSelect) return;
+      const snapshots = collectSnapshots();
+      if (!snapshots.length) {
+        dom.snapshotSelect.innerHTML = '<option value="" disabled selected>Upload a workbook to populate dates</option>';
+        dom.snapshotSelect.disabled = true;
+        return;
+      }
+      dom.snapshotSelect.innerHTML = '<option value="" disabled selected>-- Select snapshot date --</option>';
+      snapshots.forEach(({ iso, date }) => {
+        const option = document.createElement('option');
+        option.value = iso;
+        option.textContent = date instanceof Date && !Number.isNaN(date.getTime()) ? formatDate(date) : iso;
+        dom.snapshotSelect.append(option);
+      });
+      dom.snapshotSelect.disabled = false;
+    };
+
+    const populateTenantOptions = (snapshot) => {
+      if (!dom.tenantSelect) return;
+      if (!snapshot) {
+        resetSelect(dom.tenantSelect, state.datasetLoaded ? 'Select a snapshot first' : 'Upload a workbook to populate tenants');
+        resetSelect(
+          dom.accountSelect,
+          state.datasetLoaded ? 'Select a snapshot first' : 'Upload a workbook to populate accounts'
+        );
+        updateLoadButtonState();
+        return;
+      }
+      const tenants = new Set();
+      state.adoptionAll.forEach((row) => {
+        if (row.__snapshot === snapshot) {
+          tenants.add(row.__tenant || 'Not specified');
+        }
+      });
+      if (!tenants.size) {
+        dom.tenantSelect.innerHTML = '<option value="" disabled selected>No tenants for the selected snapshot</option>';
+        dom.tenantSelect.disabled = true;
+        resetSelect(dom.accountSelect, 'No accounts for the selected filters');
+        updateLoadButtonState();
+        return;
+      }
+      dom.tenantSelect.innerHTML = '';
+      const allOption = document.createElement('option');
+      allOption.value = 'all';
+      allOption.textContent = 'All tenants';
+      dom.tenantSelect.append(allOption);
+      Array.from(tenants)
+        .sort((a, b) => a.localeCompare(b))
+        .forEach((tenant) => {
+          const option = document.createElement('option');
+          option.value = tenant;
+          option.textContent = tenant;
+          dom.tenantSelect.append(option);
+        });
+      dom.tenantSelect.disabled = false;
+      dom.tenantSelect.value = 'all';
+      populateAccountOptions(snapshot, 'all');
+    };
+
+    const populateAccountOptions = (snapshot, tenant = 'all') => {
+      if (!dom.accountSelect) return;
+      if (!snapshot) {
+        resetSelect(dom.accountSelect, state.datasetLoaded ? 'Select a snapshot first' : 'Upload a workbook to populate accounts');
+        updateLoadButtonState();
+        return;
+      }
+      const accounts = new Map();
+      state.adoptionAll.forEach((row) => {
+        if (row.__snapshot !== snapshot) return;
+        const tenantLabel = row.__tenant || 'Not specified';
+        if (tenant !== 'all' && tenantLabel !== tenant) return;
+        const key = row.__accountKey || row.__accountId || row.__accountLabel;
+        if (!key) return;
+        if (!accounts.has(key)) {
+          accounts.set(key, row.__accountLabel || row.__accountName || key);
+        }
+      });
+      if (!accounts.size) {
+        dom.accountSelect.innerHTML = '<option value="" disabled selected>No accounts for the selected filters</option>';
+        dom.accountSelect.disabled = true;
+        updateLoadButtonState();
+        return;
+      }
+      dom.accountSelect.innerHTML = '';
+      const allOption = document.createElement('option');
+      allOption.value = 'all';
+      allOption.textContent = 'All accounts';
+      dom.accountSelect.append(allOption);
+      Array.from(accounts.entries())
+        .sort((a, b) => a[1].localeCompare(b[1]))
+        .forEach(([key, label]) => {
+          const option = document.createElement('option');
+          option.value = key;
+          option.textContent = label;
+          dom.accountSelect.append(option);
+        });
+      dom.accountSelect.disabled = false;
+      dom.accountSelect.value = 'all';
+      updateLoadButtonState();
+    };
+
+    const updateLoadButtonState = () => {
+      if (!dom.loadButton) return;
+      const hasDataset = state.datasetLoaded;
+      const snapshotSelected = Boolean(dom.snapshotSelect && dom.snapshotSelect.value);
+      const accountSelected =
+        dom.accountSelect && !dom.accountSelect.disabled && Boolean(dom.accountSelect.value);
+      dom.loadButton.disabled = !(hasDataset && snapshotSelected && accountSelected);
+    };
+    const parseWorkbookData = (arrayBuffer) => {
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const adoptionSheet = parseSheet(workbook, 'Adoption Metrics');
+      const scorecardSheet = parseSheet(workbook, 'Adoption Scorecard');
+      const mcmuSheet = parseSheet(workbook, 'MCMU Report');
+      const coreSheet = parseSheet(workbook, 'Core By OrgID');
+
+      const snapshotByOrg = new Map();
+      const snapshotByAccount = new Map();
+      const snapshotSet = new Set();
+
+      const coreRows = coreSheet.rows.map((row) => {
+        const snapshotDate = parseDate(row.SNAPSHOT_DT);
+        const snapshotIso = toIsoString(snapshotDate);
+        if (snapshotIso) snapshotSet.add(snapshotIso);
+        const accountId = !isBlank(row['ACCOUNT ID']) ? String(row['ACCOUNT ID']) : '';
+        const accountName = row['Account Name'] || row['Account Name (Local)'] || accountId || '';
+        const accountLabel = accountName || accountId || 'Not specified';
+        const augmented = {
+          ...row,
+          __snapshot: snapshotIso,
+          __snapshotDate: snapshotDate,
+          __accountId: accountId,
+          __accountName: accountName,
+          __accountLabel: accountLabel,
+          __accountKey: accountId || accountName || 'unknown-account',
+          __tenant: 'Not specified',
+        };
+        const orgId = !isBlank(row['ORG ID']) ? String(row['ORG ID']) : null;
+        if (orgId && snapshotIso) snapshotByOrg.set(orgId, snapshotIso);
+        if (accountId && snapshotIso) snapshotByAccount.set(accountId, snapshotIso);
+        return augmented;
+      });
+
+      const tenantByAccount = new Map();
+
+      const adoptionRows = adoptionSheet.rows.map((row, index) => {
+        const accountId = !isBlank(row['Account ID']) ? String(row['Account ID']) : '';
+        const orgId = !isBlank(row['Org ID']) ? String(row['Org ID']) : '';
+        const tenant = !isBlank(row['Company Name']) ? String(row['Company Name']) : 'Not specified';
+        const accountName = row['Account Name'] || row['Account Local Name'] || accountId || '';
+        const accountLabel = accountName || accountId || 'Not specified';
+        const snapshotIso = snapshotByOrg.get(orgId) || snapshotByAccount.get(accountId) || null;
+        const snapshotDate = snapshotIso ? new Date(snapshotIso) : null;
+        const accountKey = accountId || accountName || orgId || `unknown-account-${index}`;
+        if (accountId) tenantByAccount.set(accountId, tenant);
+        return {
+          ...row,
+          __snapshot: snapshotIso,
+          __snapshotDate: snapshotDate,
+          __tenant: tenant,
+          __accountId: accountId,
+          __accountName: accountName,
+          __accountLabel: accountLabel,
+          __accountKey: accountKey,
+        };
+      });
+
+      const scorecardRows = scorecardSheet.rows.map((row, index) => {
+        const accountId = !isBlank(row['Account ID']) ? String(row['Account ID']) : '';
+        const orgId = !isBlank(row['Org ID']) ? String(row['Org ID']) : '';
+        const tenant = tenantByAccount.get(accountId) || 'Not specified';
+        const accountName = row['Account Local Name'] || row['Account ID'] || '';
+        const accountLabel = accountName || accountId || 'Not specified';
+        const snapshotIso = snapshotByOrg.get(orgId) || snapshotByAccount.get(accountId) || null;
+        const snapshotDate = snapshotIso ? new Date(snapshotIso) : null;
+        const accountKey = accountId || accountName || orgId || `scorecard-account-${index}`;
+        return {
+          ...row,
+          __snapshot: snapshotIso,
+          __snapshotDate: snapshotDate,
+          __tenant: tenant,
+          __accountId: accountId,
+          __accountName: accountName,
+          __accountLabel: accountLabel,
+          __accountKey: accountKey,
+        };
+      });
+
+      const mcmuRows = mcmuSheet.rows.map((row, index) => {
+        const snapshotDate = parseDate(row['Snapshot Date']);
+        const snapshotIso = toIsoString(snapshotDate);
+        if (snapshotIso) snapshotSet.add(snapshotIso);
+        const accountId = !isBlank(row['Account ID']) ? String(row['Account ID']) : '';
+        const tenantFromAccount = tenantByAccount.get(accountId);
+        const tenantColumn = !isBlank(row['Enterprise Name and Tenant'])
+          ? String(row['Enterprise Name and Tenant'])
+          : null;
+        const tenant = tenantFromAccount || tenantColumn || 'Not specified';
+        const accountName = row['Account Name'] || accountId || '';
+        const accountLabel = accountName || accountId || 'Not specified';
+        const accountKey = accountId || accountName || `mcmu-account-${index}`;
+        return {
+          ...row,
+          __snapshot: snapshotIso,
+          __snapshotDate: snapshotDate,
+          __tenant: tenant,
+          __accountId: accountId,
+          __accountName: accountName,
+          __accountLabel: accountLabel,
+          __accountKey: accountKey,
+        };
+      });
+
+      if (snapshotSet.size === 1) {
+        const [onlySnapshot] = Array.from(snapshotSet);
+        const referenceDate = coreRows.find((row) => row.__snapshot === onlySnapshot)?.__snapshotDate || new Date(onlySnapshot);
+        const assignSnapshot = (row) => {
+          if (!row.__snapshot) {
+            row.__snapshot = onlySnapshot;
+            row.__snapshotDate =
+              referenceDate instanceof Date && !Number.isNaN(referenceDate.getTime())
+                ? referenceDate
+                : new Date(onlySnapshot);
+          }
+        };
+        adoptionRows.forEach(assignSnapshot);
+        scorecardRows.forEach(assignSnapshot);
+      }
+
+      coreRows.forEach((row) => {
+        const tenant = tenantByAccount.get(row.__accountId) || 'Not specified';
+        row.__tenant = tenant;
+      });
+
+      return { adoptionRows, scorecardRows, mcmuRows, coreRows };
+    };
+
+    const applySelection = (snapshot, tenant, account, labels = {}) => {
+      state.selection = { snapshot, tenant, account };
+      state.filters = { ...DEFAULT_FILTERS };
+
+      if (dom.adoptionSearch) dom.adoptionSearch.value = '';
+      if (dom.scorecardSearch) dom.scorecardSearch.value = '';
+      if (dom.cloudFilter) dom.cloudFilter.value = 'all';
+
+      const matchesSelection = (row) => {
+        if (!row) return false;
+        if (snapshot) {
+          if (row.__snapshot && row.__snapshot !== snapshot) return false;
+          if (!row.__snapshot) return false;
+        }
+        if (tenant && tenant !== 'all') {
+          const rowTenant = row.__tenant || 'Not specified';
+          if (rowTenant !== tenant) return false;
+        }
+        if (account && account !== 'all') {
+          const rowAccount = row.__accountKey || row.__accountId || row.__accountLabel;
+          if (rowAccount !== account) return false;
+        }
+        return true;
+      };
+
+      state.adoption = state.adoptionAll.filter((row) => matchesSelection(row));
+      state.scorecard = state.scorecardAll.filter((row) => matchesSelection(row));
+      state.mcmu = state.mcmuAll.filter((row) => matchesSelection(row));
+      state.core = state.coreAll.filter((row) => matchesSelection(row));
+
+      updateAdoptionFilters();
+      renderAdoptionTable();
+      updateScorecardFilters();
+      renderScorecardTable();
+      renderMcmuTable();
+      updateSummary();
+      updateSnapshotPill();
+      updateSelectionLabels(labels);
+    };
     const updateSummary = () => {
       const rows = state.adoption;
-      if (rows.length === 0) {
-        dom.summaryStatus.textContent = 'Nessuna riga caricata dal foglio “Adoption Metrics”.';
-        dom.summaryCards.hidden = true;
-        dom.groupBreakdown.hidden = true;
+      if (!rows.length) {
+        if (dom.summaryStatus) {
+          dom.summaryStatus.textContent = state.datasetLoaded
+            ? 'No adoption metrics match the current selection.'
+            : 'No rows loaded from the “Adoption Metrics” sheet.';
+        }
+        if (dom.summaryCards) dom.summaryCards.hidden = true;
+        if (dom.groupBreakdown) dom.groupBreakdown.hidden = true;
         return;
       }
 
-      dom.summaryStatus.textContent = '';
-      dom.summaryCards.hidden = false;
+      if (dom.summaryStatus) {
+        dom.summaryStatus.textContent = '';
+      }
+      if (dom.summaryCards) dom.summaryCards.hidden = false;
 
       const totalProvisioned = sumColumn(rows, 'PROVISIONED');
       const totalActivated = sumColumn(rows, 'ACTIVATED');
@@ -603,63 +1134,67 @@
 
       const summaryData = [
         {
-          label: 'Licenze provisionate',
+          label: 'Provisioned licenses',
           value: formatNumber(totalProvisioned),
-          meta: `${uniqueAccounts.size} account • ${uniqueOrgs.size} org`,
+          meta: `${uniqueAccounts.size} accounts • ${uniqueOrgs.size} orgs`,
         },
         {
-          label: 'Licenze attivate',
+          label: 'Activated licenses',
           value: formatNumber(totalActivated),
           meta: activationRate !== null ? `${formatPercent(activationRate)} activation rate` : '—',
         },
         {
-          label: 'Licenze utilizzate',
+          label: 'Used licenses',
           value: formatNumber(totalUsed),
           meta: utilizationRate !== null ? `${formatPercent(utilizationRate)} utilization` : '—',
         },
         {
-          label: 'Shelfware totale',
+          label: 'Total shelfware',
           value: formatNumber(totalShelfware),
-          meta: 'Licenze non attivate o non utilizzate',
+          meta: 'Licenses not activated or not used',
         },
         {
-          label: 'EU medio',
+          label: 'Average EU',
           value: formatEngagement(avgEu),
           meta: 'EU = Entitlement Utilization',
         },
         {
-          label: 'MAU penetration media',
+          label: 'Average MAU penetration',
           value: formatEngagement(avgMauPenetration),
-          meta: 'Quota media di utenti mensili attivi',
+          meta: 'Share of monthly active users',
         },
       ];
 
-      dom.summaryCards.innerHTML = '';
-      summaryData.forEach((item) => {
-        const card = document.createElement('div');
-        card.className = 'summary-card';
-        const label = document.createElement('span');
-        label.textContent = item.label;
-        const value = document.createElement('strong');
-        value.textContent = item.value;
-        const meta = document.createElement('span');
-        meta.textContent = item.meta;
-        card.append(label, value, meta);
-        dom.summaryCards.append(card);
-      });
+      if (dom.summaryCards) {
+        dom.summaryCards.innerHTML = '';
+        summaryData.forEach((item) => {
+          const card = document.createElement('div');
+          card.className = 'summary-card';
+          const label = document.createElement('span');
+          label.textContent = item.label;
+          const value = document.createElement('strong');
+          value.textContent = item.value;
+          const meta = document.createElement('span');
+          meta.textContent = item.meta;
+          card.append(label, value, meta);
+          dom.summaryCards.append(card);
+        });
+      }
 
       renderGroupBreakdown(rows);
     };
 
     const renderGroupBreakdown = (rows) => {
+      if (!dom.groupBreakdown) return;
       if (!rows.length) {
         dom.groupBreakdown.hidden = true;
+        dom.groupBreakdown.innerHTML = '';
         return;
       }
       dom.groupBreakdown.hidden = false;
       const groupMetrics = new Map();
       rows.forEach((row) => {
-        const key = isBlank(row.Group) ? 'Non specificato' : String(row.Group);
+        const key = isBlank(row.Group) ? 'Not specified' : String(row.Group);
         if (!groupMetrics.has(key)) {
           groupMetrics.set(key, {
             provisioned: 0,
@@ -689,7 +1224,7 @@
         title.textContent = item.group;
         const types = document.createElement('span');
         types.className = 'helper-text';
-        types.textContent = `${item.types.size} SKU`;
+        types.textContent = `${item.types.size} SKUs`;
 
         const metrics = [
           { label: 'Provisioned', value: formatNumber(item.provisioned) },
@@ -700,101 +1235,107 @@
 
         card.append(title, types);
         metrics.forEach((metric) => {
-          const row = document.createElement('div');
-          row.className = 'breakdown-metric';
+          const rowEl = document.createElement('div');
+          rowEl.className = 'breakdown-metric';
           const label = document.createElement('span');
           label.textContent = metric.label;
           const value = document.createElement('span');
           value.textContent = metric.value;
-          row.append(label, value);
-          card.append(row);
+          rowEl.append(label, value);
+          card.append(rowEl);
         });
         dom.groupBreakdown.append(card);
       });
     };
 
-    const updateAdoptionFilters = () => {
-      const { adoption } = state;
-      const groups = new Set();
-      const typesByGroup = new Map();
-      const apmLevels = new Set();
+    const updateTypeFilterOptions = () => {
+      if (!dom.typeFilter) return;
+      const { adoption, filters } = state;
+      if (!adoption.length) {
+        dom.typeFilter.innerHTML = '<option value="" disabled selected>No types available</option>';
+        dom.typeFilter.disabled = true;
+        return;
+      }
 
+      const types = new Set();
+      adoption.forEach((row) => {
+        if (filters.group !== 'all' && String(row.Group) !== filters.group) return;
+        if (!isBlank(row.Type)) types.add(String(row.Type));
+      });
+
+      dom.typeFilter.innerHTML = '<option value="all">Type: all</option>';
+      Array.from(types)
+        .sort((a, b) => a.localeCompare(b))
+        .forEach((type) => {
+          const option = document.createElement('option');
+          option.value = type;
+          option.textContent = type;
+          dom.typeFilter.append(option);
+        });
+
+      if (!types.has(state.filters.type)) {
+        state.filters.type = 'all';
+      }
+      dom.typeFilter.value = state.filters.type;
+      dom.typeFilter.disabled = dom.typeFilter.options.length <= 1;
+    };
+
+    const updateAdoptionFilters = () => {
+      if (!dom.groupFilter || !dom.apmFilter) return;
+      const { adoption } = state;
+
+      if (!adoption.length) {
+        dom.groupFilter.innerHTML = '<option value="" disabled selected>No groups available</option>';
+        dom.groupFilter.disabled = true;
+        dom.typeFilter.innerHTML = '<option value="" disabled selected>No types available</option>';
+        dom.typeFilter.disabled = true;
+        dom.apmFilter.innerHTML = '<option value="" disabled selected>No APM levels available</option>';
+        dom.apmFilter.disabled = true;
+        return;
+      }
+
+      const groups = new Set();
+      const apmLevels = new Set();
       adoption.forEach((row) => {
         if (!isBlank(row.Group)) groups.add(String(row.Group));
-        const groupKey = isBlank(row.Group) ? 'Non specificato' : String(row.Group);
-        if (!typesByGroup.has(groupKey)) typesByGroup.set(groupKey, new Set());
-        if (!isBlank(row.Type)) typesByGroup.get(groupKey).add(String(row.Type));
         if (!isBlank(row['APM Level 1'])) apmLevels.add(String(row['APM Level 1']));
       });
 
-      const sortedGroups = Array.from(groups).sort((a, b) => a.localeCompare(b));
-      dom.groupFilter.innerHTML = '<option value="all">Gruppo: tutti</option>';
-      sortedGroups.forEach((group) => {
-        const option = document.createElement('option');
-        option.value = group;
-        option.textContent = group;
-        dom.groupFilter.append(option);
-      });
+      dom.groupFilter.innerHTML = '<option value="all">Group: all</option>';
+      Array.from(groups)
+        .sort((a, b) => a.localeCompare(b))
+        .forEach((group) => {
+          const option = document.createElement('option');
+          option.value = group;
+          option.textContent = group;
+          dom.groupFilter.append(option);
+        });
+      if (!groups.has(state.filters.group)) {
+        state.filters.group = 'all';
+      }
+      dom.groupFilter.value = state.filters.group;
+      dom.groupFilter.disabled = false;
 
-      dom.typeFilter.innerHTML = '<option value="all">Tipo: tutti</option>';
-      dom.typeFilter.disabled = adoption.length === 0;
-      dom.apmFilter.innerHTML = '<option value="all">APM Level 1: tutti</option>';
-      dom.apmFilter.disabled = adoption.length === 0;
+      updateTypeFilterOptions();
 
-      const updateTypeOptions = () => {
-        const selectedGroup = state.filters.group;
-        const types = new Set();
-        if (selectedGroup === 'all') {
-          adoption.forEach((row) => {
-            if (!isBlank(row.Type)) types.add(String(row.Type));
-          });
-        } else {
-          const key = selectedGroup;
-          const groupTypes = typesByGroup.get(key) || new Set();
-          groupTypes.forEach((type) => types.add(type));
-        }
-        dom.typeFilter.innerHTML = '<option value="all">Tipo: tutti</option>';
-        Array.from(types)
-          .sort((a, b) => a.localeCompare(b))
-          .forEach((type) => {
-            const option = document.createElement('option');
-            option.value = type;
-            option.textContent = type;
-            dom.typeFilter.append(option);
-          });
-        dom.typeFilter.disabled = types.size === 0;
-      };
-
-      updateTypeOptions();
-
-      const sortedApm = Array.from(apmLevels).sort((a, b) => a.localeCompare(b));
-      sortedApm.forEach((item) => {
-        const option = document.createElement('option');
-        option.value = item;
-        option.textContent = item;
-        dom.apmFilter.append(option);
-      });
-      dom.apmFilter.disabled = sortedApm.length === 0;
-
-      dom.groupFilter.addEventListener('change', (event) => {
-        state.filters.group = event.target.value;
-        state.filters.type = 'all';
-        updateTypeOptions();
-        renderAdoptionTable();
-      });
-
-      dom.typeFilter.addEventListener('change', (event) => {
-        state.filters.type = event.target.value;
-        renderAdoptionTable();
-      });
-
-      dom.apmFilter.addEventListener('change', (event) => {
-        state.filters.apm = event.target.value;
-        renderAdoptionTable();
-      });
+      dom.apmFilter.innerHTML = '<option value="all">APM Level 1: all</option>';
+      Array.from(apmLevels)
+        .sort((a, b) => a.localeCompare(b))
+        .forEach((item) => {
+          const option = document.createElement('option');
+          option.value = item;
+          option.textContent = item;
+          dom.apmFilter.append(option);
+        });
+      if (!apmLevels.has(state.filters.apm)) {
+        state.filters.apm = 'all';
+      }
+      dom.apmFilter.value = state.filters.apm;
+      dom.apmFilter.disabled = dom.apmFilter.options.length <= 1;
     };
 
     const renderAdoptionTable = () => {
+      if (!dom.adoptionTableBody) return;
       const { adoption, filters } = state;
       const query = filters.adoptionSearch.trim().toLowerCase();
 
@@ -814,7 +1355,8 @@
 
       dom.adoptionTableBody.innerHTML = '';
       if (filtered.length === 0) {
-        dom.adoptionTableBody.innerHTML = '<tr><td colspan="10" class="empty-state">Nessun risultato per i filtri selezionati.</td></tr>';
+        dom.adoptionTableBody.innerHTML =
+          '<tr><td colspan="10" class="empty-state">No adoption metrics for the selected filters.</td></tr>';
       } else {
         filtered.forEach((row) => {
           const tr = document.createElement('tr');
@@ -839,11 +1381,19 @@
         });
       }
 
-      dom.adoptionResultsLabel.textContent = `${filtered.length} righe su ${adoption.length} totali`;
-      dom.adoptionCountPill.textContent = `${filtered.length} SKU visibili`;
+      if (dom.adoptionResultsLabel) {
+        dom.adoptionResultsLabel.textContent = adoption.length
+          ? `${filtered.length} rows out of ${adoption.length}`
+          : '';
+      }
+      if (dom.adoptionCountPill) {
+        dom.adoptionCountPill.textContent = adoption.length
+          ? `${filtered.length} SKU visible`
+          : '--';
+      }
     };
-
     const renderScorecardHighlights = (rows) => {
+      if (!dom.scorecardHighlights) return;
       if (!rows.length) {
         dom.scorecardHighlights.hidden = true;
         dom.scorecardHighlights.innerHTML = '';
@@ -852,7 +1402,7 @@
       dom.scorecardHighlights.hidden = false;
       const byCloud = new Map();
       rows.forEach((row) => {
-        const cloud = isBlank(row.Cloud) ? 'Non specificato' : String(row.Cloud);
+        const cloud = isBlank(row.Cloud) ? 'Not specified' : String(row.Cloud);
         if (!byCloud.has(cloud)) {
           byCloud.set(cloud, { totalValue: 0, metrics: 0, positive: 0, negative: 0 });
         }
@@ -883,13 +1433,14 @@
         value.textContent = formatNumber(item.totalValue);
         const meta = document.createElement('span');
         meta.className = 'helper-text';
-        meta.textContent = `${item.metrics} metriche · ${item.positive} ↑ · ${item.negative} ↓`;
+        meta.textContent = `${item.metrics} metrics · ${item.positive} ↑ · ${item.negative} ↓`;
         card.append(title, value, meta);
         dom.scorecardHighlights.append(card);
       });
     };
 
     const renderScorecardTable = () => {
+      if (!dom.scorecardTableBody) return;
       const { scorecard, filters } = state;
       const query = filters.scorecardSearch.trim().toLowerCase();
 
@@ -907,7 +1458,8 @@
 
       dom.scorecardTableBody.innerHTML = '';
       if (!filtered.length) {
-        dom.scorecardTableBody.innerHTML = '<tr><td colspan="5" class="empty-state">Nessuna metrica disponibile.</td></tr>';
+        dom.scorecardTableBody.innerHTML =
+          '<tr><td colspan="5" class="empty-state">No scorecard metrics match the current filters.</td></tr>';
       } else {
         filtered.forEach((row) => {
           const tr = document.createElement('tr');
@@ -938,16 +1490,19 @@
         });
       }
 
-      dom.scorecardCountPill.textContent = `${filtered.length} metriche`;
+      if (dom.scorecardCountPill) {
+        dom.scorecardCountPill.textContent = `${filtered.length} metrics`;
+      }
       renderScorecardHighlights(filtered);
     };
 
     const updateScorecardFilters = () => {
+      if (!dom.cloudFilter) return;
       const clouds = new Set();
       state.scorecard.forEach((row) => {
         if (!isBlank(row.Cloud)) clouds.add(String(row.Cloud));
       });
-      dom.cloudFilter.innerHTML = '<option value="all">Cloud: tutti</option>';
+      dom.cloudFilter.innerHTML = '<option value="all">Cloud: all</option>';
       Array.from(clouds)
         .sort((a, b) => a.localeCompare(b))
         .forEach((cloud) => {
@@ -956,31 +1511,39 @@
           option.textContent = cloud;
           dom.cloudFilter.append(option);
         });
+      dom.cloudFilter.disabled = dom.cloudFilter.options.length <= 1;
+      dom.cloudFilter.value = 'all';
     };
 
     const renderMcmuTable = () => {
+      if (!dom.mcmuTableBody) return;
       const rows = state.mcmu;
       dom.mcmuTableBody.innerHTML = '';
       if (!rows.length) {
-        dom.mcmuTableBody.innerHTML = '<tr><td colspan="5" class="empty-state">Dati MCMU non disponibili.</td></tr>';
-        dom.mcmuCountPill.textContent = '0 snapshot';
+        dom.mcmuTableBody.innerHTML =
+          '<tr><td colspan="5" class="empty-state">No MCMU records available for the current selection.</td></tr>';
+        if (dom.mcmuCountPill) dom.mcmuCountPill.textContent = '--';
         return;
       }
 
       const sorted = [...rows]
         .map((row) => ({
           ...row,
-          __date: parseDate(row['Snapshot Date']),
+          __date: row.__snapshotDate instanceof Date && !Number.isNaN(row.__snapshotDate.getTime())
+            ? row.__snapshotDate
+            : parseDate(row['Snapshot Date']),
         }))
         .sort((a, b) => {
-          const aTime = a.__date ? a.__date.getTime() : 0;
-          const bTime = b.__date ? b.__date.getTime() : 0;
+          const aTime = a.__date instanceof Date && !Number.isNaN(a.__date.getTime()) ? a.__date.getTime() : 0;
+          const bTime = b.__date instanceof Date && !Number.isNaN(b.__date.getTime()) ? b.__date.getTime() : 0;
           return bTime - aTime;
         });
 
       sorted.forEach((row) => {
         const tr = document.createElement('tr');
-        const date = row.__date ? formatDate(row.__date) : row['Snapshot Date'] || '—';
+        const date = row.__date instanceof Date && !Number.isNaN(row.__date.getTime())
+          ? formatDate(row.__date)
+          : row['Snapshot Date'] || '—';
         const cells = [
           date,
           row['Account Name'] || row['Account ID'] || '—',
@@ -996,80 +1559,225 @@
         dom.mcmuTableBody.append(tr);
       });
 
-      dom.mcmuCountPill.textContent = `${rows.length} righe`; 
+      if (dom.mcmuCountPill) {
+        dom.mcmuCountPill.textContent = `${rows.length} records`;
+      }
     };
 
     const updateSnapshotPill = () => {
-      if (!state.core.length) {
-        dom.snapshotPill.textContent = 'Snapshot sconosciuto';
+      if (!dom.snapshotPill) return;
+      if (!state.selection.snapshot) {
+        dom.snapshotPill.textContent = 'Snapshot not selected';
         return;
       }
-      const parsedDates = state.core
-        .map((row) => parseDate(row.SNAPSHOT_DT))
-        .filter((value) => value instanceof Date && !Number.isNaN(value.getTime()));
-      if (!parsedDates.length) {
-        dom.snapshotPill.textContent = 'Snapshot non disponibile';
+      const date = new Date(state.selection.snapshot);
+      dom.snapshotPill.textContent = Number.isNaN(date.getTime())
+        ? `Snapshot: ${state.selection.snapshot}`
+        : `Snapshot: ${formatDate(date)}`;
+    };
+    const resetDashboard = (message) => {
+      state.adoption = [];
+      state.adoptionAll = [];
+      state.scorecard = [];
+      state.scorecardAll = [];
+      state.mcmu = [];
+      state.mcmuAll = [];
+      state.core = [];
+      state.coreAll = [];
+      state.filters = { ...DEFAULT_FILTERS };
+      state.selection = { snapshot: '', tenant: 'all', account: 'all' };
+      state.datasetLoaded = false;
+
+      if (dom.uploadInput) dom.uploadInput.value = '';
+      populateSnapshotOptions();
+      resetSelect(dom.tenantSelect, 'Upload a workbook to populate tenants');
+      resetSelect(dom.accountSelect, 'Upload a workbook to populate accounts');
+      if (dom.cloudFilter) {
+        dom.cloudFilter.innerHTML = '<option value="all">Cloud: all</option>';
+        dom.cloudFilter.disabled = true;
+        dom.cloudFilter.value = 'all';
+      }
+      if (dom.adoptionSearch) dom.adoptionSearch.value = '';
+      if (dom.scorecardSearch) dom.scorecardSearch.value = '';
+      updateSelectionLabels({
+        snapshotText: 'Not selected',
+        tenantText: 'Not selected',
+        accountText: 'Not selected',
+      });
+      clearVisualizations(message);
+      updateLoadButtonState();
+      if (dom.uploadStatus) {
+        dom.uploadStatus.textContent = message;
+      }
+    };
+
+    const handleWorkbookFile = (file) => {
+      if (!file) {
+        resetDashboard('Upload an adoption workbook to begin the analysis.');
         return;
       }
-      const latest = parsedDates.reduce((max, date) => (date > max ? date : max), parsedDates[0]);
-      dom.snapshotPill.textContent = `Snapshot: ${formatDate(latest)}`;
+      if (!/\.xlsx$/i.test(file.name)) {
+        alert('Please upload an XLSX file exported from the adoption dashboard.');
+        resetDashboard('Upload an adoption workbook to begin the analysis.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const dataset = parseWorkbookData(event.target.result);
+          state.datasetLoaded = true;
+          state.adoptionAll = dataset.adoptionRows;
+          state.scorecardAll = dataset.scorecardRows;
+          state.mcmuAll = dataset.mcmuRows;
+          state.coreAll = dataset.coreRows;
+          state.selection = { snapshot: '', tenant: 'all', account: 'all' };
+          state.filters = { ...DEFAULT_FILTERS };
+
+          populateSnapshotOptions();
+          resetSelect(dom.tenantSelect, 'Select a snapshot first');
+          resetSelect(dom.accountSelect, 'Select a snapshot first');
+          updateSelectionLabels({
+            snapshotText: 'Not selected',
+            tenantText: 'Not selected',
+            accountText: 'Not selected',
+          });
+          clearVisualizations('Select a snapshot, tenant, and account, then click "Load data".');
+          if (dom.uploadStatus) {
+            dom.uploadStatus.textContent = `Loaded ${file.name}. Select a snapshot to continue.`;
+          }
+        } catch (error) {
+          console.error('Unable to parse adoption workbook', error);
+          alert('The uploaded file is not a valid adoption workbook.');
+          resetDashboard('Upload an adoption workbook to begin the analysis.');
+        }
+        updateLoadButtonState();
+      };
+      reader.onerror = () => {
+        alert('Unable to read the selected file.');
+        resetDashboard('Upload an adoption workbook to begin the analysis.');
+      };
+      reader.readAsArrayBuffer(file);
+    };
+
+    const handleSnapshotChange = () => {
+      const snapshot = dom.snapshotSelect ? dom.snapshotSelect.value : '';
+      populateTenantOptions(snapshot);
+      updateLoadButtonState();
+    };
+
+    const handleTenantChange = () => {
+      const snapshot = dom.snapshotSelect ? dom.snapshotSelect.value : '';
+      const tenantValue = dom.tenantSelect && !dom.tenantSelect.disabled ? dom.tenantSelect.value || 'all' : 'all';
+      populateAccountOptions(snapshot, tenantValue);
+    };
+
+    const handleAccountChange = () => {
+      updateLoadButtonState();
+    };
+
+    const handleLoadClick = () => {
+      if (!dom.snapshotSelect || !dom.accountSelect) return;
+      const snapshot = dom.snapshotSelect.value;
+      if (!snapshot) return;
+      if (dom.accountSelect.disabled || !dom.accountSelect.value) return;
+      const tenantValue = dom.tenantSelect && !dom.tenantSelect.disabled ? dom.tenantSelect.value || 'all' : 'all';
+      const accountValue = dom.accountSelect.value;
+      const snapshotLabel = dom.snapshotSelect.options[dom.snapshotSelect.selectedIndex]?.textContent || 'Not selected';
+      const tenantLabel =
+        tenantValue === 'all'
+          ? 'All tenants'
+          : dom.tenantSelect?.options[dom.tenantSelect.selectedIndex]?.textContent || tenantValue;
+      const accountLabel =
+        accountValue === 'all'
+          ? 'All accounts'
+          : dom.accountSelect?.options[dom.accountSelect.selectedIndex]?.textContent || accountValue;
+
+      applySelection(snapshot, tenantValue, accountValue, {
+        snapshotText: snapshotLabel,
+        tenantText: tenantLabel,
+        accountText: accountLabel,
+      });
+
+      if (dom.summaryStatus) {
+        dom.summaryStatus.textContent = '';
+      }
+      if (dom.uploadStatus) {
+        dom.uploadStatus.textContent = `Showing data for ${snapshotLabel} · ${tenantLabel} · ${accountLabel}`;
+      }
     };
 
     const attachEventListeners = () => {
-      dom.adoptionSearch.addEventListener('input', (event) => {
-        state.filters.adoptionSearch = event.target.value;
-        renderAdoptionTable();
-      });
+      if (dom.uploadInput) {
+        dom.uploadInput.addEventListener('change', (event) => {
+          const [file] = event.target.files || [];
+          handleWorkbookFile(file);
+        });
+      }
 
-      dom.scorecardSearch.addEventListener('input', (event) => {
-        state.filters.scorecardSearch = event.target.value;
-        renderScorecardTable();
-      });
+      if (dom.snapshotSelect) {
+        dom.snapshotSelect.addEventListener('change', handleSnapshotChange);
+      }
 
-      dom.cloudFilter.addEventListener('change', (event) => {
-        state.filters.cloud = event.target.value;
-        renderScorecardTable();
-      });
-    };
+      if (dom.tenantSelect) {
+        dom.tenantSelect.addEventListener('change', handleTenantChange);
+      }
 
-    const loadWorkbook = async () => {
-      try {
-        const response = await fetch(WORKBOOK_PATH);
-        if (!response.ok) {
-          throw new Error(`Impossibile scaricare il file (${response.status})`);
-        }
-        const arrayBuffer = await response.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      if (dom.accountSelect) {
+        dom.accountSelect.addEventListener('change', handleAccountChange);
+      }
 
-        const adoptionSheet = parseSheet(workbook, 'Adoption Metrics');
-        const scorecardSheet = parseSheet(workbook, 'Adoption Scorecard');
-        const mcmuSheet = parseSheet(workbook, 'MCMU Report');
-        const coreSheet = parseSheet(workbook, 'Core By OrgID');
+      if (dom.loadButton) {
+        dom.loadButton.addEventListener('click', handleLoadClick);
+      }
 
-        state.adoption = adoptionSheet.rows;
-        state.scorecard = scorecardSheet.rows;
-        state.mcmu = mcmuSheet.rows;
-        state.core = coreSheet.rows;
+      if (dom.adoptionSearch) {
+        dom.adoptionSearch.addEventListener('input', (event) => {
+          state.filters.adoptionSearch = event.target.value;
+          renderAdoptionTable();
+        });
+      }
 
-        updateSnapshotPill();
-        updateSummary();
-        updateAdoptionFilters();
-        renderAdoptionTable();
-        updateScorecardFilters();
-        renderScorecardTable();
-        renderMcmuTable();
-      } catch (error) {
-        console.error(error);
-        dom.summaryStatus.textContent = `Errore durante il caricamento del workbook: ${error.message}`;
-        dom.snapshotPill.textContent = 'Errore di caricamento';
-        dom.adoptionTableBody.innerHTML = '<tr><td colspan="10" class="empty-state">Errore nel caricamento dei dati.</td></tr>';
-        dom.scorecardTableBody.innerHTML = '<tr><td colspan="5" class="empty-state">Errore nel caricamento dei dati.</td></tr>';
-        dom.mcmuTableBody.innerHTML = '<tr><td colspan="5" class="empty-state">Errore nel caricamento dei dati.</td></tr>';
+      if (dom.groupFilter) {
+        dom.groupFilter.addEventListener('change', (event) => {
+          state.filters.group = event.target.value;
+          state.filters.type = 'all';
+          updateTypeFilterOptions();
+          renderAdoptionTable();
+        });
+      }
+
+      if (dom.typeFilter) {
+        dom.typeFilter.addEventListener('change', (event) => {
+          state.filters.type = event.target.value;
+          renderAdoptionTable();
+        });
+      }
+
+      if (dom.apmFilter) {
+        dom.apmFilter.addEventListener('change', (event) => {
+          state.filters.apm = event.target.value;
+          renderAdoptionTable();
+        });
+      }
+
+      if (dom.scorecardSearch) {
+        dom.scorecardSearch.addEventListener('input', (event) => {
+          state.filters.scorecardSearch = event.target.value;
+          renderScorecardTable();
+        });
+      }
+
+      if (dom.cloudFilter) {
+        dom.cloudFilter.addEventListener('change', (event) => {
+          state.filters.cloud = event.target.value;
+          renderScorecardTable();
+        });
       }
     };
 
     attachEventListeners();
-    loadWorkbook();
+    resetDashboard('Upload an adoption workbook to begin the analysis.');
   </script>
 </body>
 </html>
