@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adoption Analyzer · Intesa Sanpaolo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-alt: #f1f5f9;
+      --primary: #0ea5e9;
+      --primary-dark: #0284c7;
+      --success: #15803d;
+      --warning: #b45309;
+      --danger: #b91c1c;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: rgba(148, 163, 184, 0.35);
+      --shadow: 0 24px 48px rgba(15, 23, 42, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(160deg, #e2e8f0, #f8fafc 45%, #ffffff 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 4rem;
+    }
+
+    a {
+      color: var(--primary);
+    }
+
+    .page-header {
+      padding: 3rem 5vw 1.5rem;
+      display: grid;
+      gap: 1.25rem;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    .page-header h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700;
+    }
+
+    .page-header p {
+      color: var(--muted);
+      max-width: 880px;
+      line-height: 1.6;
+      font-size: 1rem;
+    }
+
+    .reference-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      background: rgba(14, 165, 233, 0.12);
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      width: fit-content;
+    }
+
+    main {
+      padding: 0 5vw;
+      display: grid;
+      gap: 2rem;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    .panel {
+      background: var(--surface);
+      border-radius: 1.25rem;
+      padding: 1.75rem;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .panel-header h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border-radius: 999px;
+      padding: 0.4rem 0.85rem;
+      background: var(--surface-alt);
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.85rem;
+      letter-spacing: 0.02em;
+    }
+
+    .helper-text {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .summary-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    @media (min-width: 720px) {
+      .summary-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+    }
+
+    .summary-card {
+      border-radius: 1.15rem;
+      border: 1px solid var(--border);
+      background: linear-gradient(160deg, rgba(14, 165, 233, 0.12), rgba(148, 163, 184, 0.08));
+      padding: 1.25rem;
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .summary-card strong {
+      font-size: 2rem;
+      font-weight: 700;
+    }
+
+    .summary-card span {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .breakdown-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    @media (min-width: 960px) {
+      .breakdown-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+    }
+
+    .breakdown-card {
+      border-radius: 1rem;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+      padding: 1.1rem 1.25rem;
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    .breakdown-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .breakdown-metric {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .filters select,
+    .filters input[type="search"] {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+      padding: 0.55rem 1rem;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .filters input[type="search"]::placeholder {
+      color: var(--muted);
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 1rem;
+      border: 1px solid var(--border);
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+    }
+
+    table.data-table thead th {
+      background: var(--surface-alt);
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    table.data-table tbody td {
+      padding: 0.85rem 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
+
+    table.data-table tbody tr:nth-child(even) {
+      background: rgba(148, 163, 184, 0.08);
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      padding: 1rem 0;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(148, 163, 184, 0.18);
+      color: var(--text);
+    }
+
+    .badge.up {
+      color: var(--success);
+      background: rgba(21, 128, 61, 0.12);
+    }
+
+    .badge.down {
+      color: var(--danger);
+      background: rgba(185, 28, 28, 0.12);
+    }
+
+    .scorecard-highlights {
+      display: grid;
+      gap: 1rem;
+    }
+
+    @media (min-width: 900px) {
+      .scorecard-highlights {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+    }
+
+    .highlight-card {
+      border-radius: 1.1rem;
+      border: 1px solid rgba(14, 165, 233, 0.2);
+      background: linear-gradient(160deg, rgba(14, 165, 233, 0.18), rgba(15, 23, 42, 0.06));
+      padding: 1.25rem;
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .highlight-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .highlight-card strong {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .timeline-table {
+      min-width: 640px;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <h1>Intesa Sanpaolo Adoption Analyzer</h1>
+    <p>
+      Questa pagina analizza automaticamente il file di adozione <strong>Oct 2025</strong> fornito dal team CSM
+      e mostra i principali indicatori di attivazione, utilizzo e messaggistica per tutti gli org Salesforce del gruppo.
+    </p>
+    <div class="reference-chip">
+      Fonte dati: <code>samples/INTESA SANPAOLO SPA__adoption_aBR300000004Ufd_Oct_2025.xlsx</code>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel" id="summarySection">
+      <div class="panel-header">
+        <h2>Riepilogo snapshot</h2>
+        <span class="pill" id="snapshotPill">Caricamento…</span>
+      </div>
+      <p class="helper-text" id="summaryStatus">Caricamento del workbook in corso…</p>
+      <div class="summary-grid" id="summaryCards" hidden></div>
+      <div class="breakdown-grid" id="groupBreakdown" hidden></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Metriche di adozione per SKU</h2>
+        <span class="pill" id="adoptionCountPill">--</span>
+      </div>
+      <p class="helper-text">
+        Visualizza le metriche di provisioning, attivazione e utilizzo per ciascun tipo di licenza e account. Usa i filtri
+        per concentrare l'analisi su gruppi o prodotti specifici.
+      </p>
+      <div class="filters">
+        <input type="search" id="adoptionSearch" placeholder="Cerca per account, org, gruppo o SKU" />
+        <select id="groupFilter">
+          <option value="all">Gruppo: tutti</option>
+        </select>
+        <select id="typeFilter" disabled>
+          <option value="all">Tipo: tutti</option>
+        </select>
+        <select id="apmFilter" disabled>
+          <option value="all">APM Level 1: tutti</option>
+        </select>
+      </div>
+      <p class="helper-text" id="adoptionResultsLabel"></p>
+      <div class="table-wrapper">
+        <table class="data-table" id="adoptionTable">
+          <thead>
+            <tr>
+              <th>Account</th>
+              <th>Org ID</th>
+              <th>Gruppo</th>
+              <th>Tipo</th>
+              <th>Provisioned</th>
+              <th>Activated</th>
+              <th>Used</th>
+              <th>EU</th>
+              <th>MAU Penetration</th>
+              <th>Shelfware</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Scorecard di adozione</h2>
+        <span class="pill" id="scorecardCountPill">--</span>
+      </div>
+      <p class="helper-text">
+        La scorecard riassume i KPI raccolti dagli executive dashboard. Identifica i trend con variazione mese su mese.
+      </p>
+      <div class="filters">
+        <input type="search" id="scorecardSearch" placeholder="Cerca metriche o account" />
+        <select id="cloudFilter">
+          <option value="all">Cloud: tutti</option>
+        </select>
+      </div>
+      <div class="scorecard-highlights" id="scorecardHighlights" hidden></div>
+      <div class="table-wrapper">
+        <table class="data-table" id="scorecardTable">
+          <thead>
+            <tr>
+              <th>Account</th>
+              <th>Cloud</th>
+              <th>Metric Name</th>
+              <th>Metric Value</th>
+              <th>MoM %</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Messaggistica MCMU</h2>
+        <span class="pill" id="mcmuCountPill">--</span>
+      </div>
+      <p class="helper-text">
+        Dati storici per super messaggi e contatti con provisioning. Utilizza questo prospetto per correlare l'utilizzo di
+        Marketing Cloud con le metriche di adozione.
+      </p>
+      <div class="table-wrapper">
+        <table class="data-table timeline-table" id="mcmuTable">
+          <thead>
+            <tr>
+              <th>Snapshot Date</th>
+              <th>Account</th>
+              <th>Super Messages Provisioned</th>
+              <th>Super Messages Used</th>
+              <th>Contacts Provisioned</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const WORKBOOK_PATH = 'samples/INTESA SANPAOLO SPA__adoption_aBR300000004Ufd_Oct_2025.xlsx';
+
+    const state = {
+      adoption: [],
+      adoptionByGroup: [],
+      scorecard: [],
+      mcmu: [],
+      core: [],
+      filters: {
+        adoptionSearch: '',
+        group: 'all',
+        type: 'all',
+        apm: 'all',
+        scorecardSearch: '',
+        cloud: 'all',
+      },
+    };
+
+    const dom = {
+      snapshotPill: document.getElementById('snapshotPill'),
+      summaryStatus: document.getElementById('summaryStatus'),
+      summaryCards: document.getElementById('summaryCards'),
+      groupBreakdown: document.getElementById('groupBreakdown'),
+      adoptionTableBody: document.querySelector('#adoptionTable tbody'),
+      adoptionResultsLabel: document.getElementById('adoptionResultsLabel'),
+      adoptionCountPill: document.getElementById('adoptionCountPill'),
+      scorecardTableBody: document.querySelector('#scorecardTable tbody'),
+      scorecardHighlights: document.getElementById('scorecardHighlights'),
+      scorecardCountPill: document.getElementById('scorecardCountPill'),
+      mcmuTableBody: document.querySelector('#mcmuTable tbody'),
+      mcmuCountPill: document.getElementById('mcmuCountPill'),
+      groupFilter: document.getElementById('groupFilter'),
+      typeFilter: document.getElementById('typeFilter'),
+      apmFilter: document.getElementById('apmFilter'),
+      adoptionSearch: document.getElementById('adoptionSearch'),
+      scorecardSearch: document.getElementById('scorecardSearch'),
+      cloudFilter: document.getElementById('cloudFilter'),
+    };
+
+    const isBlank = (value) => value === null || value === undefined || (typeof value === 'string' && value.trim() === '');
+
+    const parseSheet = (workbook, sheetName) => {
+      const sheet = workbook.Sheets[sheetName];
+      if (!sheet) return { headers: [], rows: [] };
+      const raw = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
+      const headerIndex = raw.findIndex((row) => Array.isArray(row) && row.some((cell) => !isBlank(cell)));
+      if (headerIndex === -1) return { headers: [], rows: [] };
+      const headers = raw[headerIndex].map((cell) => (isBlank(cell) ? '' : String(cell).trim()));
+      const rows = [];
+      for (let i = headerIndex + 1; i < raw.length; i += 1) {
+        const row = raw[i];
+        if (!Array.isArray(row) || row.every((cell) => isBlank(cell))) {
+          continue;
+        }
+        const entry = {};
+        headers.forEach((header, index) => {
+          if (!header) return;
+          entry[header] = index < row.length ? row[index] : null;
+        });
+        rows.push(entry);
+      }
+      return { headers, rows };
+    };
+
+    const normalizeNumber = (value) => {
+      if (value === null || value === undefined || value === '') return null;
+      if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : null;
+      }
+      const sanitized = String(value).replace(/[^0-9.,-]/g, '').replace(/,(?=\d{3}\b)/g, '');
+      const normalized = sanitized.replace(/,/g, '.');
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const sumColumn = (rows, key) =>
+      rows.reduce((acc, row) => {
+        const value = normalizeNumber(row[key]);
+        return acc + (Number.isFinite(value) ? value : 0);
+      }, 0);
+
+    const averageColumn = (rows, key) => {
+      let total = 0;
+      let count = 0;
+      rows.forEach((row) => {
+        const value = normalizeNumber(row[key]);
+        if (Number.isFinite(value)) {
+          total += value;
+          count += 1;
+        }
+      });
+      return count > 0 ? total / count : null;
+    };
+
+    const formatNumber = (value, options = {}) => {
+      if (!Number.isFinite(value)) return '—';
+      const formatter = new Intl.NumberFormat('it-IT', {
+        maximumFractionDigits: options.maximumFractionDigits ?? 0,
+        minimumFractionDigits: options.minimumFractionDigits ?? 0,
+      });
+      return formatter.format(value);
+    };
+
+    const formatPercent = (value, options = {}) => {
+      if (!Number.isFinite(value)) return '—';
+      const formatter = new Intl.NumberFormat('it-IT', {
+        style: 'percent',
+        maximumFractionDigits: options.maximumFractionDigits ?? 1,
+        minimumFractionDigits: options.minimumFractionDigits ?? 0,
+      });
+      return formatter.format(value);
+    };
+
+    const formatEngagement = (value) => {
+      const numeric = normalizeNumber(value);
+      if (!Number.isFinite(numeric)) return '—';
+      if (numeric <= 1) {
+        return formatPercent(numeric, { maximumFractionDigits: 1, minimumFractionDigits: 0 });
+      }
+      return formatNumber(numeric);
+    };
+
+    const parseDate = (value) => {
+      if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return value;
+      }
+      const numeric = normalizeNumber(value);
+      if (Number.isFinite(numeric) && numeric > 40000) {
+        const parsed = XLSX.SSF.parse_date_code(numeric);
+        if (parsed) {
+          return new Date(parsed.y, (parsed.m || 1) - 1, parsed.d || 1, parsed.H || 0, parsed.M || 0, parsed.S || 0);
+        }
+      }
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? null : date;
+    };
+
+    const formatDate = (value) => {
+      const options = { year: 'numeric', month: 'short', day: '2-digit' };
+      return new Intl.DateTimeFormat('it-IT', options).format(value);
+    };
+
+    const updateSummary = () => {
+      const rows = state.adoption;
+      if (rows.length === 0) {
+        dom.summaryStatus.textContent = 'Nessuna riga caricata dal foglio “Adoption Metrics”.';
+        dom.summaryCards.hidden = true;
+        dom.groupBreakdown.hidden = true;
+        return;
+      }
+
+      dom.summaryStatus.textContent = '';
+      dom.summaryCards.hidden = false;
+
+      const totalProvisioned = sumColumn(rows, 'PROVISIONED');
+      const totalActivated = sumColumn(rows, 'ACTIVATED');
+      const totalUsed = sumColumn(rows, 'USED');
+      const totalShelfware = sumColumn(rows, 'Shelfware');
+      const avgMauPenetration = averageColumn(rows, 'MAU Penetration');
+      const avgEu = averageColumn(rows, 'EU');
+
+      const uniqueAccounts = new Set();
+      const uniqueOrgs = new Set();
+      rows.forEach((row) => {
+        if (!isBlank(row['Account ID'])) uniqueAccounts.add(row['Account ID']);
+        if (!isBlank(row['Org ID'])) uniqueOrgs.add(row['Org ID']);
+      });
+
+      const activationRate = totalProvisioned > 0 ? totalActivated / totalProvisioned : null;
+      const utilizationRate = totalProvisioned > 0 ? totalUsed / totalProvisioned : null;
+
+      const summaryData = [
+        {
+          label: 'Licenze provisionate',
+          value: formatNumber(totalProvisioned),
+          meta: `${uniqueAccounts.size} account • ${uniqueOrgs.size} org`,
+        },
+        {
+          label: 'Licenze attivate',
+          value: formatNumber(totalActivated),
+          meta: activationRate !== null ? `${formatPercent(activationRate)} activation rate` : '—',
+        },
+        {
+          label: 'Licenze utilizzate',
+          value: formatNumber(totalUsed),
+          meta: utilizationRate !== null ? `${formatPercent(utilizationRate)} utilization` : '—',
+        },
+        {
+          label: 'Shelfware totale',
+          value: formatNumber(totalShelfware),
+          meta: 'Licenze non attivate o non utilizzate',
+        },
+        {
+          label: 'EU medio',
+          value: formatEngagement(avgEu),
+          meta: 'EU = Entitlement Utilization',
+        },
+        {
+          label: 'MAU penetration media',
+          value: formatEngagement(avgMauPenetration),
+          meta: 'Quota media di utenti mensili attivi',
+        },
+      ];
+
+      dom.summaryCards.innerHTML = '';
+      summaryData.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = 'summary-card';
+        const label = document.createElement('span');
+        label.textContent = item.label;
+        const value = document.createElement('strong');
+        value.textContent = item.value;
+        const meta = document.createElement('span');
+        meta.textContent = item.meta;
+        card.append(label, value, meta);
+        dom.summaryCards.append(card);
+      });
+
+      renderGroupBreakdown(rows);
+    };
+
+    const renderGroupBreakdown = (rows) => {
+      if (!rows.length) {
+        dom.groupBreakdown.hidden = true;
+        return;
+      }
+      dom.groupBreakdown.hidden = false;
+      const groupMetrics = new Map();
+      rows.forEach((row) => {
+        const key = isBlank(row.Group) ? 'Non specificato' : String(row.Group);
+        if (!groupMetrics.has(key)) {
+          groupMetrics.set(key, {
+            provisioned: 0,
+            activated: 0,
+            used: 0,
+            shelfware: 0,
+            types: new Set(),
+          });
+        }
+        const metrics = groupMetrics.get(key);
+        metrics.provisioned += normalizeNumber(row.PROVISIONED) || 0;
+        metrics.activated += normalizeNumber(row.ACTIVATED) || 0;
+        metrics.used += normalizeNumber(row.USED) || 0;
+        metrics.shelfware += normalizeNumber(row.Shelfware) || 0;
+        if (!isBlank(row.Type)) metrics.types.add(String(row.Type));
+      });
+
+      const sorted = Array.from(groupMetrics.entries())
+        .map(([group, metrics]) => ({ group, ...metrics }))
+        .sort((a, b) => b.used - a.used || b.activated - a.activated);
+
+      dom.groupBreakdown.innerHTML = '';
+      sorted.slice(0, 6).forEach((item) => {
+        const card = document.createElement('div');
+        card.className = 'breakdown-card';
+        const title = document.createElement('h3');
+        title.textContent = item.group;
+        const types = document.createElement('span');
+        types.className = 'helper-text';
+        types.textContent = `${item.types.size} SKU`;
+
+        const metrics = [
+          { label: 'Provisioned', value: formatNumber(item.provisioned) },
+          { label: 'Activated', value: formatNumber(item.activated) },
+          { label: 'Used', value: formatNumber(item.used) },
+          { label: 'Shelfware', value: formatNumber(item.shelfware) },
+        ];
+
+        card.append(title, types);
+        metrics.forEach((metric) => {
+          const row = document.createElement('div');
+          row.className = 'breakdown-metric';
+          const label = document.createElement('span');
+          label.textContent = metric.label;
+          const value = document.createElement('span');
+          value.textContent = metric.value;
+          row.append(label, value);
+          card.append(row);
+        });
+        dom.groupBreakdown.append(card);
+      });
+    };
+
+    const updateAdoptionFilters = () => {
+      const { adoption } = state;
+      const groups = new Set();
+      const typesByGroup = new Map();
+      const apmLevels = new Set();
+
+      adoption.forEach((row) => {
+        if (!isBlank(row.Group)) groups.add(String(row.Group));
+        const groupKey = isBlank(row.Group) ? 'Non specificato' : String(row.Group);
+        if (!typesByGroup.has(groupKey)) typesByGroup.set(groupKey, new Set());
+        if (!isBlank(row.Type)) typesByGroup.get(groupKey).add(String(row.Type));
+        if (!isBlank(row['APM Level 1'])) apmLevels.add(String(row['APM Level 1']));
+      });
+
+      const sortedGroups = Array.from(groups).sort((a, b) => a.localeCompare(b));
+      dom.groupFilter.innerHTML = '<option value="all">Gruppo: tutti</option>';
+      sortedGroups.forEach((group) => {
+        const option = document.createElement('option');
+        option.value = group;
+        option.textContent = group;
+        dom.groupFilter.append(option);
+      });
+
+      dom.typeFilter.innerHTML = '<option value="all">Tipo: tutti</option>';
+      dom.typeFilter.disabled = adoption.length === 0;
+      dom.apmFilter.innerHTML = '<option value="all">APM Level 1: tutti</option>';
+      dom.apmFilter.disabled = adoption.length === 0;
+
+      const updateTypeOptions = () => {
+        const selectedGroup = state.filters.group;
+        const types = new Set();
+        if (selectedGroup === 'all') {
+          adoption.forEach((row) => {
+            if (!isBlank(row.Type)) types.add(String(row.Type));
+          });
+        } else {
+          const key = selectedGroup;
+          const groupTypes = typesByGroup.get(key) || new Set();
+          groupTypes.forEach((type) => types.add(type));
+        }
+        dom.typeFilter.innerHTML = '<option value="all">Tipo: tutti</option>';
+        Array.from(types)
+          .sort((a, b) => a.localeCompare(b))
+          .forEach((type) => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = type;
+            dom.typeFilter.append(option);
+          });
+        dom.typeFilter.disabled = types.size === 0;
+      };
+
+      updateTypeOptions();
+
+      const sortedApm = Array.from(apmLevels).sort((a, b) => a.localeCompare(b));
+      sortedApm.forEach((item) => {
+        const option = document.createElement('option');
+        option.value = item;
+        option.textContent = item;
+        dom.apmFilter.append(option);
+      });
+      dom.apmFilter.disabled = sortedApm.length === 0;
+
+      dom.groupFilter.addEventListener('change', (event) => {
+        state.filters.group = event.target.value;
+        state.filters.type = 'all';
+        updateTypeOptions();
+        renderAdoptionTable();
+      });
+
+      dom.typeFilter.addEventListener('change', (event) => {
+        state.filters.type = event.target.value;
+        renderAdoptionTable();
+      });
+
+      dom.apmFilter.addEventListener('change', (event) => {
+        state.filters.apm = event.target.value;
+        renderAdoptionTable();
+      });
+    };
+
+    const renderAdoptionTable = () => {
+      const { adoption, filters } = state;
+      const query = filters.adoptionSearch.trim().toLowerCase();
+
+      const filtered = adoption.filter((row) => {
+        if (filters.group !== 'all' && String(row.Group) !== filters.group) return false;
+        if (filters.type !== 'all' && String(row.Type) !== filters.type) return false;
+        if (filters.apm !== 'all' && String(row['APM Level 1']) !== filters.apm) return false;
+        if (query) {
+          const haystack = [row['Account Name'], row['Account Local Name'], row['Org ID'], row.Type, row.Group]
+            .filter((value) => !isBlank(value))
+            .map((value) => String(value).toLowerCase())
+            .join(' ');
+          if (!haystack.includes(query)) return false;
+        }
+        return true;
+      });
+
+      dom.adoptionTableBody.innerHTML = '';
+      if (filtered.length === 0) {
+        dom.adoptionTableBody.innerHTML = '<tr><td colspan="10" class="empty-state">Nessun risultato per i filtri selezionati.</td></tr>';
+      } else {
+        filtered.forEach((row) => {
+          const tr = document.createElement('tr');
+          const cells = [
+            row['Account Name'] || row['Account Local Name'] || '—',
+            row['Org ID'] || '—',
+            row.Group || '—',
+            row.Type || '—',
+            formatNumber(normalizeNumber(row.PROVISIONED)),
+            formatNumber(normalizeNumber(row.ACTIVATED)),
+            formatNumber(normalizeNumber(row.USED)),
+            formatEngagement(row.EU),
+            formatEngagement(row['MAU Penetration']),
+            formatNumber(normalizeNumber(row.Shelfware)),
+          ];
+          cells.forEach((text) => {
+            const td = document.createElement('td');
+            td.textContent = text;
+            tr.append(td);
+          });
+          dom.adoptionTableBody.append(tr);
+        });
+      }
+
+      dom.adoptionResultsLabel.textContent = `${filtered.length} righe su ${adoption.length} totali`;
+      dom.adoptionCountPill.textContent = `${filtered.length} SKU visibili`;
+    };
+
+    const renderScorecardHighlights = (rows) => {
+      if (!rows.length) {
+        dom.scorecardHighlights.hidden = true;
+        dom.scorecardHighlights.innerHTML = '';
+        return;
+      }
+      dom.scorecardHighlights.hidden = false;
+      const byCloud = new Map();
+      rows.forEach((row) => {
+        const cloud = isBlank(row.Cloud) ? 'Non specificato' : String(row.Cloud);
+        if (!byCloud.has(cloud)) {
+          byCloud.set(cloud, { totalValue: 0, metrics: 0, positive: 0, negative: 0 });
+        }
+        const entry = byCloud.get(cloud);
+        const metricValue = normalizeNumber(row['Metric Value']);
+        const momValue = normalizeNumber(row['Month over Month Pct']);
+        if (Number.isFinite(metricValue)) {
+          entry.totalValue += metricValue;
+        }
+        entry.metrics += 1;
+        if (Number.isFinite(momValue)) {
+          if (momValue > 0) entry.positive += 1;
+          if (momValue < 0) entry.negative += 1;
+        }
+      });
+
+      const sorted = Array.from(byCloud.entries())
+        .map(([cloud, metrics]) => ({ cloud, ...metrics }))
+        .sort((a, b) => b.totalValue - a.totalValue);
+
+      dom.scorecardHighlights.innerHTML = '';
+      sorted.slice(0, 6).forEach((item) => {
+        const card = document.createElement('div');
+        card.className = 'highlight-card';
+        const title = document.createElement('h3');
+        title.textContent = item.cloud;
+        const value = document.createElement('strong');
+        value.textContent = formatNumber(item.totalValue);
+        const meta = document.createElement('span');
+        meta.className = 'helper-text';
+        meta.textContent = `${item.metrics} metriche · ${item.positive} ↑ · ${item.negative} ↓`;
+        card.append(title, value, meta);
+        dom.scorecardHighlights.append(card);
+      });
+    };
+
+    const renderScorecardTable = () => {
+      const { scorecard, filters } = state;
+      const query = filters.scorecardSearch.trim().toLowerCase();
+
+      const filtered = scorecard.filter((row) => {
+        if (filters.cloud !== 'all' && String(row.Cloud) !== filters.cloud) return false;
+        if (query) {
+          const haystack = [row['Account Local Name'], row['Metric Name'], row.Cloud]
+            .filter((value) => !isBlank(value))
+            .map((value) => String(value).toLowerCase())
+            .join(' ');
+          if (!haystack.includes(query)) return false;
+        }
+        return true;
+      });
+
+      dom.scorecardTableBody.innerHTML = '';
+      if (!filtered.length) {
+        dom.scorecardTableBody.innerHTML = '<tr><td colspan="5" class="empty-state">Nessuna metrica disponibile.</td></tr>';
+      } else {
+        filtered.forEach((row) => {
+          const tr = document.createElement('tr');
+          const mom = normalizeNumber(row['Month over Month Pct']);
+          const momBadge = document.createElement('span');
+          const badgeClass = mom > 0 ? 'badge up' : mom < 0 ? 'badge down' : 'badge';
+          momBadge.className = badgeClass;
+          momBadge.textContent = Number.isFinite(mom) ? `${(mom * 100).toFixed(1)}%` : '—';
+
+          const cells = [
+            row['Account Local Name'] || row['Account ID'] || '—',
+            row.Cloud || '—',
+            row['Metric Name'] || '—',
+            formatNumber(normalizeNumber(row['Metric Value'])),
+            momBadge,
+          ];
+
+          cells.forEach((content, index) => {
+            const td = document.createElement('td');
+            if (index === cells.length - 1 && content instanceof HTMLElement) {
+              td.append(content);
+            } else {
+              td.textContent = content;
+            }
+            tr.append(td);
+          });
+          dom.scorecardTableBody.append(tr);
+        });
+      }
+
+      dom.scorecardCountPill.textContent = `${filtered.length} metriche`;
+      renderScorecardHighlights(filtered);
+    };
+
+    const updateScorecardFilters = () => {
+      const clouds = new Set();
+      state.scorecard.forEach((row) => {
+        if (!isBlank(row.Cloud)) clouds.add(String(row.Cloud));
+      });
+      dom.cloudFilter.innerHTML = '<option value="all">Cloud: tutti</option>';
+      Array.from(clouds)
+        .sort((a, b) => a.localeCompare(b))
+        .forEach((cloud) => {
+          const option = document.createElement('option');
+          option.value = cloud;
+          option.textContent = cloud;
+          dom.cloudFilter.append(option);
+        });
+    };
+
+    const renderMcmuTable = () => {
+      const rows = state.mcmu;
+      dom.mcmuTableBody.innerHTML = '';
+      if (!rows.length) {
+        dom.mcmuTableBody.innerHTML = '<tr><td colspan="5" class="empty-state">Dati MCMU non disponibili.</td></tr>';
+        dom.mcmuCountPill.textContent = '0 snapshot';
+        return;
+      }
+
+      const sorted = [...rows]
+        .map((row) => ({
+          ...row,
+          __date: parseDate(row['Snapshot Date']),
+        }))
+        .sort((a, b) => {
+          const aTime = a.__date ? a.__date.getTime() : 0;
+          const bTime = b.__date ? b.__date.getTime() : 0;
+          return bTime - aTime;
+        });
+
+      sorted.forEach((row) => {
+        const tr = document.createElement('tr');
+        const date = row.__date ? formatDate(row.__date) : row['Snapshot Date'] || '—';
+        const cells = [
+          date,
+          row['Account Name'] || row['Account ID'] || '—',
+          formatNumber(normalizeNumber(row['Super Messages Provisioned'])),
+          formatNumber(normalizeNumber(row['Super Messages Used'])),
+          formatNumber(normalizeNumber(row['Contacts Provisioned'])),
+        ];
+        cells.forEach((text) => {
+          const td = document.createElement('td');
+          td.textContent = text;
+          tr.append(td);
+        });
+        dom.mcmuTableBody.append(tr);
+      });
+
+      dom.mcmuCountPill.textContent = `${rows.length} righe`; 
+    };
+
+    const updateSnapshotPill = () => {
+      if (!state.core.length) {
+        dom.snapshotPill.textContent = 'Snapshot sconosciuto';
+        return;
+      }
+      const parsedDates = state.core
+        .map((row) => parseDate(row.SNAPSHOT_DT))
+        .filter((value) => value instanceof Date && !Number.isNaN(value.getTime()));
+      if (!parsedDates.length) {
+        dom.snapshotPill.textContent = 'Snapshot non disponibile';
+        return;
+      }
+      const latest = parsedDates.reduce((max, date) => (date > max ? date : max), parsedDates[0]);
+      dom.snapshotPill.textContent = `Snapshot: ${formatDate(latest)}`;
+    };
+
+    const attachEventListeners = () => {
+      dom.adoptionSearch.addEventListener('input', (event) => {
+        state.filters.adoptionSearch = event.target.value;
+        renderAdoptionTable();
+      });
+
+      dom.scorecardSearch.addEventListener('input', (event) => {
+        state.filters.scorecardSearch = event.target.value;
+        renderScorecardTable();
+      });
+
+      dom.cloudFilter.addEventListener('change', (event) => {
+        state.filters.cloud = event.target.value;
+        renderScorecardTable();
+      });
+    };
+
+    const loadWorkbook = async () => {
+      try {
+        const response = await fetch(WORKBOOK_PATH);
+        if (!response.ok) {
+          throw new Error(`Impossibile scaricare il file (${response.status})`);
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+
+        const adoptionSheet = parseSheet(workbook, 'Adoption Metrics');
+        const scorecardSheet = parseSheet(workbook, 'Adoption Scorecard');
+        const mcmuSheet = parseSheet(workbook, 'MCMU Report');
+        const coreSheet = parseSheet(workbook, 'Core By OrgID');
+
+        state.adoption = adoptionSheet.rows;
+        state.scorecard = scorecardSheet.rows;
+        state.mcmu = mcmuSheet.rows;
+        state.core = coreSheet.rows;
+
+        updateSnapshotPill();
+        updateSummary();
+        updateAdoptionFilters();
+        renderAdoptionTable();
+        updateScorecardFilters();
+        renderScorecardTable();
+        renderMcmuTable();
+      } catch (error) {
+        console.error(error);
+        dom.summaryStatus.textContent = `Errore durante il caricamento del workbook: ${error.message}`;
+        dom.snapshotPill.textContent = 'Errore di caricamento';
+        dom.adoptionTableBody.innerHTML = '<tr><td colspan="10" class="empty-state">Errore nel caricamento dei dati.</td></tr>';
+        dom.scorecardTableBody.innerHTML = '<tr><td colspan="5" class="empty-state">Errore nel caricamento dei dati.</td></tr>';
+        dom.mcmuTableBody.innerHTML = '<tr><td colspan="5" class="empty-state">Errore nel caricamento dei dati.</td></tr>';
+      }
+    };
+
+    attachEventListeners();
+    loadWorkbook();
+  </script>
+</body>
+</html>
