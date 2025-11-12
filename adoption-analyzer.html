@@ -524,8 +524,6 @@
         <table class="data-table" id="adoptionTable">
           <thead>
             <tr>
-              <th>Account</th>
-              <th>Org ID</th>
               <th>Group</th>
               <th>Type</th>
               <th>Provisioned</th>
@@ -755,6 +753,7 @@
       'Account Name (Local)',
       'ACCOUNT ID',
       'ORG ID',
+      'Total Provisioned',
       'Entitlement Utilization',
       'SNAPSHOT_DT',
     ]);
@@ -834,7 +833,7 @@
         dom.summaryStatus.textContent = message;
       }
       if (dom.adoptionTableBody) {
-        dom.adoptionTableBody.innerHTML = `<tr><td colspan="10" class="empty-state">${message}</td></tr>`;
+        dom.adoptionTableBody.innerHTML = `<tr><td colspan="8" class="empty-state">${message}</td></tr>`;
       }
       if (dom.adoptionResultsLabel) {
         dom.adoptionResultsLabel.textContent = '';
@@ -1484,13 +1483,11 @@
       dom.adoptionTableBody.innerHTML = '';
       if (filtered.length === 0) {
         dom.adoptionTableBody.innerHTML =
-          '<tr><td colspan="10" class="empty-state">No adoption metrics for the selected filters.</td></tr>';
+          '<tr><td colspan="8" class="empty-state">No adoption metrics for the selected filters.</td></tr>';
       } else {
         filtered.forEach((row) => {
           const tr = document.createElement('tr');
           const cells = [
-            row['Account Name'] || row['Account Local Name'] || '—',
-            row['Org ID'] || '—',
             row.Group || '—',
             row.Type || '—',
             formatNumber(normalizeNumber(row.PROVISIONED)),
