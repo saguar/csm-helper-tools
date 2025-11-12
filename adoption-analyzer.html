@@ -389,36 +389,6 @@
       background: rgba(185, 28, 28, 0.12);
     }
 
-    .scorecard-highlights {
-      display: grid;
-      gap: 1rem;
-    }
-
-    @media (min-width: 900px) {
-      .scorecard-highlights {
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      }
-    }
-
-    .highlight-card {
-      border-radius: 1.1rem;
-      border: 1px solid rgba(14, 165, 233, 0.2);
-      background: linear-gradient(160deg, rgba(14, 165, 233, 0.18), rgba(15, 23, 42, 0.06));
-      padding: 1.25rem;
-      display: grid;
-      gap: 0.65rem;
-    }
-
-    .highlight-card h3 {
-      font-size: 1rem;
-      font-weight: 600;
-    }
-
-    .highlight-card strong {
-      font-size: 1.8rem;
-      font-weight: 700;
-    }
-
     .timeline-table {
       min-width: 640px;
     }
@@ -554,7 +524,6 @@
           <option value="all">Cloud: all</option>
         </select>
       </div>
-      <div class="scorecard-highlights" id="scorecardHighlights" hidden></div>
       <div class="table-wrapper">
         <table class="data-table" id="scorecardTable">
           <thead>
@@ -645,7 +614,6 @@
       typeFilter: document.getElementById('typeFilter'),
       apmFilter: document.getElementById('apmFilter'),
       scorecardTableBody: document.querySelector('#scorecardTable tbody'),
-      scorecardHighlights: document.getElementById('scorecardHighlights'),
       scorecardCountPill: document.getElementById('scorecardCountPill'),
       scorecardSearch: document.getElementById('scorecardSearch'),
       cloudFilter: document.getElementById('cloudFilter'),
@@ -843,10 +811,6 @@
       }
       if (dom.scorecardTableBody) {
         dom.scorecardTableBody.innerHTML = `<tr><td colspan="5" class="empty-state">${message}</td></tr>`;
-      }
-      if (dom.scorecardHighlights) {
-        dom.scorecardHighlights.hidden = true;
-        dom.scorecardHighlights.innerHTML = '';
       }
       if (dom.scorecardCountPill) {
         dom.scorecardCountPill.textContent = '--';
@@ -1517,53 +1481,6 @@
           : '--';
       }
     };
-    const renderScorecardHighlights = (rows) => {
-      if (!dom.scorecardHighlights) return;
-      if (!rows.length) {
-        dom.scorecardHighlights.hidden = true;
-        dom.scorecardHighlights.innerHTML = '';
-        return;
-      }
-      dom.scorecardHighlights.hidden = false;
-      const byCloud = new Map();
-      rows.forEach((row) => {
-        const cloud = isBlank(row.Cloud) ? 'Not specified' : String(row.Cloud);
-        if (!byCloud.has(cloud)) {
-          byCloud.set(cloud, { totalValue: 0, metrics: 0, positive: 0, negative: 0 });
-        }
-        const entry = byCloud.get(cloud);
-        const metricValue = normalizeNumber(row['Metric Value']);
-        const momValue = normalizeNumber(row['Month over Month Pct']);
-        if (Number.isFinite(metricValue)) {
-          entry.totalValue += metricValue;
-        }
-        entry.metrics += 1;
-        if (Number.isFinite(momValue)) {
-          if (momValue > 0) entry.positive += 1;
-          if (momValue < 0) entry.negative += 1;
-        }
-      });
-
-      const sorted = Array.from(byCloud.entries())
-        .map(([cloud, metrics]) => ({ cloud, ...metrics }))
-        .sort((a, b) => b.totalValue - a.totalValue);
-
-      dom.scorecardHighlights.innerHTML = '';
-      sorted.slice(0, 6).forEach((item) => {
-        const card = document.createElement('div');
-        card.className = 'highlight-card';
-        const title = document.createElement('h3');
-        title.textContent = item.cloud;
-        const value = document.createElement('strong');
-        value.textContent = formatNumber(item.totalValue);
-        const meta = document.createElement('span');
-        meta.className = 'helper-text';
-        meta.textContent = `${item.metrics} metrics · ${item.positive} ↑ · ${item.negative} ↓`;
-        card.append(title, value, meta);
-        dom.scorecardHighlights.append(card);
-      });
-    };
-
     const renderScorecardTable = () => {
       if (!dom.scorecardTableBody) return;
       const { scorecard, filters } = state;
@@ -1618,7 +1535,6 @@
       if (dom.scorecardCountPill) {
         dom.scorecardCountPill.textContent = `${filtered.length} metrics`;
       }
-      renderScorecardHighlights(filtered);
     };
 
     const updateScorecardFilters = () => {
