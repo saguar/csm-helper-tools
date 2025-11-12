@@ -11,6 +11,7 @@
     rel="stylesheet"
   />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       color-scheme: light;
@@ -199,6 +200,94 @@
       display: grid;
       gap: 1rem;
       overflow-x: auto;
+    }
+
+    .license-chart-section {
+      display: grid;
+      gap: 1.25rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1.75rem;
+      margin-top: 1.75rem;
+    }
+
+    .license-chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .license-chart-grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 960px) {
+      .license-chart-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .license-chart-card {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      display: grid;
+      gap: 1.25rem;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    }
+
+    .license-chart-card-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .license-chart-card-header h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .license-chart-meta {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .license-chart-figure {
+      position: relative;
+      height: 220px;
+    }
+
+    .license-chart-figure canvas {
+      position: absolute;
+      inset: 0;
+    }
+
+    .license-chart-metrics {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+
+    .license-chart-metric {
+      display: grid;
+      gap: 0.25rem;
+    }
+
+    .license-chart-metric-label {
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .license-chart-metric-value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text);
     }
 
     .summary-controls {
@@ -466,6 +555,14 @@
       </div>
       <p class="helper-text" id="summaryStatus">Upload an adoption workbook to begin the analysis.</p>
       <div class="summary-grid" id="summaryCards" hidden></div>
+      <div class="license-chart-section" id="licenseChartSection" hidden>
+        <div class="license-chart-header">
+          <h3>License adoption overview</h3>
+          <span class="pill" id="licenseChartCount">--</span>
+        </div>
+        <p class="helper-text" id="licenseChartStatus">Upload an adoption workbook to begin the analysis.</p>
+        <div class="license-chart-grid" id="licenseChartRoot"></div>
+      </div>
     </section>
 
     <section class="panel">
@@ -577,6 +674,12 @@
       summarySearch: '',
     };
 
+    const LICENSE_CHART_COLORS = {
+      provisioned: '#3b82f6',
+      activated: '#60a5fa',
+      used: '#fcd34d',
+    };
+
     const state = {
       adoption: [],
       adoptionAll: [],
@@ -587,6 +690,7 @@
       core: [],
       coreAll: [],
       coreHeaders: [],
+      licenseChartInstances: [],
       filters: { ...DEFAULT_FILTERS },
       selection: { snapshot: '', tenant: 'all', account: 'all' },
       datasetLoaded: false,
@@ -606,6 +710,10 @@
       summaryStatus: document.getElementById('summaryStatus'),
       summaryCards: document.getElementById('summaryCards'),
       summarySearch: document.getElementById('summarySearch'),
+      licenseChartSection: document.getElementById('licenseChartSection'),
+      licenseChartRoot: document.getElementById('licenseChartRoot'),
+      licenseChartStatus: document.getElementById('licenseChartStatus'),
+      licenseChartCount: document.getElementById('licenseChartCount'),
       adoptionTableBody: document.querySelector('#adoptionTable tbody'),
       adoptionResultsLabel: document.getElementById('adoptionResultsLabel'),
       adoptionCountPill: document.getElementById('adoptionCountPill'),
@@ -788,6 +896,20 @@
       select.disabled = true;
     };
 
+    const destroyLicenseCharts = () => {
+      if (Array.isArray(state.licenseChartInstances) && state.licenseChartInstances.length) {
+        state.licenseChartInstances.forEach((chart) => {
+          if (chart && typeof chart.destroy === 'function') {
+            chart.destroy();
+          }
+        });
+      }
+      state.licenseChartInstances = [];
+      if (dom.licenseChartRoot) {
+        dom.licenseChartRoot.innerHTML = '';
+      }
+    };
+
     const clearVisualizations = (message) => {
       if (dom.summaryCards) {
         dom.summaryCards.hidden = true;
@@ -823,6 +945,16 @@
       }
       if (dom.snapshotPill) {
         dom.snapshotPill.textContent = 'Snapshot not selected';
+      }
+      destroyLicenseCharts();
+      if (dom.licenseChartCount) {
+        dom.licenseChartCount.textContent = '--';
+      }
+      if (dom.licenseChartStatus) {
+        dom.licenseChartStatus.textContent = message;
+      }
+      if (dom.licenseChartSection) {
+        dom.licenseChartSection.hidden = true;
       }
     };
 
@@ -1122,6 +1254,301 @@
       return { adoptionRows, scorecardRows, mcmuRows, coreRows, coreHeaders: coreSheet.headers };
     };
 
+    const renderLicenseCharts = () => {
+      if (
+        !dom.licenseChartRoot ||
+        !dom.licenseChartSection ||
+        !dom.licenseChartStatus ||
+        !dom.licenseChartCount
+      ) {
+        return;
+      }
+
+      destroyLicenseCharts();
+      dom.licenseChartSection.hidden = false;
+
+      const rows = state.core;
+
+      if (!rows.length) {
+        dom.licenseChartStatus.textContent = state.datasetLoaded
+          ? 'No license metrics available for the selected filters.'
+          : 'Upload an adoption workbook to begin the analysis.';
+        dom.licenseChartCount.textContent = '--';
+        return;
+      }
+
+      if (typeof Chart === 'undefined') {
+        dom.licenseChartStatus.textContent = 'Unable to render charts because the charting library failed to load.';
+        dom.licenseChartCount.textContent = '--';
+        return;
+      }
+
+      const aggregates = new Map();
+      const getNumericValue = (row, keys) => {
+        for (const key of keys) {
+          if (!Object.prototype.hasOwnProperty.call(row, key)) continue;
+          const numeric = normalizeNumber(row[key]);
+          if (Number.isFinite(numeric)) {
+            return numeric;
+          }
+        }
+        return null;
+      };
+
+      rows.forEach((row) => {
+        const level1 = !isBlank(row['Level 1 Cloud']) ? String(row['Level 1 Cloud']) : 'Not specified';
+        const level2 = !isBlank(row['Level 2 Cloud']) ? String(row['Level 2 Cloud']) : level1;
+        const key = `${level1}__${level2}`;
+        if (!aggregates.has(key)) {
+          aggregates.set(key, {
+            level1,
+            level2,
+            provisioned: null,
+            activated: null,
+            used: null,
+            recordCount: 0,
+          });
+        }
+        const aggregate = aggregates.get(key);
+        aggregate.recordCount += 1;
+
+        const provisioned = getNumericValue(row, ['Provisioned', 'Total Provisioned']);
+        if (provisioned !== null) {
+          aggregate.provisioned = aggregate.provisioned === null ? provisioned : aggregate.provisioned + provisioned;
+        }
+        const activated = getNumericValue(row, ['Activated']);
+        if (activated !== null) {
+          aggregate.activated = aggregate.activated === null ? activated : aggregate.activated + activated;
+        }
+        const used = getNumericValue(row, ['Used']);
+        if (used !== null) {
+          aggregate.used = aggregate.used === null ? used : aggregate.used + used;
+        }
+      });
+
+      const entries = Array.from(aggregates.values()).filter((entry) =>
+        [entry.provisioned, entry.activated, entry.used].some((value) => Number.isFinite(value))
+      );
+
+      if (!entries.length) {
+        dom.licenseChartStatus.textContent = 'No license metrics available for the selected filters.';
+        dom.licenseChartCount.textContent = '--';
+        return;
+      }
+
+      entries.sort((a, b) => {
+        if (a.level1 === b.level1) {
+          if (a.level2 === b.level2) return 0;
+          if (a.level2 === 'Not specified') return 1;
+          if (b.level2 === 'Not specified') return -1;
+          return a.level2.localeCompare(b.level2, undefined, { sensitivity: 'base' });
+        }
+        if (a.level1 === 'Not specified') return 1;
+        if (b.level1 === 'Not specified') return -1;
+        return a.level1.localeCompare(b.level1, undefined, { sensitivity: 'base' });
+      });
+
+      const rootStyles = getComputedStyle(document.documentElement);
+      const mutedColor = (rootStyles.getPropertyValue('--muted') || '#64748b').trim() || '#64748b';
+
+      let chartsRendered = 0;
+
+      entries.forEach((entry) => {
+        const labels = [];
+        const data = [];
+        const colors = [];
+
+        if (Number.isFinite(entry.provisioned)) {
+          labels.push('Provisioned');
+          data.push(entry.provisioned);
+          colors.push(LICENSE_CHART_COLORS.provisioned);
+        }
+        if (Number.isFinite(entry.activated)) {
+          labels.push('Activated');
+          data.push(entry.activated);
+          colors.push(LICENSE_CHART_COLORS.activated);
+        }
+        if (Number.isFinite(entry.used)) {
+          labels.push('Used');
+          data.push(entry.used);
+          colors.push(LICENSE_CHART_COLORS.used);
+        }
+
+        if (!labels.length) {
+          return;
+        }
+
+        const card = document.createElement('article');
+        card.className = 'license-chart-card';
+
+        const header = document.createElement('div');
+        header.className = 'license-chart-card-header';
+
+        const title = document.createElement('h3');
+        title.textContent = entry.level2;
+        header.append(title);
+
+        const subtitle = document.createElement('span');
+        subtitle.className = 'license-chart-meta';
+        subtitle.textContent = entry.level1;
+        header.append(subtitle);
+
+        card.append(header);
+
+        const recordMeta = document.createElement('span');
+        recordMeta.className = 'license-chart-meta';
+        recordMeta.textContent =
+          entry.recordCount === 1 ? 'Based on 1 record' : `Based on ${formatNumber(entry.recordCount)} records`;
+        card.append(recordMeta);
+
+        const figure = document.createElement('div');
+        figure.className = 'license-chart-figure';
+        const canvas = document.createElement('canvas');
+        figure.append(canvas);
+        card.append(figure);
+
+        const chart = new Chart(canvas, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              {
+                data,
+                backgroundColor: colors,
+                borderWidth: 0,
+                borderRadius: 10,
+                barPercentage: 0.6,
+                categoryPercentage: 0.8,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            scales: {
+              x: {
+                beginAtZero: true,
+                grid: {
+                  color: 'rgba(148, 163, 184, 0.2)',
+                },
+                ticks: {
+                  color: mutedColor,
+                  callback: (value) => formatNumber(Number(value)),
+                },
+              },
+              y: {
+                grid: {
+                  display: false,
+                },
+                ticks: {
+                  color: mutedColor,
+                },
+              },
+            },
+            plugins: {
+              legend: {
+                display: false,
+              },
+              tooltip: {
+                callbacks: {
+                  label(context) {
+                    const value = context.parsed.x ?? context.parsed;
+                    return `${context.label}: ${formatNumber(Number(value))}`;
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        state.licenseChartInstances.push(chart);
+
+        const adoptionRate =
+          Number.isFinite(entry.provisioned) && entry.provisioned > 0 && Number.isFinite(entry.activated)
+            ? entry.activated / entry.provisioned
+            : null;
+        const utilizationRate =
+          Number.isFinite(entry.activated) && entry.activated > 0 && Number.isFinite(entry.used)
+            ? entry.used / entry.activated
+            : null;
+
+        const metricsWrapper = document.createElement('div');
+        metricsWrapper.className = 'license-chart-metrics';
+
+        const metrics = [
+          {
+            label: 'Provisioned',
+            value: Number.isFinite(entry.provisioned) ? formatNumber(entry.provisioned) : '—',
+          },
+          {
+            label: 'Activated',
+            value: Number.isFinite(entry.activated) ? formatNumber(entry.activated) : '—',
+          },
+          {
+            label: 'Used',
+            value: Number.isFinite(entry.used) ? formatNumber(entry.used) : '—',
+          },
+        ];
+
+        if (Number.isFinite(adoptionRate)) {
+          metrics.push({
+            label: 'Adoption rate',
+            value: formatPercent(adoptionRate, { maximumFractionDigits: 1, minimumFractionDigits: 0 }),
+            detail:
+              Number.isFinite(entry.provisioned) && Number.isFinite(entry.activated)
+                ? `${formatNumber(entry.activated)} of ${formatNumber(entry.provisioned)} activated`
+                : '',
+          });
+        }
+
+        if (Number.isFinite(utilizationRate)) {
+          metrics.push({
+            label: 'Utilization rate',
+            value: formatPercent(utilizationRate, { maximumFractionDigits: 1, minimumFractionDigits: 0 }),
+            detail:
+              Number.isFinite(entry.activated) && Number.isFinite(entry.used)
+                ? `${formatNumber(entry.used)} of ${formatNumber(entry.activated)} used`
+                : '',
+          });
+        }
+
+        metrics.forEach((metric) => {
+          const metricEl = document.createElement('div');
+          metricEl.className = 'license-chart-metric';
+          const labelEl = document.createElement('span');
+          labelEl.className = 'license-chart-metric-label';
+          labelEl.textContent = metric.label;
+          const valueEl = document.createElement('span');
+          valueEl.className = 'license-chart-metric-value';
+          valueEl.textContent = metric.value;
+          metricEl.append(labelEl, valueEl);
+          if (metric.detail) {
+            const detailEl = document.createElement('span');
+            detailEl.className = 'license-chart-meta';
+            detailEl.textContent = metric.detail;
+            metricEl.append(detailEl);
+          }
+          metricsWrapper.append(metricEl);
+        });
+
+        card.append(metricsWrapper);
+        dom.licenseChartRoot.append(card);
+        chartsRendered += 1;
+      });
+
+      if (!chartsRendered) {
+        dom.licenseChartStatus.textContent = 'No license metrics available for the selected filters.';
+        dom.licenseChartCount.textContent = '--';
+        dom.licenseChartSection.hidden = false;
+        return;
+      }
+
+      dom.licenseChartCount.textContent = formatNumber(chartsRendered);
+      dom.licenseChartStatus.textContent =
+        'Aggregated provisioning, activation, and usage by cloud for the current selection.';
+    };
+
     const applySelection = (snapshot, tenant, account, labels = {}) => {
       state.selection = { snapshot, tenant, account };
       state.filters = { ...DEFAULT_FILTERS };
@@ -1159,6 +1586,7 @@
       renderScorecardTable();
       renderMcmuTable();
       updateSummary();
+      renderLicenseCharts();
       updateSnapshotPill();
       updateSelectionLabels(labels);
     };
@@ -1626,6 +2054,7 @@
       state.core = [];
       state.coreAll = [];
       state.coreHeaders = [];
+      state.licenseChartInstances = [];
       state.filters = { ...DEFAULT_FILTERS };
       state.selection = { snapshot: '', tenant: 'all', account: 'all' };
       state.datasetLoaded = false;
