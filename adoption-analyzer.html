@@ -1639,10 +1639,14 @@
       card.chartInstance = chart;
       state.licenseChartInstances.push(chart);
 
-      const adoptionRate =
-        Number.isFinite(aggregate.provisioned) && aggregate.provisioned > 0 && Number.isFinite(aggregate.activated)
-          ? aggregate.activated / aggregate.provisioned
-          : null;
+      let adoptionRate = null;
+      if (Number.isFinite(aggregate.provisioned) && aggregate.provisioned > 0) {
+        if (Number.isFinite(aggregate.used) && aggregate.used > 0) {
+          adoptionRate = aggregate.used / aggregate.provisioned;
+        } else if (Number.isFinite(aggregate.activated)) {
+          adoptionRate = aggregate.activated / aggregate.provisioned;
+        }
+      }
       const utilizationRate =
         Number.isFinite(aggregate.activated) && aggregate.activated > 0 && Number.isFinite(aggregate.used)
           ? aggregate.used / aggregate.activated
