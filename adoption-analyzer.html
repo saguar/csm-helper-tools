@@ -218,6 +218,32 @@
       flex-wrap: wrap;
     }
 
+    .license-chart-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .license-chart-add-button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 0.55rem 1.2rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 10px 24px rgba(14, 165, 233, 0.35);
+    }
+
+    .license-chart-add-button:hover,
+    .license-chart-add-button:focus {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(14, 165, 233, 0.45);
+    }
+
     .license-chart-grid {
       display: grid;
       gap: 1.5rem;
@@ -611,7 +637,10 @@
       <div class="license-chart-section" id="licenseChartSection" hidden>
         <div class="license-chart-header">
           <h3>License adoption overview</h3>
-          <span class="pill" id="licenseChartCount">--</span>
+          <div class="license-chart-controls">
+            <button type="button" class="license-chart-add-button" id="manualChartButton">Add manually</button>
+            <span class="pill" id="licenseChartCount">--</span>
+          </div>
         </div>
         <p class="helper-text" id="licenseChartStatus">Upload an adoption workbook to begin the analysis.</p>
         <div class="license-chart-grid" id="licenseChartRoot"></div>
@@ -652,6 +681,7 @@
               <th>EU</th>
               <th>MAU Penetration</th>
               <th>Shelfware</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -769,6 +799,7 @@
       licenseChartRoot: document.getElementById('licenseChartRoot'),
       licenseChartStatus: document.getElementById('licenseChartStatus'),
       licenseChartCount: document.getElementById('licenseChartCount'),
+      manualChartButton: document.getElementById('manualChartButton'),
       adoptionTableBody: document.querySelector('#adoptionTable tbody'),
       adoptionResultsLabel: document.getElementById('adoptionResultsLabel'),
       adoptionCountPill: document.getElementById('adoptionCountPill'),
@@ -866,14 +897,14 @@
       if (dom.licenseChartStatus) {
         if (overrideMessage) {
           dom.licenseChartStatus.textContent = overrideMessage;
-        } else if (!state.datasetLoaded) {
+        } else if (!state.datasetLoaded && cardCount === 0) {
           dom.licenseChartStatus.textContent = 'Upload an adoption workbook to begin the analysis.';
-        } else if (!hasAggregates) {
-          dom.licenseChartStatus.textContent = 'No license metrics available for the selected filters.';
-        } else if (!cardCount) {
-          dom.licenseChartStatus.textContent = 'Select “Chart” on any summary row to visualize license metrics.';
+        } else if (cardCount === 0) {
+          dom.licenseChartStatus.textContent = hasAggregates
+            ? 'Select “Chart” on any summary or adoption row to visualize license metrics, or add one manually.'
+            : 'No license metrics available for the selected filters.';
         } else {
-          dom.licenseChartStatus.textContent = 'License metrics for selected summary rows.';
+          dom.licenseChartStatus.textContent = 'License metrics for selected summary or adoption rows.';
         }
       }
     };
@@ -1023,7 +1054,7 @@
         dom.summaryStatus.textContent = message;
       }
       if (dom.adoptionTableBody) {
-        dom.adoptionTableBody.innerHTML = `<tr><td colspan="8" class="empty-state">${message}</td></tr>`;
+        dom.adoptionTableBody.innerHTML = `<tr><td colspan="9" class="empty-state">${message}</td></tr>`;
       }
       if (dom.adoptionResultsLabel) {
         dom.adoptionResultsLabel.textContent = '';
@@ -1540,29 +1571,7 @@
       title.textContent = titleText;
       header.append(title);
 
-      const subtitleParts = [];
-      if (accountLabel && accountLabel !== titleText) subtitleParts.push(accountLabel);
-      if (level1Label && level1Label !== titleText) subtitleParts.push(level1Label);
-      const snapshotDate = sourceRow.__snapshotDate || parseDate(sourceRow.SNAPSHOT_DT);
-      if (snapshotDate instanceof Date && !Number.isNaN(snapshotDate.getTime())) {
-        subtitleParts.push(formatDate(snapshotDate));
-      }
-      if (subtitleParts.length) {
-        const subtitle = document.createElement('span');
-        subtitle.className = 'license-chart-meta';
-        subtitle.textContent = subtitleParts.join(' • ');
-        header.append(subtitle);
-      }
-
       card.append(closeButton, header);
-
-      const recordMeta = document.createElement('span');
-      recordMeta.className = 'license-chart-meta';
-      recordMeta.textContent =
-        aggregate.recordCount === 1
-          ? 'Based on 1 record'
-          : `Based on ${formatNumber(aggregate.recordCount)} records`;
-      card.append(recordMeta);
 
       const figure = document.createElement('div');
       figure.className = 'license-chart-figure';
@@ -1662,10 +1671,6 @@
         metrics.push({
           label: 'Adoption rate',
           value: formatPercent(adoptionRate, { maximumFractionDigits: 1, minimumFractionDigits: 0 }),
-          detail:
-            Number.isFinite(aggregate.provisioned) && Number.isFinite(aggregate.activated)
-              ? `${formatNumber(aggregate.activated)} of ${formatNumber(aggregate.provisioned)} activated`
-              : '',
         });
       }
 
@@ -1673,10 +1678,6 @@
         metrics.push({
           label: 'Utilization rate',
           value: formatPercent(utilizationRate, { maximumFractionDigits: 1, minimumFractionDigits: 0 }),
-          detail:
-            Number.isFinite(aggregate.activated) && Number.isFinite(aggregate.used)
-              ? `${formatNumber(aggregate.used)} of ${formatNumber(aggregate.activated)} used`
-              : '',
         });
       }
 
@@ -1690,12 +1691,6 @@
         valueEl.className = 'license-chart-metric-value';
         valueEl.textContent = metric.value;
         metricEl.append(labelEl, valueEl);
-        if (metric.detail) {
-          const detailEl = document.createElement('span');
-          detailEl.className = 'license-chart-meta';
-          detailEl.textContent = metric.detail;
-          metricEl.append(detailEl);
-        }
         metricsWrapper.append(metricEl);
       });
 
@@ -2052,6 +2047,113 @@
       dom.apmFilter.disabled = dom.apmFilter.options.length <= 1;
     };
 
+    const handleAdoptionChartRequest = (row) => {
+      if (!row) return;
+
+      if (typeof Chart === 'undefined') {
+        updateLicenseChartStatus('Unable to render charts because the charting library failed to load.');
+        return;
+      }
+
+      const provisioned = normalizeNumber(row.PROVISIONED);
+      const activated = normalizeNumber(row.ACTIVATED);
+      const used = normalizeNumber(row.USED);
+
+      if (![provisioned, activated, used].some((value) => Number.isFinite(value))) {
+        updateLicenseChartStatus('No license metrics available for the selected row.');
+        return;
+      }
+
+      const groupLabel = !isBlank(row.Group) ? String(row.Group) : 'Not specified';
+      const typeLabel = !isBlank(row.Type) ? String(row.Type) : groupLabel;
+
+      const keyParts = [
+        row.__accountKey || row.__accountId || row.__accountLabel || row['Org ID'] || row['ORG ID'] || '',
+        row.Group || '',
+        row.Type || '',
+        row.SKU || row['SKU Name'] || row['Product Name'] || '',
+      ];
+
+      const keyBase = keyParts
+        .filter((value) => !isBlank(value))
+        .map((value) => String(value).trim().toLowerCase().replace(/\s+/g, '_'))
+        .join('__');
+
+      const aggregate = {
+        key: keyBase ? `adoption__${keyBase}` : `adoption__${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        level1: groupLabel,
+        level2: typeLabel,
+        provisioned: Number.isFinite(provisioned) ? provisioned : null,
+        activated: Number.isFinite(activated) ? activated : null,
+        used: Number.isFinite(used) ? used : null,
+        recordCount: 1,
+      };
+
+      const sourceRow = { ...row };
+      if (isBlank(sourceRow['Level 1 Cloud'])) sourceRow['Level 1 Cloud'] = groupLabel;
+      if (isBlank(sourceRow['Level 2 Cloud'])) sourceRow['Level 2 Cloud'] = typeLabel;
+
+      createLicenseChartCard(aggregate, sourceRow);
+    };
+
+    const handleManualChartAdd = () => {
+      if (typeof Chart === 'undefined') {
+        updateLicenseChartStatus('Unable to render charts because the charting library failed to load.');
+        return;
+      }
+
+      const titleInput = window.prompt('Enter a title for the manual chart:');
+      if (titleInput === null) return;
+      const title = titleInput.trim();
+      if (!title) return;
+
+      const requestNumber = (message) => {
+        const input = window.prompt(message);
+        if (input === null) return { cancelled: true };
+        if (isBlank(input)) return { value: null };
+        const numeric = normalizeNumber(input);
+        if (!Number.isFinite(numeric)) {
+          window.alert('Value must be numeric. Manual chart creation cancelled.');
+          return { error: true };
+        }
+        return { value: numeric };
+      };
+
+      const provisionedResult = requestNumber('Provisioned quantity (leave blank to skip):');
+      if (provisionedResult?.cancelled || provisionedResult?.error) return;
+      const activatedResult = requestNumber('Activated quantity (leave blank to skip):');
+      if (activatedResult?.cancelled || activatedResult?.error) return;
+      const usedResult = requestNumber('Used quantity (leave blank to skip):');
+      if (usedResult?.cancelled || usedResult?.error) return;
+
+      const provisioned = provisionedResult?.value ?? null;
+      const activated = activatedResult?.value ?? null;
+      const used = usedResult?.value ?? null;
+
+      if (![provisioned, activated, used].some((value) => Number.isFinite(value))) {
+        window.alert('At least one metric is required to create a chart.');
+        return;
+      }
+
+      const aggregate = {
+        key: `manual__${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        level1: title,
+        level2: title,
+        provisioned: Number.isFinite(provisioned) ? provisioned : null,
+        activated: Number.isFinite(activated) ? activated : null,
+        used: Number.isFinite(used) ? used : null,
+        recordCount: 1,
+      };
+
+      const sourceRow = {
+        'Level 1 Cloud': title,
+        'Level 2 Cloud': title,
+        __manual: true,
+      };
+
+      createLicenseChartCard(aggregate, sourceRow);
+    };
+
     const renderAdoptionTable = () => {
       if (!dom.adoptionTableBody) return;
       const { adoption, filters } = state;
@@ -2074,7 +2176,7 @@
       dom.adoptionTableBody.innerHTML = '';
       if (filtered.length === 0) {
         dom.adoptionTableBody.innerHTML =
-          '<tr><td colspan="8" class="empty-state">No adoption metrics for the selected filters.</td></tr>';
+          '<tr><td colspan="9" class="empty-state">No adoption metrics for the selected filters.</td></tr>';
       } else {
         filtered.forEach((row) => {
           const tr = document.createElement('tr');
@@ -2093,6 +2195,19 @@
             td.textContent = text;
             tr.append(td);
           });
+
+          const actionCell = document.createElement('td');
+          actionCell.className = 'summary-action-cell';
+          const chartButton = document.createElement('button');
+          chartButton.type = 'button';
+          chartButton.className = 'summary-action-button';
+          chartButton.textContent = 'Chart';
+          chartButton.addEventListener('click', () => {
+            handleAdoptionChartRequest(row);
+          });
+          actionCell.append(chartButton);
+          tr.append(actionCell);
+
           dom.adoptionTableBody.append(tr);
         });
       }
@@ -2407,6 +2522,10 @@
           state.filters.summarySearch = event.target.value;
           updateSummary();
         });
+      }
+
+      if (dom.manualChartButton) {
+        dom.manualChartButton.addEventListener('click', handleManualChartAdd);
       }
 
       if (dom.adoptionSearch) {
