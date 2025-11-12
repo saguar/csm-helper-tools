@@ -750,8 +750,16 @@
       return date.toISOString();
     };
 
-    const SUMMARY_HIDDEN_COLUMNS = new Set(['Account Name', 'Account Name (Local)', 'ACCOUNT ID', 'ORG ID']);
+    const SUMMARY_HIDDEN_COLUMNS = new Set([
+      'Account Name',
+      'Account Name (Local)',
+      'ACCOUNT ID',
+      'ORG ID',
+      'Entitlement Utilization',
+      'SNAPSHOT_DT',
+    ]);
     const SUMMARY_LEVEL_COLUMNS = ['Level 1 Cloud', 'Level 2 Cloud'];
+    const SUMMARY_PERCENT_COLUMNS = new Set(['License Activation', 'True Login Percentage']);
 
     const getSummaryCellValue = (header, row) => {
       if (header === 'SNAPSHOT_DT') {
@@ -762,6 +770,14 @@
       }
       const rawValue = row[header];
       if (rawValue === null || rawValue === undefined || rawValue === '') {
+        return '';
+      }
+      if (SUMMARY_PERCENT_COLUMNS.has(header)) {
+        const numeric = normalizeNumber(rawValue);
+        if (Number.isFinite(numeric)) {
+          const ratio = numeric > 1 ? numeric / 100 : numeric;
+          return formatPercent(ratio, { maximumFractionDigits: 1, minimumFractionDigits: 0 });
+        }
         return '';
       }
       return String(rawValue);
@@ -1318,7 +1334,6 @@
       level1Entries.forEach(([level1Label, level2Map]) => {
         const level1Details = document.createElement('details');
         level1Details.className = 'summary-accordion level1';
-        level1Details.open = true;
 
         const level1Summary = document.createElement('summary');
         const level1Text = document.createElement('span');
@@ -1334,7 +1349,6 @@
         level2Entries.forEach(([level2Label, level2Rows]) => {
           const level2Details = document.createElement('details');
           level2Details.className = 'summary-accordion level2';
-          level2Details.open = true;
 
           const level2Summary = document.createElement('summary');
           const level2Text = document.createElement('span');
