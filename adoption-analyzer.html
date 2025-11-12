@@ -708,7 +708,6 @@
         <table class="data-table" id="scorecardTable">
           <thead>
             <tr>
-              <th>Account</th>
               <th>Cloud</th>
               <th>Metric Name</th>
               <th>Metric Value</th>
@@ -2243,7 +2242,7 @@
       dom.scorecardTableBody.innerHTML = '';
       if (!filtered.length) {
         dom.scorecardTableBody.innerHTML =
-          '<tr><td colspan="5" class="empty-state">No scorecard metrics match the current filters.</td></tr>';
+          '<tr><td colspan="4" class="empty-state">No scorecard metrics match the current filters.</td></tr>';
       } else {
         filtered.forEach((row) => {
           const tr = document.createElement('tr');
@@ -2254,7 +2253,6 @@
           momBadge.textContent = Number.isFinite(mom) ? `${(mom * 100).toFixed(1)}%` : '—';
 
           const cells = [
-            row['Account Local Name'] || row['Account ID'] || '—',
             row.Cloud || '—',
             row['Metric Name'] || '—',
             formatNumber(normalizeNumber(row['Metric Value'])),
