@@ -584,6 +584,8 @@
       <span class="status-chip">Snapshot: <strong id="selectedSnapshot">Not selected</strong></span>
       <span class="status-chip">Tenant: <strong id="selectedTenant">Not selected</strong></span>
       <span class="status-chip">Account: <strong id="selectedAccount">Not selected</strong></span>
+      <span class="status-chip">Account ID: <strong id="selectedAccountId">Not selected</strong></span>
+      <span class="status-chip">Org ID: <strong id="selectedOrgId">Not selected</strong></span>
     </div>
   </header>
 
@@ -776,7 +778,7 @@
       licenseChartAggregates: new Map(),
       licenseChartCards: new Map(),
       filters: { ...DEFAULT_FILTERS },
-      selection: { snapshot: '', tenant: 'all', account: 'all' },
+      selection: { snapshot: '', tenant: 'all', account: 'all', accountId: '', orgId: '' },
       datasetLoaded: false,
     };
 
@@ -784,6 +786,8 @@
       selectedSnapshot: document.getElementById('selectedSnapshot'),
       selectedTenant: document.getElementById('selectedTenant'),
       selectedAccount: document.getElementById('selectedAccount'),
+      selectedAccountId: document.getElementById('selectedAccountId'),
+      selectedOrgId: document.getElementById('selectedOrgId'),
       snapshotSelect: document.getElementById('snapshotSelect'),
       tenantSelect: document.getElementById('tenantSelect'),
       accountSelect: document.getElementById('accountSelect'),
@@ -1083,7 +1087,7 @@
       }
     };
 
-    const updateSelectionLabels = ({ snapshotText, tenantText, accountText } = {}) => {
+    const updateSelectionLabels = ({ snapshotText, tenantText, accountText, accountIdText, orgIdText } = {}) => {
       if (dom.selectedSnapshot) {
         if (snapshotText) {
           dom.selectedSnapshot.textContent = snapshotText;
@@ -1116,6 +1120,36 @@
           }
         } else {
           dom.selectedAccount.textContent = 'Not selected';
+        }
+      }
+      if (dom.selectedAccountId) {
+        if (accountIdText) {
+          dom.selectedAccountId.textContent = accountIdText;
+        } else if (state.selection.snapshot) {
+          if (state.selection.account === 'all') {
+            dom.selectedAccountId.textContent = 'All accounts';
+          } else if (state.selection.accountId) {
+            dom.selectedAccountId.textContent = state.selection.accountId;
+          } else {
+            dom.selectedAccountId.textContent = 'Not specified';
+          }
+        } else {
+          dom.selectedAccountId.textContent = 'Not selected';
+        }
+      }
+      if (dom.selectedOrgId) {
+        if (orgIdText) {
+          dom.selectedOrgId.textContent = orgIdText;
+        } else if (state.selection.snapshot) {
+          if (state.selection.account === 'all') {
+            dom.selectedOrgId.textContent = 'All orgs';
+          } else if (state.selection.orgId) {
+            dom.selectedOrgId.textContent = state.selection.orgId;
+          } else {
+            dom.selectedOrgId.textContent = 'Not specified';
+          }
+        } else {
+          dom.selectedOrgId.textContent = 'Not selected';
         }
       }
     };
@@ -1747,7 +1781,9 @@
     };
 
     const applySelection = (snapshot, tenant, account, labels = {}) => {
-      state.selection = { snapshot, tenant, account };
+      const accountIdValue = account === 'all' ? 'All accounts' : labels.accountIdText || '';
+      const orgIdValue = account === 'all' ? 'All orgs' : labels.orgIdText || '';
+      state.selection = { snapshot, tenant, account, accountId: accountIdValue, orgId: orgIdValue };
       state.filters = { ...DEFAULT_FILTERS };
 
       if (dom.adoptionSearch) dom.adoptionSearch.value = '';
@@ -2372,7 +2408,7 @@
       state.coreHeaders = [];
       state.licenseChartInstances = [];
       state.filters = { ...DEFAULT_FILTERS };
-      state.selection = { snapshot: '', tenant: 'all', account: 'all' };
+      state.selection = { snapshot: '', tenant: 'all', account: 'all', accountId: '', orgId: '' };
       state.datasetLoaded = false;
 
       if (dom.uploadInput) dom.uploadInput.value = '';
@@ -2390,6 +2426,8 @@
         snapshotText: 'Not selected',
         tenantText: 'Not selected',
         accountText: 'Not selected',
+        accountIdText: 'Not selected',
+        orgIdText: 'Not selected',
       });
       clearVisualizations(message);
       updateLoadButtonState();
@@ -2419,7 +2457,7 @@
           state.mcmuAll = dataset.mcmuRows;
           state.coreAll = dataset.coreRows;
           state.coreHeaders = Array.isArray(dataset.coreHeaders) ? dataset.coreHeaders.filter((header) => !isBlank(header)) : [];
-          state.selection = { snapshot: '', tenant: 'all', account: 'all' };
+          state.selection = { snapshot: '', tenant: 'all', account: 'all', accountId: '', orgId: '' };
           state.filters = { ...DEFAULT_FILTERS };
 
           populateSnapshotOptions();
@@ -2429,6 +2467,8 @@
             snapshotText: 'Not selected',
             tenantText: 'Not selected',
             accountText: 'Not selected',
+            accountIdText: 'Not selected',
+            orgIdText: 'Not selected',
           });
           clearVisualizations('Select a snapshot, tenant, and account, then click "Load data".');
           if (dom.uploadStatus) {
@@ -2481,10 +2521,63 @@
           ? 'All accounts'
           : dom.accountSelect?.options[dom.accountSelect.selectedIndex]?.textContent || accountValue;
 
+      const resolveRowValue = (row, keys) => {
+        if (!row) return '';
+        for (const key of keys) {
+          if (!key) continue;
+          const value = row[key];
+          if (!isBlank(value)) {
+            return String(value);
+          }
+        }
+        return '';
+      };
+
+      let accountIdLabel = '';
+      let orgIdLabel = '';
+      if (accountValue === 'all') {
+        accountIdLabel = 'All accounts';
+        orgIdLabel = 'All orgs';
+      } else {
+        const datasets = [state.adoptionAll, state.scorecardAll, state.coreAll, state.mcmuAll];
+        let matchedRow = null;
+        for (const rows of datasets) {
+          if (!Array.isArray(rows)) continue;
+          matchedRow = rows.find((row) => {
+            if (!row) return false;
+            if (snapshot && row.__snapshot && row.__snapshot !== snapshot) return false;
+            const key = row.__accountKey || row.__accountId || row.__accountLabel;
+            return key === accountValue;
+          });
+          if (matchedRow) break;
+        }
+        const accountIdValue = resolveRowValue(matchedRow, [
+          '__accountId',
+          'Account ID',
+          'ACCOUNT ID',
+          'Account Id',
+          'Account id',
+          'AccountID',
+          'ACCOUNTID',
+        ]);
+        const orgIdValue = resolveRowValue(matchedRow, [
+          'Org Id',
+          'Org ID',
+          'ORG ID',
+          'OrgId',
+          'OrgID',
+          'ORGID',
+        ]);
+        accountIdLabel = accountIdValue || 'Not specified';
+        orgIdLabel = orgIdValue || 'Not specified';
+      }
+
       applySelection(snapshot, tenantValue, accountValue, {
         snapshotText: snapshotLabel,
         tenantText: tenantLabel,
         accountText: accountLabel,
+        accountIdText: accountIdLabel,
+        orgIdText: orgIdLabel,
       });
 
       if (dom.summaryStatus) {
