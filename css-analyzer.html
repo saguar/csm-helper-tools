@@ -1538,6 +1538,55 @@
       return String(value).trim().toLowerCase().replace(/\s+/g, ' ');
     };
 
+    const createValueBandScorer = (bands) => (value) => {
+      if (!Number.isFinite(value)) return null;
+      for (const band of bands) {
+        if (value <= band.max) {
+          return band.score;
+        }
+      }
+      return null;
+    };
+
+    const GOVERNOR_LIMITS_CALIBRATED_SCORE = createValueBandScorer([
+      { max: 2950, score: 95 },
+      { max: 14750, score: 85 },
+      { max: 29500, score: 75 },
+      { max: 59000, score: 65 },
+      { max: 147500, score: 50 },
+      { max: Infinity, score: 25 },
+    ]);
+
+    const UNHANDLED_EXCEPTIONS_CALIBRATED_SCORE = createValueBandScorer([
+      { max: 5900, score: 95 },
+      { max: 17700, score: 85 },
+      { max: 35400, score: 75 },
+      { max: 59000, score: 65 },
+      { max: 118000, score: 50 },
+      { max: Infinity, score: 25 },
+    ]);
+
+    const SPECIAL_SIGNAL_SCORE_RULES = [
+      {
+        aliases: ['governor limits (gacks)'],
+        scorer: GOVERNOR_LIMITS_CALIBRATED_SCORE,
+      },
+      {
+        aliases: ['unhandled exceptions'],
+        scorer: UNHANDLED_EXCEPTIONS_CALIBRATED_SCORE,
+      },
+    ];
+
+    const computeSpecialSignalScore = (signal) => {
+      if (!signal) return null;
+      const normalizedName = normalizeKey(signal.signalName || signal.metricName || '');
+      const rule = SPECIAL_SIGNAL_SCORE_RULES.find((entry) =>
+        entry.aliases.some((alias) => normalizedName === alias || normalizedName.startsWith(`${alias} `))
+      );
+      if (!rule) return null;
+      return rule.scorer(signal.valueNumeric);
+    };
+
     const TECH_HEALTH_SCORED_STRUCTURE = [
       {
         name: 'Efficiency',
@@ -1956,6 +2005,13 @@
       normalized.valueNumeric = parseNumber(normalized.value);
       normalized.moMChange = parseNumber(normalized.moMChangeRaw);
       normalized.qoQChange = parseNumber(normalized.qoQChangeRaw);
+      if (!Number.isFinite(normalized.score)) {
+        const calibratedScore = computeSpecialSignalScore(normalized);
+        if (Number.isFinite(calibratedScore)) {
+          normalized.score = calibratedScore;
+          normalized.scoreRaw = formatScore(calibratedScore);
+        }
+      }
       return normalized;
     };
 
