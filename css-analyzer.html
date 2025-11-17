@@ -1478,12 +1478,19 @@
     const formatNumberWithThousandSuffix = (value, options = {}) => {
       if (!Number.isFinite(value)) return '';
       const absolute = Math.abs(value);
+      const sign = value < 0 ? '-' : '';
+      if (absolute >= 1_000_000) {
+        const formattedMillions = formatNumber(absolute / 1_000_000, {
+          maximumFractionDigits: 1,
+          minimumFractionDigits: 0,
+        });
+        return `${sign}${formattedMillions} M`;
+      }
       if (absolute >= 1000) {
         const formattedThousands = formatNumber(absolute / 1000, {
           maximumFractionDigits: 1,
           minimumFractionDigits: 0,
         });
-        const sign = value < 0 ? '-' : '';
         return `${sign}${formattedThousands} K`;
       }
       return formatNumber(value, options);
