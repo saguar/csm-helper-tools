@@ -1597,6 +1597,7 @@
             signals: [
               { name: 'EPT Page Load Time', aliases: ['experience page time (ept)', 'average page load time'] },
               { name: 'Concurrent UI Errors' },
+              { name: 'Logins' },
             ],
           },
           {
@@ -1604,14 +1605,19 @@
             signals: [
               { name: 'Concurrent API Errors' },
               { name: 'API performance', aliases: ['api performance score', 'api performance index'] },
+              { name: 'Failed Callouts' },
             ],
           },
           {
             name: 'Transaction Efficiency',
             signals: [
+              { name: 'Governor Limits (GACKS)', aliases: ['governor limits'] },
               { name: 'Concurrent Apex Errors' },
               { name: 'CPU Timeout Errors', aliases: ['apex cpu time out errors', 'apex cpu timeout errors'] },
+              { name: 'Unhandled Exceptions' },
               { name: 'Rowlock Errors', aliases: ['rowlock error rates', 'row lock errors'] },
+              { name: 'Batch Failures' },
+              { name: 'Transactions' },
             ],
           },
           {
@@ -1647,6 +1653,7 @@
               { name: 'SSO Enabled', aliases: ['single sign-on (sso) enabled'] },
               { name: 'Core MFA Enabled', aliases: ['mfa enabled', 'mfa enforcement'] },
               { name: 'Maximum Invalid Login Attempts' },
+              { name: 'Failed Logins' },
               { name: 'Minimum Password Length' },
               { name: 'Minimum Password Lifetime Requirement' },
               { name: 'Password Complexity Requirement' },
