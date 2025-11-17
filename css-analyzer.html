@@ -1573,6 +1573,34 @@
       { max: Infinity, score: 25 },
     ]);
 
+    const FAILED_LOGINS_CALIBRATED_SCORE = createValueBandScorer([
+      { max: 113000, score: 95 },
+      { max: 339000, score: 75 },
+      { max: 565000, score: 45 },
+      { max: Infinity, score: 15 },
+    ]);
+
+    const CONCURRENT_UI_ERRORS_CALIBRATED_SCORE = createValueBandScorer([
+      { max: 5900, score: 95 },
+      { max: 29500, score: 75 },
+      { max: 59000, score: 45 },
+      { max: Infinity, score: 15 },
+    ]);
+
+    const FAILED_CALLOUTS_CALIBRATED_SCORE = createValueBandScorer([
+      { max: 11800, score: 95 },
+      { max: 59000, score: 75 },
+      { max: 118000, score: 45 },
+      { max: Infinity, score: 15 },
+    ]);
+
+    const BATCH_FAILURES_CALIBRATED_SCORE = createValueBandScorer([
+      { max: 590, score: 95 },
+      { max: 2950, score: 75 },
+      { max: 5900, score: 45 },
+      { max: Infinity, score: 15 },
+    ]);
+
     const SPECIAL_SIGNAL_SCORE_RULES = [
       {
         aliases: ['governor limits (gacks)'],
@@ -1581,6 +1609,22 @@
       {
         aliases: ['unhandled exceptions'],
         scorer: UNHANDLED_EXCEPTIONS_CALIBRATED_SCORE,
+      },
+      {
+        aliases: ['failed logins', 'failed login attempts'],
+        scorer: FAILED_LOGINS_CALIBRATED_SCORE,
+      },
+      {
+        aliases: ['concurrent ui errors'],
+        scorer: CONCURRENT_UI_ERRORS_CALIBRATED_SCORE,
+      },
+      {
+        aliases: ['failed callouts'],
+        scorer: FAILED_CALLOUTS_CALIBRATED_SCORE,
+      },
+      {
+        aliases: ['batch failures'],
+        scorer: BATCH_FAILURES_CALIBRATED_SCORE,
       },
     ];
 
