@@ -1261,6 +1261,14 @@
               >
                 Add custom Signal
               </button>
+              <input type="file" id="unhandledErrorsUpload" accept=".csv,text/csv" hidden>
+              <input type="file" id="gacksUpload" accept=".csv,text/csv" hidden>
+              <button type="button" class="technical-health-add-button" id="loadUnhandledErrorsButton">
+                Load Unhandled Errors
+              </button>
+              <button type="button" class="technical-health-add-button" id="loadGacksButton">
+                Load GACKS
+              </button>
             </div>
             <div class="technical-health-grid" id="technicalHealthGrid" aria-live="polite"></div>
             <p class="empty-state" id="technicalHealthEmpty">Upload a file to begin the analysis.</p>
@@ -2919,6 +2927,10 @@
       });
     };
 
+    const analyzeUnhandledExceptions = (file) => {};
+
+    const analyzeGacks = (file) => {};
+
     const selectedMonthLabel = document.getElementById('selectedMonth');
     const selectedAccountLabel = document.getElementById('selectedAccount');
     const referenceMonthSelect = document.getElementById('referenceMonth');
@@ -2947,6 +2959,10 @@
       ? Array.from(technicalHealthDeepDiveModal.querySelectorAll('[data-modal-close]'))
       : [];
     const addCustomTechnicalHealthSignalButton = document.getElementById('addCustomTechnicalHealthSignalButton');
+    const loadUnhandledErrorsButton = document.getElementById('loadUnhandledErrorsButton');
+    const loadGacksButton = document.getElementById('loadGacksButton');
+    const unhandledErrorsUploadInput = document.getElementById('unhandledErrorsUpload');
+    const gacksUploadInput = document.getElementById('gacksUpload');
     const customTechnicalHealthModal = document.getElementById('customTechnicalHealthModal');
     const customTechnicalHealthForm = document.getElementById('customTechnicalHealthForm');
     const customTechnicalHealthError = document.getElementById('customTechnicalHealthError');
@@ -3250,6 +3266,36 @@
       addCustomTechnicalHealthSignalButton.addEventListener('click', (event) => {
         event.preventDefault();
         openCustomTechnicalHealthModal(addCustomTechnicalHealthSignalButton);
+      });
+    }
+
+    if (loadUnhandledErrorsButton && unhandledErrorsUploadInput) {
+      loadUnhandledErrorsButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        unhandledErrorsUploadInput.click();
+      });
+
+      unhandledErrorsUploadInput.addEventListener('change', () => {
+        const file = unhandledErrorsUploadInput.files && unhandledErrorsUploadInput.files[0];
+        if (file) {
+          analyzeUnhandledExceptions(file);
+        }
+        unhandledErrorsUploadInput.value = '';
+      });
+    }
+
+    if (loadGacksButton && gacksUploadInput) {
+      loadGacksButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        gacksUploadInput.click();
+      });
+
+      gacksUploadInput.addEventListener('change', () => {
+        const file = gacksUploadInput.files && gacksUploadInput.files[0];
+        if (file) {
+          analyzeGacks(file);
+        }
+        gacksUploadInput.value = '';
       });
     }
 
