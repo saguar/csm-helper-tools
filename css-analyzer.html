@@ -583,6 +583,22 @@
       margin-bottom: 0.25rem;
     }
 
+    .gacks-analysis-group + .gacks-analysis-group {
+      margin-top: 2.5rem;
+      padding-top: 2.5rem;
+      border-top: 1px solid #e0e3eb;
+    }
+
+    .gacks-analysis-group-title {
+      margin-bottom: 1rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .gacks-analysis-group-body > :last-child {
+      margin-bottom: 0;
+    }
+
     .gacks-file-label {
       font-size: 0.875rem;
       color: #5f6368;
@@ -3124,14 +3140,19 @@
         try {
           const text = event?.target?.result;
           if (typeof text !== 'string') {
-            showGacksAnalysisError('Unable to read the selected file.', UNHANDLED_ERRORS_ANALYSIS_TITLE);
+            showGacksAnalysisError(
+              'Unable to read the selected file.',
+              UNHANDLED_ERRORS_ANALYSIS_TITLE,
+              { analysisType: GACKS_ANALYSIS_TYPES.UNHANDLED }
+            );
             return;
           }
           const rows = parseCSV(text);
           if (!rows.length) {
             showGacksAnalysisError(
               'The selected file does not contain any rows to analyze.',
-              UNHANDLED_ERRORS_ANALYSIS_TITLE
+              UNHANDLED_ERRORS_ANALYSIS_TITLE,
+              { analysisType: GACKS_ANALYSIS_TYPES.UNHANDLED }
             );
             return;
           }
@@ -3140,12 +3161,17 @@
           console.error('Unable to analyze unhandled exception export', error);
           showGacksAnalysisError(
             'Unable to parse the selected unhandled error export.',
-            UNHANDLED_ERRORS_ANALYSIS_TITLE
+            UNHANDLED_ERRORS_ANALYSIS_TITLE,
+            { analysisType: GACKS_ANALYSIS_TYPES.UNHANDLED }
           );
         }
       };
       reader.onerror = () => {
-        showGacksAnalysisError('Unable to read the selected file.', UNHANDLED_ERRORS_ANALYSIS_TITLE);
+        showGacksAnalysisError(
+          'Unable to read the selected file.',
+          UNHANDLED_ERRORS_ANALYSIS_TITLE,
+          { analysisType: GACKS_ANALYSIS_TYPES.UNHANDLED }
+        );
       };
       reader.readAsText(file);
     };
@@ -3200,6 +3226,11 @@
       ? gacksAnalysisTitle.textContent || 'Governor limit exception insights'
       : 'Governor limit exception insights';
     const UNHANDLED_ERRORS_ANALYSIS_TITLE = 'Unhandled Apex exception insights';
+    const GACKS_ANALYSIS_TYPES = {
+      GACKS: 'gacks',
+      UNHANDLED: 'unhandled-errors',
+    };
+    const GACKS_COMBINED_ANALYSIS_TITLE = 'Governor limit & unhandled exception insights';
 
     const syncTechnicalHealthModalState = () => {
       if (!document.body) return;
@@ -3270,15 +3301,85 @@
       gacksAnalysisTitle.textContent = text || gacksAnalysisDefaultTitle;
     };
 
+    const getGacksAnalysisGroupElements = (type) => {
+      if (!gacksAnalysisResults || !type) return null;
+      let section = gacksAnalysisResults.querySelector(`[data-analysis-type="${type}"]`);
+      if (!section) {
+        section = document.createElement('section');
+        section.className = 'gacks-analysis-group';
+        section.dataset.analysisType = type;
+        const title = document.createElement('h4');
+        title.className = 'gacks-analysis-group-title';
+        section.appendChild(title);
+        const body = document.createElement('div');
+        body.className = 'gacks-analysis-group-body';
+        section.appendChild(body);
+        gacksAnalysisResults.appendChild(section);
+      }
+      const title = section.querySelector('.gacks-analysis-group-title');
+      const body = section.querySelector('.gacks-analysis-group-body');
+      return { section, title, body };
+    };
+
+    const resetGacksAnalysisGroup = (type, titleText) => {
+      const elements = getGacksAnalysisGroupElements(type);
+      if (!elements) return null;
+      const { title, body } = elements;
+      if (title && titleText) {
+        title.textContent = titleText;
+      }
+      if (body) {
+        body.innerHTML = '';
+      }
+      return body || null;
+    };
+
+    const syncGacksAnalysisTitle = () => {
+      if (!gacksAnalysisResults) return;
+      const hasGacksResults = Boolean(
+        gacksAnalysisResults.querySelector(`[data-analysis-type="${GACKS_ANALYSIS_TYPES.GACKS}"]`)
+      );
+      const hasUnhandledResults = Boolean(
+        gacksAnalysisResults.querySelector(`[data-analysis-type="${GACKS_ANALYSIS_TYPES.UNHANDLED}"]`)
+      );
+      if (!hasGacksResults && !hasUnhandledResults) {
+        setGacksAnalysisTitle();
+        return;
+      }
+      if (hasGacksResults && hasUnhandledResults) {
+        setGacksAnalysisTitle(GACKS_COMBINED_ANALYSIS_TITLE);
+        return;
+      }
+      if (hasUnhandledResults) {
+        setGacksAnalysisTitle(UNHANDLED_ERRORS_ANALYSIS_TITLE);
+        return;
+      }
+      setGacksAnalysisTitle(gacksAnalysisDefaultTitle);
+    };
+
     const clearGacksAnalysis = () => {
       if (!gacksAnalysisContainer || !gacksAnalysisResults) return;
       gacksAnalysisResults.innerHTML = '';
       gacksAnalysisContainer.hidden = true;
-      setGacksAnalysisTitle();
+      syncGacksAnalysisTitle();
     };
 
-    const showGacksAnalysisError = (message, titleText = gacksAnalysisDefaultTitle) => {
+    const showGacksAnalysisError = (
+      message,
+      titleText = gacksAnalysisDefaultTitle,
+      options = {}
+    ) => {
       if (!gacksAnalysisContainer || !gacksAnalysisResults) return;
+      const { analysisType = null } = options;
+      if (analysisType) {
+        const body = resetGacksAnalysisGroup(analysisType, titleText);
+        if (body) {
+          body.innerHTML = `<p class="empty-state">${message}</p>`;
+          gacksAnalysisContainer.hidden = false;
+          syncGacksAnalysisTitle();
+        }
+        return;
+      }
       setGacksAnalysisTitle(titleText);
       gacksAnalysisResults.innerHTML = `<p class="empty-state">${message}</p>`;
       gacksAnalysisContainer.hidden = false;
@@ -3599,12 +3700,21 @@
 
     const renderGacksAnalysis = (rows) => {
       if (!gacksAnalysisContainer || !gacksAnalysisResults) return;
-      setGacksAnalysisTitle(gacksAnalysisDefaultTitle);
       const normalizedRows = normalizeGacksRows(rows);
       if (!normalizedRows.length) {
-        showGacksAnalysisError('No governor limit rows found in the selected file.', gacksAnalysisDefaultTitle);
+        showGacksAnalysisError(
+          'No governor limit rows found in the selected file.',
+          gacksAnalysisDefaultTitle,
+          { analysisType: GACKS_ANALYSIS_TYPES.GACKS }
+        );
         return;
       }
+
+      const analysisBody = resetGacksAnalysisGroup(
+        GACKS_ANALYSIS_TYPES.GACKS,
+        gacksAnalysisDefaultTitle
+      );
+      if (!analysisBody) return;
 
       const totalRows = normalizedRows.length;
       const totalOccurrences = normalizedRows.reduce((sum, row) => sum + row.occurrences, 0);
@@ -3612,8 +3722,6 @@
       const uniqueEntryPoints = new Set(
         normalizedRows.map((row) => row.entryPoint || row.location || 'Unknown entry point')
       ).size;
-
-      gacksAnalysisResults.innerHTML = '';
 
       const metrics = [
         getGacksScoreMetric(),
@@ -3624,7 +3732,7 @@
       const metricsGrid = document.createElement('div');
       metricsGrid.className = 'gacks-metrics-grid';
       metrics.forEach((metric) => metricsGrid.appendChild(createGacksMetricCard(metric)));
-      gacksAnalysisResults.appendChild(metricsGrid);
+      analysisBody.appendChild(metricsGrid);
 
       const topErrors = buildGacksAggregate(
         normalizedRows,
@@ -3647,7 +3755,7 @@
           };
         });
       if (topErrors.length) {
-        gacksAnalysisResults.appendChild(
+        analysisBody.appendChild(
           createGacksTopSection('Top governor limit violations', topErrors, {
             onItemSelect: (item, element) => {
               const deepDiveSignal = buildGacksDeepDiveSignal(item.label);
@@ -3678,7 +3786,7 @@
           };
         });
       if (topEntryPoints.length) {
-        gacksAnalysisResults.appendChild(
+        analysisBody.appendChild(
           createGacksTopSection('Entry points with the highest failure volume', topEntryPoints, {
             onItemSelect: (item, element) => {
               const deepDiveSignal = buildGacksDeepDiveSignal(item.label);
@@ -3689,6 +3797,7 @@
       }
 
       gacksAnalysisContainer.hidden = false;
+      syncGacksAnalysisTitle();
     };
 
     const renderUnhandledErrorsAnalysis = (rows) => {
@@ -3697,20 +3806,23 @@
       if (!normalizedRows.length) {
         showGacksAnalysisError(
           'No unhandled error rows found in the selected file.',
-          UNHANDLED_ERRORS_ANALYSIS_TITLE
+          UNHANDLED_ERRORS_ANALYSIS_TITLE,
+          { analysisType: GACKS_ANALYSIS_TYPES.UNHANDLED }
         );
         return;
       }
 
-      setGacksAnalysisTitle(UNHANDLED_ERRORS_ANALYSIS_TITLE);
+      const analysisBody = resetGacksAnalysisGroup(
+        GACKS_ANALYSIS_TYPES.UNHANDLED,
+        UNHANDLED_ERRORS_ANALYSIS_TITLE
+      );
+      if (!analysisBody) return;
       const totalOccurrences = normalizedRows.reduce((sum, row) => sum + row.occurrences, 0);
       const uniqueReasons = new Set(normalizedRows.map((row) => row.reason)).size;
       const uniqueEntryPoints = new Set(
         normalizedRows.map((row) => row.entryPoint || 'Unknown entry point')
       ).size;
       const uniqueClasses = new Set(normalizedRows.map((row) => row.location || 'Unknown class')).size;
-
-      gacksAnalysisResults.innerHTML = '';
 
       const metrics = [
         { label: 'Occurrences', value: formatNumber(totalOccurrences, { maximumFractionDigits: 0 }) },
@@ -3721,7 +3833,7 @@
       const metricsGrid = document.createElement('div');
       metricsGrid.className = 'gacks-metrics-grid';
       metrics.forEach((metric) => metricsGrid.appendChild(createGacksMetricCard(metric)));
-      gacksAnalysisResults.appendChild(metricsGrid);
+      analysisBody.appendChild(metricsGrid);
 
       const topClasses = buildGacksAggregate(
         normalizedRows,
@@ -3748,7 +3860,7 @@
           };
         });
       if (topClasses.length) {
-        gacksAnalysisResults.appendChild(
+        analysisBody.appendChild(
           createGacksTopSection('Classes generating the most failures', topClasses)
         );
       }
@@ -3778,12 +3890,13 @@
           };
         });
       if (topEntryPoints.length) {
-        gacksAnalysisResults.appendChild(
+        analysisBody.appendChild(
           createGacksTopSection('Entry points with repeated failures', topEntryPoints)
         );
       }
 
       gacksAnalysisContainer.hidden = false;
+      syncGacksAnalysisTitle();
     };
 
     const analyzeGacks = (file) => {
@@ -3794,22 +3907,32 @@
         try {
           const text = event?.target?.result;
           if (typeof text !== 'string') {
-            showGacksAnalysisError('Unable to read the selected file.');
+            showGacksAnalysisError('Unable to read the selected file.', gacksAnalysisDefaultTitle, {
+              analysisType: GACKS_ANALYSIS_TYPES.GACKS,
+            });
             return;
           }
           const rows = parseCSV(text);
           if (!rows.length) {
-            showGacksAnalysisError('The selected file does not contain any rows to analyze.');
+            showGacksAnalysisError(
+              'The selected file does not contain any rows to analyze.',
+              gacksAnalysisDefaultTitle,
+              { analysisType: GACKS_ANALYSIS_TYPES.GACKS }
+            );
             return;
           }
           renderGacksAnalysis(rows);
         } catch (error) {
           console.error('Unable to analyze GACKS export', error);
-          showGacksAnalysisError('Unable to parse the selected GACKS export.');
+          showGacksAnalysisError('Unable to parse the selected GACKS export.', gacksAnalysisDefaultTitle, {
+            analysisType: GACKS_ANALYSIS_TYPES.GACKS,
+          });
         }
       };
       reader.onerror = () => {
-        showGacksAnalysisError('Unable to read the selected file.');
+        showGacksAnalysisError('Unable to read the selected file.', gacksAnalysisDefaultTitle, {
+          analysisType: GACKS_ANALYSIS_TYPES.GACKS,
+        });
       };
       reader.readAsText(file);
     };
