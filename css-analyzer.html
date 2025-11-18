@@ -1425,7 +1425,7 @@
             <section class="gacks-analysis" id="gacksAnalysis" aria-live="polite" hidden>
               <div class="gacks-analysis-header">
                 <div>
-                  <h3>Governor limit exception insights</h3>
+                  <h3 id="gacksAnalysisTitle">Governor limit exception insights</h3>
                 </div>
               </div>
               <div id="gacksAnalysisResults"></div>
@@ -3116,7 +3116,39 @@
       });
     };
 
-    const analyzeUnhandledExceptions = (file) => {};
+    const analyzeUnhandledExceptions = (file) => {
+      if (!file) return;
+      if (!gacksAnalysisContainer || !gacksAnalysisResults) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const text = event?.target?.result;
+          if (typeof text !== 'string') {
+            showGacksAnalysisError('Unable to read the selected file.', UNHANDLED_ERRORS_ANALYSIS_TITLE);
+            return;
+          }
+          const rows = parseCSV(text);
+          if (!rows.length) {
+            showGacksAnalysisError(
+              'The selected file does not contain any rows to analyze.',
+              UNHANDLED_ERRORS_ANALYSIS_TITLE
+            );
+            return;
+          }
+          renderUnhandledErrorsAnalysis(rows);
+        } catch (error) {
+          console.error('Unable to analyze unhandled exception export', error);
+          showGacksAnalysisError(
+            'Unable to parse the selected unhandled error export.',
+            UNHANDLED_ERRORS_ANALYSIS_TITLE
+          );
+        }
+      };
+      reader.onerror = () => {
+        showGacksAnalysisError('Unable to read the selected file.', UNHANDLED_ERRORS_ANALYSIS_TITLE);
+      };
+      reader.readAsText(file);
+    };
 
     const selectedMonthLabel = document.getElementById('selectedMonth');
     const selectedAccountLabel = document.getElementById('selectedAccount');
@@ -3152,6 +3184,7 @@
     const gacksUploadInput = document.getElementById('gacksUpload');
     const gacksAnalysisContainer = document.getElementById('gacksAnalysis');
     const gacksAnalysisResults = document.getElementById('gacksAnalysisResults');
+    const gacksAnalysisTitle = document.getElementById('gacksAnalysisTitle');
     const customTechnicalHealthModal = document.getElementById('customTechnicalHealthModal');
     const customTechnicalHealthForm = document.getElementById('customTechnicalHealthForm');
     const customTechnicalHealthError = document.getElementById('customTechnicalHealthError');
@@ -3163,6 +3196,10 @@
     const TECHNICAL_HEALTH_NO_DATA_MESSAGE = 'No Technical Health scores available for the current selection.';
     const tabButtons = Array.from(document.querySelectorAll('[data-tab-target]'));
     const tabPanels = Array.from(document.querySelectorAll('.tab-panel-section'));
+    const gacksAnalysisDefaultTitle = gacksAnalysisTitle
+      ? gacksAnalysisTitle.textContent || 'Governor limit exception insights'
+      : 'Governor limit exception insights';
+    const UNHANDLED_ERRORS_ANALYSIS_TITLE = 'Unhandled Apex exception insights';
 
     const syncTechnicalHealthModalState = () => {
       if (!document.body) return;
@@ -3228,14 +3265,21 @@
       focusTabButton(nextIndex);
     };
 
+    const setGacksAnalysisTitle = (text) => {
+      if (!gacksAnalysisTitle) return;
+      gacksAnalysisTitle.textContent = text || gacksAnalysisDefaultTitle;
+    };
+
     const clearGacksAnalysis = () => {
       if (!gacksAnalysisContainer || !gacksAnalysisResults) return;
       gacksAnalysisResults.innerHTML = '';
       gacksAnalysisContainer.hidden = true;
+      setGacksAnalysisTitle();
     };
 
-    const showGacksAnalysisError = (message) => {
+    const showGacksAnalysisError = (message, titleText = gacksAnalysisDefaultTitle) => {
       if (!gacksAnalysisContainer || !gacksAnalysisResults) return;
+      setGacksAnalysisTitle(titleText);
       gacksAnalysisResults.innerHTML = `<p class="empty-state">${message}</p>`;
       gacksAnalysisContainer.hidden = false;
     };
@@ -3286,6 +3330,36 @@
         .filter((row) => row.error || row.entryPoint || row.location);
     };
 
+    const normalizeUnhandledRows = (rows) => {
+      if (!Array.isArray(rows)) return [];
+      return rows
+        .map((row) => {
+          const normalizedMap = {};
+          Object.entries(row || {}).forEach(([key, value]) => {
+            const normalizedKey = normalizeKey(key);
+            if (normalizedKey) {
+              normalizedMap[normalizedKey] = value;
+            }
+          });
+          const countRaw = getNormalizedCellValue(normalizedMap, 'count', 'occurrences', 'hits');
+          const lineRaw = getNormalizedCellValue(normalizedMap, 'line', 'line number');
+          const entryPointRaw = getNormalizedCellValue(normalizedMap, 'entrypoint', 'entry point', 'entry');
+          const classRaw = getNormalizedCellValue(normalizedMap, 'failing_class', 'class', 'apex class');
+          const reasonRaw = getNormalizedCellValue(normalizedMap, 'reason', 'error', 'exception', 'message');
+          const occurrences = parseNumber(countRaw);
+          const lineNumber = parseNumber(lineRaw);
+          return {
+            organizationId: getNormalizedCellValue(normalizedMap, 'organizationid', 'organization id', 'orgid'),
+            reason: reasonRaw || 'Unhandled exception',
+            location: classRaw || '',
+            entryPoint: entryPointRaw || '',
+            lineNumber: Number.isFinite(lineNumber) ? lineNumber : null,
+            occurrences: Number.isFinite(occurrences) ? occurrences : 1,
+          };
+        })
+        .filter((row) => row.reason || row.entryPoint || row.location);
+    };
+
     const getTopAggregateLabel = (countsMap) => {
       if (!(countsMap instanceof Map) || !countsMap.size) return '';
       const [label] = Array.from(countsMap.entries()).sort((a, b) => b[1] - a[1])[0];
@@ -3325,6 +3399,14 @@
       return Array.from(groups.values()).sort((a, b) => b.occurrences - a.occurrences);
     };
 
+    const describeAggregateLocation = (group) => {
+      if (!group || !group.sampleLocation) return '';
+      if (Number.isFinite(group.sampleLine)) {
+        return `Class: ${group.sampleLocation} (line ${group.sampleLine})`;
+      }
+      return `Class: ${group.sampleLocation}`;
+    };
+
     const createGacksMetricCard = (metric) => {
       const card = document.createElement('article');
       card.className = 'gacks-metric-card';
@@ -3351,7 +3433,8 @@
       return 'red';
     };
 
-    const createGacksTopSection = (title, items) => {
+    const createGacksTopSection = (title, items, options = {}) => {
+      const { onItemSelect } = options;
       const section = document.createElement('section');
       section.className = 'gacks-top-section';
       const heading = document.createElement('h4');
@@ -3387,21 +3470,22 @@
         bar.appendChild(fill);
         listItem.appendChild(bar);
 
-        listItem.setAttribute('role', 'button');
-        listItem.setAttribute('tabindex', '0');
-        const ariaLabel = item.label
-          ? `View guidance for ${item.label}`
-          : 'View guidance for this governor limit violation';
-        listItem.setAttribute('aria-label', ariaLabel);
-        const deepDiveSignal = buildGacksDeepDiveSignal(item.label);
-        const openDeepDive = () => openTechnicalHealthDeepDive(deepDiveSignal, listItem);
-        listItem.addEventListener('click', openDeepDive);
-        listItem.addEventListener('keydown', (event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            openDeepDive();
-          }
-        });
+        if (typeof onItemSelect === 'function') {
+          listItem.setAttribute('role', 'button');
+          listItem.setAttribute('tabindex', '0');
+          const ariaLabel = item.label
+            ? `View guidance for ${item.label}`
+            : 'View guidance for this governor limit violation';
+          listItem.setAttribute('aria-label', ariaLabel);
+          const handleSelect = () => onItemSelect(item, listItem);
+          listItem.addEventListener('click', handleSelect);
+          listItem.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              handleSelect();
+            }
+          });
+        }
 
         list.appendChild(listItem);
       });
@@ -3515,9 +3599,10 @@
 
     const renderGacksAnalysis = (rows) => {
       if (!gacksAnalysisContainer || !gacksAnalysisResults) return;
+      setGacksAnalysisTitle(gacksAnalysisDefaultTitle);
       const normalizedRows = normalizeGacksRows(rows);
       if (!normalizedRows.length) {
-        showGacksAnalysisError('No governor limit rows found in the selected file.');
+        showGacksAnalysisError('No governor limit rows found in the selected file.', gacksAnalysisDefaultTitle);
         return;
       }
 
@@ -3562,7 +3647,14 @@
           };
         });
       if (topErrors.length) {
-        gacksAnalysisResults.appendChild(createGacksTopSection('Top governor limit violations', topErrors));
+        gacksAnalysisResults.appendChild(
+          createGacksTopSection('Top governor limit violations', topErrors, {
+            onItemSelect: (item, element) => {
+              const deepDiveSignal = buildGacksDeepDiveSignal(item.label);
+              openTechnicalHealthDeepDive(deepDiveSignal, element);
+            },
+          })
+        );
       }
 
       const topEntryPoints = buildGacksAggregate(
@@ -3573,13 +3665,7 @@
         .slice(0, 5)
         .map((group) => {
           const topError = getTopAggregateLabel(group.relatedCounts);
-          const locationDetails = (() => {
-            if (!group.sampleLocation) return '';
-            if (Number.isFinite(group.sampleLine)) {
-              return `Class: ${group.sampleLocation} (line ${group.sampleLine})`;
-            }
-            return `Class: ${group.sampleLocation}`;
-          })();
+          const locationDetails = describeAggregateLocation(group);
           const metaPieces = [
             `${formatNumber(group.occurrences, { maximumFractionDigits: 0 })} occurrences`,
           ];
@@ -3593,7 +3679,137 @@
         });
       if (topEntryPoints.length) {
         gacksAnalysisResults.appendChild(
-          createGacksTopSection('Entry points with the highest failure volume', topEntryPoints)
+          createGacksTopSection('Entry points with the highest failure volume', topEntryPoints, {
+            onItemSelect: (item, element) => {
+              const deepDiveSignal = buildGacksDeepDiveSignal(item.label);
+              openTechnicalHealthDeepDive(deepDiveSignal, element);
+            },
+          })
+        );
+      }
+
+      gacksAnalysisContainer.hidden = false;
+    };
+
+    const renderUnhandledErrorsAnalysis = (rows) => {
+      if (!gacksAnalysisContainer || !gacksAnalysisResults) return;
+      const normalizedRows = normalizeUnhandledRows(rows);
+      if (!normalizedRows.length) {
+        showGacksAnalysisError(
+          'No unhandled error rows found in the selected file.',
+          UNHANDLED_ERRORS_ANALYSIS_TITLE
+        );
+        return;
+      }
+
+      setGacksAnalysisTitle(UNHANDLED_ERRORS_ANALYSIS_TITLE);
+      const totalOccurrences = normalizedRows.reduce((sum, row) => sum + row.occurrences, 0);
+      const uniqueReasons = new Set(normalizedRows.map((row) => row.reason)).size;
+      const uniqueEntryPoints = new Set(
+        normalizedRows.map((row) => row.entryPoint || 'Unknown entry point')
+      ).size;
+      const uniqueClasses = new Set(normalizedRows.map((row) => row.location || 'Unknown class')).size;
+
+      gacksAnalysisResults.innerHTML = '';
+
+      const metrics = [
+        { label: 'Occurrences', value: formatNumber(totalOccurrences, { maximumFractionDigits: 0 }) },
+        { label: 'Unique reasons', value: formatNumber(uniqueReasons, { maximumFractionDigits: 0 }) },
+        { label: 'Entry points', value: formatNumber(uniqueEntryPoints, { maximumFractionDigits: 0 }) },
+        { label: 'Classes', value: formatNumber(uniqueClasses, { maximumFractionDigits: 0 }) },
+      ];
+      const metricsGrid = document.createElement('div');
+      metricsGrid.className = 'gacks-metrics-grid';
+      metrics.forEach((metric) => metricsGrid.appendChild(createGacksMetricCard(metric)));
+      gacksAnalysisResults.appendChild(metricsGrid);
+
+      const topReasons = buildGacksAggregate(
+        normalizedRows,
+        (row) => row.reason || 'Unknown exception',
+        (row) => row.entryPoint || row.location || 'Unknown entry point'
+      )
+        .slice(0, 5)
+        .map((group) => {
+          const primaryEntryPoint = getTopAggregateLabel(group.relatedCounts);
+          const locationDetails = describeAggregateLocation(group);
+          const metaPieces = [
+            `${formatNumber(group.occurrences, { maximumFractionDigits: 0 })} occurrences`,
+          ];
+          if (primaryEntryPoint) {
+            metaPieces.push(`Common entry point: ${primaryEntryPoint}`);
+          }
+          if (locationDetails) {
+            metaPieces.push(locationDetails);
+          }
+          return {
+            label: group.label,
+            occurrences: group.occurrences,
+            meta: metaPieces.join(' • '),
+          };
+        });
+      if (topReasons.length) {
+        gacksAnalysisResults.appendChild(
+          createGacksTopSection('Top unhandled exceptions', topReasons)
+        );
+      }
+
+      const topClasses = buildGacksAggregate(
+        normalizedRows,
+        (row) => row.location || 'Unknown class',
+        (row) => row.reason || 'Unknown exception'
+      )
+        .slice(0, 5)
+        .map((group) => {
+          const topReason = getTopAggregateLabel(group.relatedCounts);
+          const metaPieces = [
+            `${formatNumber(group.occurrences, { maximumFractionDigits: 0 })} occurrences`,
+          ];
+          if (topReason) {
+            metaPieces.push(`Common reason: ${topReason}`);
+          }
+          const locationDetails = describeAggregateLocation(group);
+          if (locationDetails) {
+            metaPieces.push(locationDetails);
+          }
+          return {
+            label: group.label,
+            occurrences: group.occurrences,
+            meta: metaPieces.join(' • '),
+          };
+        });
+      if (topClasses.length) {
+        gacksAnalysisResults.appendChild(
+          createGacksTopSection('Classes generating the most failures', topClasses)
+        );
+      }
+
+      const topEntryPoints = buildGacksAggregate(
+        normalizedRows,
+        (row) => row.entryPoint || 'Unknown entry point',
+        (row) => row.reason || 'Unknown exception'
+      )
+        .slice(0, 5)
+        .map((group) => {
+          const topReason = getTopAggregateLabel(group.relatedCounts);
+          const metaPieces = [
+            `${formatNumber(group.occurrences, { maximumFractionDigits: 0 })} occurrences`,
+          ];
+          if (topReason) {
+            metaPieces.push(`Common reason: ${topReason}`);
+          }
+          const locationDetails = describeAggregateLocation(group);
+          if (locationDetails) {
+            metaPieces.push(locationDetails);
+          }
+          return {
+            label: group.label,
+            occurrences: group.occurrences,
+            meta: metaPieces.join(' • '),
+          };
+        });
+      if (topEntryPoints.length) {
+        gacksAnalysisResults.appendChild(
+          createGacksTopSection('Entry points with repeated failures', topEntryPoints)
         );
       }
 
