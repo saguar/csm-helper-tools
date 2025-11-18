@@ -1744,6 +1744,7 @@
     ];
 
     const TECH_HEALTH_INFORMATIONAL_SUBCATEGORY = 'Informational Signals';
+    const TECH_HEALTH_DEFAULT_SCORE_SIGNALS = new Set(['transactions', 'logins']);
 
     const { capabilityMap: TECH_HEALTH_CAPABILITY_LOOKUP, signalMap: TECH_HEALTH_SIGNAL_LOOKUP } = (() => {
       const capabilityMap = new Map();
@@ -1786,6 +1787,26 @@
 
       return { capabilityMap, signalMap };
     })();
+
+    const usesDefaultTechnicalHealthScore = (signal) => {
+      if (!signal) return false;
+      const nameKey = normalizeKey(signal.signalName || signal.metricName || '');
+      if (!nameKey) return false;
+      return TECH_HEALTH_DEFAULT_SCORE_SIGNALS.has(nameKey);
+    };
+
+    const getTechnicalHealthScoreValue = (signal) => {
+      if (usesDefaultTechnicalHealthScore(signal)) return 100;
+      return signal?.score;
+    };
+
+    const getTechnicalHealthScoreFallback = (signal, scoreValue) => {
+      if (usesDefaultTechnicalHealthScore(signal)) {
+        if (Number.isFinite(scoreValue)) return scoreValue;
+        return '100';
+      }
+      return signal?.scoreRaw ?? signal?.score;
+    };
 
     const classifySignal = (row) => {
       const categoryKey = normalizeKey(row.categoryName);
@@ -3349,8 +3370,11 @@
     }
 
     const createTechnicalHealthCard = (signal) => {
+      const scoreNumericValue = getTechnicalHealthScoreValue(signal);
+      const scoreFallback = getTechnicalHealthScoreFallback(signal, scoreNumericValue);
+
       const card = document.createElement('article');
-      card.className = `technical-health-card ${technicalHealthScoreBand(signal.score)}`;
+      card.className = `technical-health-card ${technicalHealthScoreBand(scoreNumericValue)}`;
 
       const label = document.createElement('p');
       label.className = 'technical-health-label';
@@ -3371,11 +3395,11 @@
       const scoreWrapper = document.createElement('div');
       scoreWrapper.className = 'technical-health-score';
 
-      const scoreValue = document.createElement('span');
-      scoreValue.className = 'technical-health-value';
-      const formattedScore = formatScore(signal.score, signal.scoreRaw ?? signal.score);
-      scoreValue.textContent = formattedScore;
-      scoreWrapper.appendChild(scoreValue);
+      const scoreValueElement = document.createElement('span');
+      scoreValueElement.className = 'technical-health-value';
+      const formattedScore = formatScore(scoreNumericValue, scoreFallback);
+      scoreValueElement.textContent = formattedScore;
+      scoreWrapper.appendChild(scoreValueElement);
 
       const valueText = (() => {
         if (signal.valueDisplay && `${signal.valueDisplay}`.trim()) {
