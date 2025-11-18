@@ -642,6 +642,17 @@
       border-radius: 0.75rem;
       background: #fff;
       box-shadow: 0 1px 3px rgba(32, 33, 36, 0.08), 0 4px 12px rgba(32, 33, 36, 0.06);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .gacks-list-item:focus-visible {
+      outline: 2px solid #1a73e8;
+      outline-offset: 2px;
+    }
+
+    .gacks-list-item:active {
+      transform: translateY(1px);
     }
 
     .gacks-list-title {
@@ -3329,6 +3340,23 @@
         }
         bar.appendChild(fill);
         listItem.appendChild(bar);
+
+        listItem.setAttribute('role', 'button');
+        listItem.setAttribute('tabindex', '0');
+        const ariaLabel = item.label
+          ? `View guidance for ${item.label}`
+          : 'View guidance for this governor limit violation';
+        listItem.setAttribute('aria-label', ariaLabel);
+        const deepDiveSignal = buildGacksDeepDiveSignal(item.label);
+        const openDeepDive = () => openTechnicalHealthDeepDive(deepDiveSignal, listItem);
+        listItem.addEventListener('click', openDeepDive);
+        listItem.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openDeepDive();
+          }
+        });
+
         list.appendChild(listItem);
       });
       section.appendChild(list);
@@ -3336,6 +3364,82 @@
     };
 
     const GACKS_SIGNAL_KEYS = ['governor limits (gacks)', 'governor limits'];
+
+    const GACKS_ERROR_DEFINITIONS = (() => {
+      const entries = [
+        {
+          key: 'Query of LOB fields caused heap usage to exceed limit',
+          definition:
+            'This error occurs when SOQL queries retrieve LOB fields (Long Text Area, Rich Text Area, Base64, encrypted text, etc.) that consume enough heap memory to pass Salesforce limits (6MB synchronous, 12MB asynchronous).',
+          resolution:
+            'Resolution approaches: Reduce queried rows, avoid unnecessary LOB fields, batch processing with smaller sizes, and apply selective WHERE clauses to limit result sets.',
+        },
+        {
+          key: 'CPU_ENFORCED 15000',
+          definition:
+            "This error indicates Apex code exceeded Salesforce's 15,000 millisecond CPU time limit for synchronous executions, enforced to preserve multi-tenant stability.",
+          resolution:
+            'Typical causes: Complex business logic, inefficient loops, and resource-intensive operations consuming significant CPU time in a single transaction.',
+        },
+        {
+          key: 'Apex CPU time limit exceeded',
+          definition:
+            'A CPU timeout triggered because Apex code surpassed the allotted CPU time (10 seconds synchronous with a 5-second grace period, 60 seconds asynchronous).',
+          resolution:
+            'Common scenarios: Multiple flows/triggers in one transaction, complex validation rules, extensive data manipulation, or inefficient coding patterns.',
+        },
+        {
+          key: 'Too many SOQL queries: 101',
+          definition:
+            'This governor limit violation happens when a transaction runs more than 100 SOQL statements, causing Salesforce to abort at the 101st query.',
+          resolution:
+            'Root causes: Running SOQL inside loops, missing bulkification, redundant Get Records elements, or unoptimized queries.',
+        },
+        {
+          key: 'NE:Too many query rows: 50001',
+          definition:
+            'SOQL queries returned over 50,000 rows within a single transaction, surpassing Salesforce query row limits (often surfaced with the NE namespace prefix).',
+          resolution:
+            'Contributing factors: Missing WHERE filters, data skew with many child records, inefficient queries, or processing large datasets without batching/pagination.',
+        },
+      ];
+      const map = new Map();
+      entries.forEach(({ key, definition, resolution }) => {
+        const normalizedKey = normalizeKey(key);
+        map.set(normalizedKey, {
+          title: key,
+          definition: definition || 'missing description',
+          resolution: resolution || '',
+        });
+      });
+      return map;
+    })();
+
+    const getGacksErrorDefinition = (label) => {
+      const normalizedLabel = normalizeKey(label || '');
+      if (normalizedLabel && GACKS_ERROR_DEFINITIONS.has(normalizedLabel)) {
+        return GACKS_ERROR_DEFINITIONS.get(normalizedLabel);
+      }
+      return {
+        title: label || 'Governor limit error',
+        definition: 'missing description',
+        resolution: '',
+      };
+    };
+
+    const buildGacksDeepDiveSignal = (label) => {
+      const info = getGacksErrorDefinition(label);
+      const definitionPieces = [info.definition];
+      if (info.resolution) {
+        definitionPieces.push(info.resolution);
+      }
+      return {
+        signalName: info.title,
+        technicalHealthCapability: 'Governor limits',
+        technicalHealthSubcategory: 'GACKS analysis',
+        signalDefinition: definitionPieces.join(' '),
+      };
+    };
 
     const findGacksTechnicalHealthSignal = () => {
       const scoredSignals = Array.isArray(allSignalsByType?.scored) ? allSignalsByType.scored : [];
