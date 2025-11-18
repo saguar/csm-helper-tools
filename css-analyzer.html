@@ -527,6 +527,7 @@
       align-items: center;
       gap: 0.5rem;
       padding: 0.55rem 1.4rem;
+      margin-right: 10px;
       border-radius: 999px;
       border: 1px solid transparent;
       background: var(--primary);
@@ -3349,7 +3350,6 @@
 
       const metrics = [
         getGacksScoreMetric(),
-        { label: 'Rows analyzed', value: formatNumber(totalRows, { maximumFractionDigits: 0 }) },
         { label: 'Occurrences', value: formatNumber(totalOccurrences, { maximumFractionDigits: 0 }) },
         { label: 'Unique errors', value: formatNumber(uniqueErrors, { maximumFractionDigits: 0 }) },
         { label: 'Entry points', value: formatNumber(uniqueEntryPoints, { maximumFractionDigits: 0 }) },
