@@ -3629,7 +3629,8 @@
       }
     };
 
-    const updateTechnicalHealthDeepDiveContent = (signal) => {
+    const updateTechnicalHealthDeepDiveContent = (signal, options = {}) => {
+      const { triggeredByGacksListItem = false } = options;
       if (!technicalHealthDeepDiveModal) return;
       const metricName = signal.signalName || signal.metricName || 'Technical health metric';
       if (technicalHealthDeepDiveTitle) {
@@ -3686,8 +3687,12 @@
         const encodeQueryValue = (value) =>
           encodeURIComponent(`${value}`.trim()).replace(/%20/g, '+');
 
+        const queryLead = triggeredByGacksListItem
+          ? 'Give me details and official documentation for Governor Limits (GACKS - General Apex Code Kernel Stops)'
+          : 'Give me details and official documentation for: salesforce customer success score';
+
         const query = [
-          'Give me details and official documentation for: salesforce customer success score',
+          queryLead,
           signalCategory,
           signalName,
           definitionText,
@@ -3721,7 +3726,10 @@
 
     const openTechnicalHealthDeepDive = (signal, trigger) => {
       if (!technicalHealthDeepDiveModal) return;
-      updateTechnicalHealthDeepDiveContent(signal);
+      const triggeredByGacksListItem = Boolean(
+        trigger?.classList?.contains('gacks-list-item')
+      );
+      updateTechnicalHealthDeepDiveContent(signal, { triggeredByGacksListItem });
       if (trigger) {
         lastTechnicalHealthDeepDiveTrigger = trigger;
       }
