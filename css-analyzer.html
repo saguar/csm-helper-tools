@@ -3417,8 +3417,15 @@
 
     const getGacksErrorDefinition = (label) => {
       const normalizedLabel = normalizeKey(label || '');
-      if (normalizedLabel && GACKS_ERROR_DEFINITIONS.has(normalizedLabel)) {
-        return GACKS_ERROR_DEFINITIONS.get(normalizedLabel);
+      const sanitizedLabel = normalizedLabel.replace(/[.?!]+$/g, '').trim();
+      const lookupKeys = [normalizedLabel];
+      if (sanitizedLabel && sanitizedLabel !== normalizedLabel) {
+        lookupKeys.push(sanitizedLabel);
+      }
+      for (const key of lookupKeys) {
+        if (key && GACKS_ERROR_DEFINITIONS.has(key)) {
+          return GACKS_ERROR_DEFINITIONS.get(key);
+        }
       }
       return {
         title: label || 'Governor limit error',
