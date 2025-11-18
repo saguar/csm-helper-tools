@@ -3723,36 +3723,6 @@
       metrics.forEach((metric) => metricsGrid.appendChild(createGacksMetricCard(metric)));
       gacksAnalysisResults.appendChild(metricsGrid);
 
-      const topReasons = buildGacksAggregate(
-        normalizedRows,
-        (row) => row.reason || 'Unknown exception',
-        (row) => row.entryPoint || row.location || 'Unknown entry point'
-      )
-        .slice(0, 5)
-        .map((group) => {
-          const primaryEntryPoint = getTopAggregateLabel(group.relatedCounts);
-          const locationDetails = describeAggregateLocation(group);
-          const metaPieces = [
-            `${formatNumber(group.occurrences, { maximumFractionDigits: 0 })} occurrences`,
-          ];
-          if (primaryEntryPoint) {
-            metaPieces.push(`Common entry point: ${primaryEntryPoint}`);
-          }
-          if (locationDetails) {
-            metaPieces.push(locationDetails);
-          }
-          return {
-            label: group.label,
-            occurrences: group.occurrences,
-            meta: metaPieces.join(' • '),
-          };
-        });
-      if (topReasons.length) {
-        gacksAnalysisResults.appendChild(
-          createGacksTopSection('Top unhandled exceptions', topReasons)
-        );
-      }
-
       const topClasses = buildGacksAggregate(
         normalizedRows,
         (row) => row.location || 'Unknown class',
