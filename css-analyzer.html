@@ -666,7 +666,21 @@
 
     .gacks-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, #34a853 0%, #fbbc05 50%, #ea4335 100%);
+      border-radius: inherit;
+      transition: width 0.3s ease, background-color 0.3s ease;
+      background-color: #34a853;
+    }
+
+    .gacks-bar-fill.green {
+      background-color: #34a853;
+    }
+
+    .gacks-bar-fill.yellow {
+      background-color: #fbbc05;
+    }
+
+    .gacks-bar-fill.red {
+      background-color: #ea4335;
     }
 
     .technical-health-subcategory-group {
@@ -3274,6 +3288,12 @@
       return card;
     };
 
+    const getGacksBarFillClass = (percentage) => {
+      if (percentage <= 35) return 'green';
+      if (percentage <= 60) return 'yellow';
+      return 'red';
+    };
+
     const createGacksTopSection = (title, items) => {
       const section = document.createElement('section');
       section.className = 'gacks-top-section';
@@ -3300,8 +3320,13 @@
         bar.className = 'gacks-bar';
         const fill = document.createElement('div');
         fill.className = 'gacks-bar-fill';
-        const width = maxValue ? Math.max(8, (item.occurrences / maxValue) * 100) : 100;
+        const percentage = maxValue ? (item.occurrences / maxValue) * 100 : 100;
+        const width = maxValue ? Math.max(8, percentage) : 100;
         fill.style.width = `${width}%`;
+        const colorClass = getGacksBarFillClass(percentage);
+        if (colorClass) {
+          fill.classList.add(colorClass);
+        }
         bar.appendChild(fill);
         listItem.appendChild(bar);
         list.appendChild(listItem);
