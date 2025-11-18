@@ -665,7 +665,7 @@
 
     .gacks-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, #1a73e8, #34a853);
+      background: linear-gradient(90deg, #34a853 0%, #fbbc05 50%, #ea4335 100%);
     }
 
     .technical-health-subcategory-group {
@@ -1384,11 +1384,7 @@
               <div class="gacks-analysis-header">
                 <div>
                   <h3>Governor limit exception insights</h3>
-                  <p class="helper-text" id="gacksAnalysisSummary">
-                    Upload a GACKS export to highlight the most frequent governor limit errors.
-                  </p>
                 </div>
-                <p class="gacks-file-label" id="gacksAnalysisFileLabel"></p>
               </div>
               <div id="gacksAnalysisResults"></div>
             </section>
@@ -3083,9 +3079,7 @@
     const unhandledErrorsUploadInput = document.getElementById('unhandledErrorsUpload');
     const gacksUploadInput = document.getElementById('gacksUpload');
     const gacksAnalysisContainer = document.getElementById('gacksAnalysis');
-    const gacksAnalysisSummary = document.getElementById('gacksAnalysisSummary');
     const gacksAnalysisResults = document.getElementById('gacksAnalysisResults');
-    const gacksAnalysisFileLabel = document.getElementById('gacksAnalysisFileLabel');
     const customTechnicalHealthModal = document.getElementById('customTechnicalHealthModal');
     const customTechnicalHealthForm = document.getElementById('customTechnicalHealthForm');
     const customTechnicalHealthError = document.getElementById('customTechnicalHealthError');
@@ -3095,7 +3089,6 @@
     let lastTechnicalHealthDeepDiveTrigger = null;
     let lastCustomTechnicalHealthTrigger = null;
     const TECHNICAL_HEALTH_NO_DATA_MESSAGE = 'No Technical Health scores available for the current selection.';
-    const GACKS_DEFAULT_SUMMARY = 'Upload a GACKS export to highlight the most frequent governor limit errors.';
     const tabButtons = Array.from(document.querySelectorAll('[data-tab-target]'));
     const tabPanels = Array.from(document.querySelectorAll('.tab-panel-section'));
 
@@ -3164,22 +3157,14 @@
     };
 
     const clearGacksAnalysis = () => {
-      if (!gacksAnalysisContainer || !gacksAnalysisSummary || !gacksAnalysisResults) return;
-      gacksAnalysisSummary.textContent = GACKS_DEFAULT_SUMMARY;
+      if (!gacksAnalysisContainer || !gacksAnalysisResults) return;
       gacksAnalysisResults.innerHTML = '';
-      if (gacksAnalysisFileLabel) {
-        gacksAnalysisFileLabel.textContent = '';
-      }
       gacksAnalysisContainer.hidden = true;
     };
 
     const showGacksAnalysisError = (message) => {
-      if (!gacksAnalysisContainer || !gacksAnalysisSummary || !gacksAnalysisResults) return;
-      gacksAnalysisSummary.textContent = message;
+      if (!gacksAnalysisContainer || !gacksAnalysisResults) return;
       gacksAnalysisResults.innerHTML = `<p class="empty-state">${message}</p>`;
-      if (gacksAnalysisFileLabel) {
-        gacksAnalysisFileLabel.textContent = '';
-      }
       gacksAnalysisContainer.hidden = false;
     };
 
@@ -3324,8 +3309,29 @@
       return section;
     };
 
-    const renderGacksAnalysis = (rows, fileName) => {
-      if (!gacksAnalysisContainer || !gacksAnalysisSummary || !gacksAnalysisResults) return;
+    const GACKS_SIGNAL_KEYS = ['governor limits (gacks)', 'governor limits'];
+
+    const findGacksTechnicalHealthSignal = () => {
+      const scoredSignals = Array.isArray(allSignalsByType?.scored) ? allSignalsByType.scored : [];
+      return scoredSignals.find((signal) => {
+        const nameKey = normalizeKey(signal?.signalName || signal?.metricName || '');
+        if (!nameKey) return false;
+        return GACKS_SIGNAL_KEYS.some((target) => nameKey === target || nameKey.startsWith(`${target} `));
+      });
+    };
+
+    const getGacksScoreMetric = () => {
+      const signal = findGacksTechnicalHealthSignal();
+      if (!signal) {
+        return { label: 'Score', value: '-' };
+      }
+      const scoreValue = getTechnicalHealthScoreValue(signal);
+      const fallback = getTechnicalHealthScoreFallback(signal, scoreValue);
+      return { label: 'Score', value: formatScore(scoreValue, fallback) };
+    };
+
+    const renderGacksAnalysis = (rows) => {
+      if (!gacksAnalysisContainer || !gacksAnalysisResults) return;
       const normalizedRows = normalizeGacksRows(rows);
       if (!normalizedRows.length) {
         showGacksAnalysisError('No governor limit rows found in the selected file.');
@@ -3340,15 +3346,9 @@
       ).size;
 
       gacksAnalysisResults.innerHTML = '';
-      gacksAnalysisSummary.textContent = `Analyzed ${formatNumber(totalRows, { maximumFractionDigits: 0 })} rows with ${formatNumber(
-        totalOccurrences,
-        { maximumFractionDigits: 0 }
-      )} governor limit occurrences.`;
-      if (gacksAnalysisFileLabel) {
-        gacksAnalysisFileLabel.textContent = fileName ? `Source: ${fileName}` : '';
-      }
 
       const metrics = [
+        getGacksScoreMetric(),
         { label: 'Rows analyzed', value: formatNumber(totalRows, { maximumFractionDigits: 0 }) },
         { label: 'Occurrences', value: formatNumber(totalOccurrences, { maximumFractionDigits: 0 }) },
         { label: 'Unique errors', value: formatNumber(uniqueErrors, { maximumFractionDigits: 0 }) },
@@ -3420,7 +3420,7 @@
 
     const analyzeGacks = (file) => {
       if (!file) return;
-      if (!gacksAnalysisContainer || !gacksAnalysisSummary || !gacksAnalysisResults) return;
+      if (!gacksAnalysisContainer || !gacksAnalysisResults) return;
       const reader = new FileReader();
       reader.onload = (event) => {
         try {
@@ -3434,7 +3434,7 @@
             showGacksAnalysisError('The selected file does not contain any rows to analyze.');
             return;
           }
-          renderGacksAnalysis(rows, file.name || 'GACKS export');
+          renderGacksAnalysis(rows);
         } catch (error) {
           console.error('Unable to analyze GACKS export', error);
           showGacksAnalysisError('Unable to parse the selected GACKS export.');
