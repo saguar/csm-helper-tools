@@ -559,6 +559,115 @@
       gap: 2rem;
     }
 
+    .gacks-analysis {
+      margin-top: 2.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #dfe1e5;
+    }
+
+    .gacks-analysis[hidden] {
+      display: none;
+    }
+
+    .gacks-analysis-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .gacks-analysis-header h3 {
+      margin-bottom: 0.25rem;
+    }
+
+    .gacks-file-label {
+      font-size: 0.875rem;
+      color: #5f6368;
+    }
+
+    .gacks-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .gacks-metric-card {
+      padding: 1rem;
+      border-radius: 0.75rem;
+      background: #f8f9fa;
+      box-shadow: inset 0 0 0 1px #e0e3eb;
+    }
+
+    .gacks-metric-label {
+      font-size: 0.85rem;
+      color: #5f6368;
+      margin-bottom: 0.25rem;
+    }
+
+    .gacks-metric-value {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #202124;
+    }
+
+    .gacks-metric-helper {
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      color: #5f6368;
+    }
+
+    .gacks-top-section + .gacks-top-section {
+      margin-top: 2rem;
+    }
+
+    .gacks-top-section h4 {
+      margin-bottom: 0.75rem;
+    }
+
+    .gacks-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .gacks-list-item {
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(32, 33, 36, 0.08), 0 4px 12px rgba(32, 33, 36, 0.06);
+    }
+
+    .gacks-list-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: #202124;
+    }
+
+    .gacks-list-meta {
+      font-size: 0.85rem;
+      color: #5f6368;
+      margin-bottom: 0.5rem;
+    }
+
+    .gacks-bar {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: #e8eaed;
+      overflow: hidden;
+    }
+
+    .gacks-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #1a73e8, #34a853);
+    }
+
     .technical-health-subcategory-group {
       display: grid;
       gap: 1rem;
@@ -1271,6 +1380,18 @@
               </button>
             </div>
             <div class="technical-health-grid" id="technicalHealthGrid" aria-live="polite"></div>
+            <section class="gacks-analysis" id="gacksAnalysis" aria-live="polite" hidden>
+              <div class="gacks-analysis-header">
+                <div>
+                  <h3>Governor limit exception insights</h3>
+                  <p class="helper-text" id="gacksAnalysisSummary">
+                    Upload a GACKS export to highlight the most frequent governor limit errors.
+                  </p>
+                </div>
+                <p class="gacks-file-label" id="gacksAnalysisFileLabel"></p>
+              </div>
+              <div id="gacksAnalysisResults"></div>
+            </section>
             <p class="empty-state" id="technicalHealthEmpty">Upload a file to begin the analysis.</p>
           </div>
         </section>
@@ -2929,8 +3050,6 @@
 
     const analyzeUnhandledExceptions = (file) => {};
 
-    const analyzeGacks = (file) => {};
-
     const selectedMonthLabel = document.getElementById('selectedMonth');
     const selectedAccountLabel = document.getElementById('selectedAccount');
     const referenceMonthSelect = document.getElementById('referenceMonth');
@@ -2963,6 +3082,10 @@
     const loadGacksButton = document.getElementById('loadGacksButton');
     const unhandledErrorsUploadInput = document.getElementById('unhandledErrorsUpload');
     const gacksUploadInput = document.getElementById('gacksUpload');
+    const gacksAnalysisContainer = document.getElementById('gacksAnalysis');
+    const gacksAnalysisSummary = document.getElementById('gacksAnalysisSummary');
+    const gacksAnalysisResults = document.getElementById('gacksAnalysisResults');
+    const gacksAnalysisFileLabel = document.getElementById('gacksAnalysisFileLabel');
     const customTechnicalHealthModal = document.getElementById('customTechnicalHealthModal');
     const customTechnicalHealthForm = document.getElementById('customTechnicalHealthForm');
     const customTechnicalHealthError = document.getElementById('customTechnicalHealthError');
@@ -2972,6 +3095,7 @@
     let lastTechnicalHealthDeepDiveTrigger = null;
     let lastCustomTechnicalHealthTrigger = null;
     const TECHNICAL_HEALTH_NO_DATA_MESSAGE = 'No Technical Health scores available for the current selection.';
+    const GACKS_DEFAULT_SUMMARY = 'Upload a GACKS export to highlight the most frequent governor limit errors.';
     const tabButtons = Array.from(document.querySelectorAll('[data-tab-target]'));
     const tabPanels = Array.from(document.querySelectorAll('.tab-panel-section'));
 
@@ -3037,6 +3161,289 @@
       if (nextIndex < 0) nextIndex = lastIndex;
       if (nextIndex > lastIndex) nextIndex = 0;
       focusTabButton(nextIndex);
+    };
+
+    const clearGacksAnalysis = () => {
+      if (!gacksAnalysisContainer || !gacksAnalysisSummary || !gacksAnalysisResults) return;
+      gacksAnalysisSummary.textContent = GACKS_DEFAULT_SUMMARY;
+      gacksAnalysisResults.innerHTML = '';
+      if (gacksAnalysisFileLabel) {
+        gacksAnalysisFileLabel.textContent = '';
+      }
+      gacksAnalysisContainer.hidden = true;
+    };
+
+    const showGacksAnalysisError = (message) => {
+      if (!gacksAnalysisContainer || !gacksAnalysisSummary || !gacksAnalysisResults) return;
+      gacksAnalysisSummary.textContent = message;
+      gacksAnalysisResults.innerHTML = `<p class="empty-state">${message}</p>`;
+      if (gacksAnalysisFileLabel) {
+        gacksAnalysisFileLabel.textContent = '';
+      }
+      gacksAnalysisContainer.hidden = false;
+    };
+
+    clearGacksAnalysis();
+
+    const getNormalizedCellValue = (map, ...keys) => {
+      for (const key of keys) {
+        const normalizedKey = normalizeKey(key);
+        if (!normalizedKey) continue;
+        if (Object.prototype.hasOwnProperty.call(map, normalizedKey)) {
+          const value = map[normalizedKey];
+          if (value !== null && value !== undefined) {
+            return value;
+          }
+        }
+      }
+      return '';
+    };
+
+    const normalizeGacksRows = (rows) => {
+      if (!Array.isArray(rows)) return [];
+      return rows
+        .map((row) => {
+          const normalizedMap = {};
+          Object.entries(row || {}).forEach(([key, value]) => {
+            const normalizedKey = normalizeKey(key);
+            if (normalizedKey) {
+              normalizedMap[normalizedKey] = value;
+            }
+          });
+          const countRaw = getNormalizedCellValue(normalizedMap, 'count', 'occurrences', 'hits');
+          const lineRaw = getNormalizedCellValue(normalizedMap, 'line', 'line number');
+          const entryPointRaw = getNormalizedCellValue(normalizedMap, 'entrypoint', 'entry point', 'entry');
+          const locationRaw = getNormalizedCellValue(normalizedMap, 'location', 'class', 'apex class');
+          const errorRaw = getNormalizedCellValue(normalizedMap, 'thrown', 'error', 'exception', 'exception message');
+          const occurrences = parseNumber(countRaw);
+          const lineNumber = parseNumber(lineRaw);
+          return {
+            organizationId: getNormalizedCellValue(normalizedMap, 'organizationid', 'organization id', 'orgid'),
+            error: errorRaw || 'Unknown governor limit',
+            location: locationRaw || '',
+            entryPoint: entryPointRaw || '',
+            lineNumber: Number.isFinite(lineNumber) ? lineNumber : null,
+            occurrences: Number.isFinite(occurrences) ? occurrences : 1,
+          };
+        })
+        .filter((row) => row.error || row.entryPoint || row.location);
+    };
+
+    const getTopAggregateLabel = (countsMap) => {
+      if (!(countsMap instanceof Map) || !countsMap.size) return '';
+      const [label] = Array.from(countsMap.entries()).sort((a, b) => b[1] - a[1])[0];
+      return label;
+    };
+
+    const buildGacksAggregate = (rows, keySelector, relatedSelector) => {
+      const groups = new Map();
+      rows.forEach((row) => {
+        const rawKey = keySelector(row) || 'Unknown';
+        const key = rawKey.trim() || 'Unknown';
+        if (!groups.has(key)) {
+          groups.set(key, {
+            label: key,
+            occurrences: 0,
+            relatedCounts: new Map(),
+            sampleLocation: row.location || '',
+            sampleLine: Number.isFinite(row.lineNumber) ? row.lineNumber : null,
+          });
+        }
+        const bucket = groups.get(key);
+        bucket.occurrences += row.occurrences;
+        if (relatedSelector) {
+          const relatedRaw = relatedSelector(row) || '';
+          const related = relatedRaw.trim();
+          if (related) {
+            bucket.relatedCounts.set(related, (bucket.relatedCounts.get(related) || 0) + row.occurrences);
+          }
+        }
+        if (!bucket.sampleLocation && row.location) {
+          bucket.sampleLocation = row.location;
+        }
+        if (!Number.isFinite(bucket.sampleLine) && Number.isFinite(row.lineNumber)) {
+          bucket.sampleLine = row.lineNumber;
+        }
+      });
+      return Array.from(groups.values()).sort((a, b) => b.occurrences - a.occurrences);
+    };
+
+    const createGacksMetricCard = (metric) => {
+      const card = document.createElement('article');
+      card.className = 'gacks-metric-card';
+      const label = document.createElement('p');
+      label.className = 'gacks-metric-label';
+      label.textContent = metric.label;
+      card.appendChild(label);
+      const value = document.createElement('p');
+      value.className = 'gacks-metric-value';
+      value.textContent = metric.value;
+      card.appendChild(value);
+      if (metric.helper) {
+        const helper = document.createElement('p');
+        helper.className = 'gacks-metric-helper';
+        helper.textContent = metric.helper;
+        card.appendChild(helper);
+      }
+      return card;
+    };
+
+    const createGacksTopSection = (title, items) => {
+      const section = document.createElement('section');
+      section.className = 'gacks-top-section';
+      const heading = document.createElement('h4');
+      heading.textContent = title;
+      section.appendChild(heading);
+      const list = document.createElement('ol');
+      list.className = 'gacks-list';
+      const maxValue = items.length ? items[0].occurrences : 0;
+      items.forEach((item) => {
+        const listItem = document.createElement('li');
+        listItem.className = 'gacks-list-item';
+        const titleElement = document.createElement('p');
+        titleElement.className = 'gacks-list-title';
+        titleElement.textContent = item.label;
+        listItem.appendChild(titleElement);
+        if (item.meta) {
+          const meta = document.createElement('p');
+          meta.className = 'gacks-list-meta';
+          meta.textContent = item.meta;
+          listItem.appendChild(meta);
+        }
+        const bar = document.createElement('div');
+        bar.className = 'gacks-bar';
+        const fill = document.createElement('div');
+        fill.className = 'gacks-bar-fill';
+        const width = maxValue ? Math.max(8, (item.occurrences / maxValue) * 100) : 100;
+        fill.style.width = `${width}%`;
+        bar.appendChild(fill);
+        listItem.appendChild(bar);
+        list.appendChild(listItem);
+      });
+      section.appendChild(list);
+      return section;
+    };
+
+    const renderGacksAnalysis = (rows, fileName) => {
+      if (!gacksAnalysisContainer || !gacksAnalysisSummary || !gacksAnalysisResults) return;
+      const normalizedRows = normalizeGacksRows(rows);
+      if (!normalizedRows.length) {
+        showGacksAnalysisError('No governor limit rows found in the selected file.');
+        return;
+      }
+
+      const totalRows = normalizedRows.length;
+      const totalOccurrences = normalizedRows.reduce((sum, row) => sum + row.occurrences, 0);
+      const uniqueErrors = new Set(normalizedRows.map((row) => row.error)).size;
+      const uniqueEntryPoints = new Set(
+        normalizedRows.map((row) => row.entryPoint || row.location || 'Unknown entry point')
+      ).size;
+
+      gacksAnalysisResults.innerHTML = '';
+      gacksAnalysisSummary.textContent = `Analyzed ${formatNumber(totalRows, { maximumFractionDigits: 0 })} rows with ${formatNumber(
+        totalOccurrences,
+        { maximumFractionDigits: 0 }
+      )} governor limit occurrences.`;
+      if (gacksAnalysisFileLabel) {
+        gacksAnalysisFileLabel.textContent = fileName ? `Source: ${fileName}` : '';
+      }
+
+      const metrics = [
+        { label: 'Rows analyzed', value: formatNumber(totalRows, { maximumFractionDigits: 0 }) },
+        { label: 'Occurrences', value: formatNumber(totalOccurrences, { maximumFractionDigits: 0 }) },
+        { label: 'Unique errors', value: formatNumber(uniqueErrors, { maximumFractionDigits: 0 }) },
+        { label: 'Entry points', value: formatNumber(uniqueEntryPoints, { maximumFractionDigits: 0 }) },
+      ];
+      const metricsGrid = document.createElement('div');
+      metricsGrid.className = 'gacks-metrics-grid';
+      metrics.forEach((metric) => metricsGrid.appendChild(createGacksMetricCard(metric)));
+      gacksAnalysisResults.appendChild(metricsGrid);
+
+      const topErrors = buildGacksAggregate(
+        normalizedRows,
+        (row) => row.error || 'Unknown governor limit',
+        (row) => row.entryPoint || row.location || 'Unknown entry point'
+      )
+        .slice(0, 5)
+        .map((group) => {
+          const primaryEntryPoint = getTopAggregateLabel(group.relatedCounts);
+          const metaPieces = [
+            `${formatNumber(group.occurrences, { maximumFractionDigits: 0 })} occurrences`,
+          ];
+          if (primaryEntryPoint) {
+            metaPieces.push(`Common entry point: ${primaryEntryPoint}`);
+          }
+          return {
+            label: group.label,
+            occurrences: group.occurrences,
+            meta: metaPieces.join(' • '),
+          };
+        });
+      if (topErrors.length) {
+        gacksAnalysisResults.appendChild(createGacksTopSection('Top governor limit violations', topErrors));
+      }
+
+      const topEntryPoints = buildGacksAggregate(
+        normalizedRows,
+        (row) => row.entryPoint || row.location || 'Unknown entry point',
+        (row) => row.error || 'Unknown governor limit'
+      )
+        .slice(0, 5)
+        .map((group) => {
+          const topError = getTopAggregateLabel(group.relatedCounts);
+          const locationDetails = (() => {
+            if (!group.sampleLocation) return '';
+            if (Number.isFinite(group.sampleLine)) {
+              return `Class: ${group.sampleLocation} (line ${group.sampleLine})`;
+            }
+            return `Class: ${group.sampleLocation}`;
+          })();
+          const metaPieces = [
+            `${formatNumber(group.occurrences, { maximumFractionDigits: 0 })} occurrences`,
+          ];
+          if (locationDetails) metaPieces.push(locationDetails);
+          if (topError) metaPieces.push(`Common error: ${topError}`);
+          return {
+            label: group.label,
+            occurrences: group.occurrences,
+            meta: metaPieces.join(' • '),
+          };
+        });
+      if (topEntryPoints.length) {
+        gacksAnalysisResults.appendChild(
+          createGacksTopSection('Entry points with the highest failure volume', topEntryPoints)
+        );
+      }
+
+      gacksAnalysisContainer.hidden = false;
+    };
+
+    const analyzeGacks = (file) => {
+      if (!file) return;
+      if (!gacksAnalysisContainer || !gacksAnalysisSummary || !gacksAnalysisResults) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const text = event?.target?.result;
+          if (typeof text !== 'string') {
+            showGacksAnalysisError('Unable to read the selected file.');
+            return;
+          }
+          const rows = parseCSV(text);
+          if (!rows.length) {
+            showGacksAnalysisError('The selected file does not contain any rows to analyze.');
+            return;
+          }
+          renderGacksAnalysis(rows, file.name || 'GACKS export');
+        } catch (error) {
+          console.error('Unable to analyze GACKS export', error);
+          showGacksAnalysisError('Unable to parse the selected GACKS export.');
+        }
+      };
+      reader.onerror = () => {
+        showGacksAnalysisError('Unable to read the selected file.');
+      };
+      reader.readAsText(file);
     };
 
     if (tabButtons.length && tabPanels.length) {
@@ -3629,6 +4036,7 @@
         technicalHealthEmpty.textContent = message || technicalHealthEmptyDefault || TECHNICAL_HEALTH_NO_DATA_MESSAGE;
         technicalHealthEmpty.hidden = false;
       }
+      clearGacksAnalysis();
       document.querySelectorAll('.signal-search').forEach((input) => {
         input.value = '';
       });
