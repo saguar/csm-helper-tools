@@ -3737,15 +3737,13 @@
           ? 'I need help for reviewing Salesforce Governor Limits (GACKS - General Apex Code Kernel Stops). I want to perform '
           : 'Give me details and official documentation for: salesforce customer success score';
 
-        const query = [
-          queryLead,
-          signalCategory,
-          signalName,
-          definitionText,
-        ]
-          .filter((segment) => segment && `${segment}`.trim().length)
-          .map(encodeQueryValue)
-          .join('+');
+        const querySegments = [queryLead, signalCategory, signalName, definitionText]
+          .map((segment) => `${segment ?? ''}`.trim())
+          .filter((segment) => segment.length);
+
+        const queryText = querySegments.join(' ');
+
+        const query = querySegments.map(encodeQueryValue).join('+');
 
         geminiLink.href = `https://www.google.com/search?udm=50&source=searchlabs&q=${query}`;
         geminiLink.setAttribute('aria-label', 'Open Ask Gemini search in a new tab');
@@ -3763,7 +3761,7 @@
         copyPromptButton.addEventListener('click', async () => {
           copyPromptButton.disabled = true;
           try {
-            await copyTextToClipboard(query);
+            await copyTextToClipboard(queryText || queryLead);
             copyPromptButton.textContent = 'Copied!';
           } catch (error) {
             console.error('Unable to copy Gemini query text', error);
