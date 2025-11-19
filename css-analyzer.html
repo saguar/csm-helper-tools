@@ -4688,6 +4688,24 @@
       }
     };
 
+    const autoSelectDefaultFilters = (dates) => {
+      if (!Array.isArray(dates) || !dates.length) return;
+      const firstDate = dates[0];
+      if (firstDate) {
+        referenceMonthSelect.value = firstDate;
+        referenceMonthSelect.dispatchEvent(new Event('change'));
+      }
+
+      if (!tenantTypeFilterSelect || tenantTypeFilterSelect.disabled) return;
+      const desiredTenantValue = 'force.com';
+      const forceTenantOption = Array.from(tenantTypeFilterSelect.options || []).find(
+        (option) => `${option.value}`.toLowerCase() === desiredTenantValue
+      );
+      if (!forceTenantOption) return;
+      tenantTypeFilterSelect.value = forceTenantOption.value;
+      tenantTypeFilterSelect.dispatchEvent(new Event('change'));
+    };
+
     const resetTenantTypeSelect = (message) => {
       if (!tenantTypeFilterSelect) return;
       tenantTypeFilterSelect.innerHTML = `<option value="" disabled selected>${message}</option>`;
@@ -5152,6 +5170,7 @@
             selectedMonthLabel.textContent = 'Not selected';
             selectedAccountLabel.textContent = 'Not selected';
             updateLoadButtonState();
+            autoSelectDefaultFilters(dates);
           } catch (error) {
             console.error('Unable to parse Excel file', error);
             alert('The uploaded file is not a valid Customer Success Score export.');
@@ -5184,6 +5203,7 @@
             selectedMonthLabel.textContent = 'Not selected';
             selectedAccountLabel.textContent = 'Not selected';
             updateLoadButtonState();
+            autoSelectDefaultFilters(dates);
           } catch (error) {
             console.error('Unable to parse CSV file', error);
             alert('The uploaded file is not a valid Customer Success Score export.');
