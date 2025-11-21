@@ -1191,6 +1191,12 @@
         dom.snapshotSelect.append(option);
       });
       dom.snapshotSelect.disabled = false;
+      
+      // Auto-select the first snapshot if available
+      if (dom.snapshotSelect.options.length > 1) {
+        dom.snapshotSelect.selectedIndex = 1;
+        dom.snapshotSelect.dispatchEvent(new Event('change'));
+      }
     };
 
     const populateTenantOptions = (snapshot) => {
@@ -1231,7 +1237,20 @@
           dom.tenantSelect.append(option);
         });
       dom.tenantSelect.disabled = false;
-      dom.tenantSelect.value = 'all';
+      
+      // Auto-select 'force.com' if available, otherwise default to 'all'
+      const forceTenantOption = Array.from(dom.tenantSelect.options).find(
+        (option) => option.value.toLowerCase() === 'force.com'
+      );
+      
+      if (forceTenantOption) {
+        dom.tenantSelect.value = forceTenantOption.value;
+      } else {
+        dom.tenantSelect.value = 'all';
+      }
+      
+      // Trigger change to update accounts
+      dom.tenantSelect.dispatchEvent(new Event('change'));
       populateAccountOptions(snapshot, 'all');
     };
 
