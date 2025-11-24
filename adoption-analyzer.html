@@ -1622,7 +1622,7 @@
         ? sourceRow['ACCOUNT ID']
         : '';
       const accountLabel = !isBlank(accountLabelSource) ? String(accountLabelSource) : '';
-      const customHeader = [apmLevel2Label, groupLabel, typeLabel].filter(Boolean).join(' ');
+      const customHeader = [groupLabel, typeLabel].filter(Boolean).join(' - ');
       const titleText = customHeader || level2Label || level1Label || accountLabel || 'License metrics';
       title.textContent = titleText;
       header.append(title);
