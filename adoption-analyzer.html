@@ -1,15 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Adoption Analyzer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -372,11 +370,11 @@
       background: var(--surface-alt);
     }
 
-    .summary-accordion + .summary-accordion {
+    .summary-accordion+.summary-accordion {
       margin-top: 0.75rem;
     }
 
-    .summary-accordion > summary {
+    .summary-accordion>summary {
       cursor: pointer;
       list-style: none;
       font-weight: 600;
@@ -387,18 +385,18 @@
       gap: 0.5rem;
     }
 
-    .summary-accordion > summary::-webkit-details-marker {
+    .summary-accordion>summary::-webkit-details-marker {
       display: none;
     }
 
-    .summary-accordion > summary::after {
+    .summary-accordion>summary::after {
       content: '▾';
       font-size: 0.8rem;
       color: var(--muted);
       transition: transform 0.2s ease;
     }
 
-    .summary-accordion[open] > summary::after {
+    .summary-accordion[open]>summary::after {
       transform: rotate(180deg);
     }
 
@@ -408,7 +406,7 @@
       border: 1px solid rgba(148, 163, 184, 0.25);
     }
 
-    .summary-accordion.level2 > summary {
+    .summary-accordion.level2>summary {
       font-weight: 500;
       font-size: 0.95rem;
     }
@@ -562,6 +560,7 @@
     }
 
     @media (max-width: 640px) {
+
       .page-header,
       main {
         padding-left: 1.25rem;
@@ -570,6 +569,7 @@
     }
   </style>
 </head>
+
 <body>
   <header class="page-header">
     <div>
@@ -614,11 +614,8 @@
           </div>
           <div class="form-group">
             <label for="adoptionUpload">Upload adoption workbook</label>
-            <input
-              type="file"
-              id="adoptionUpload"
-              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            />
+            <input type="file" id="adoptionUpload"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
           </div>
         </div>
         <button class="load-button" type="button" id="loadWorkbookBtn" disabled>Load data</button>
@@ -1191,7 +1188,7 @@
         dom.snapshotSelect.append(option);
       });
       dom.snapshotSelect.disabled = false;
-      
+
       // Auto-select the first snapshot if available
       if (dom.snapshotSelect.options.length > 1) {
         dom.snapshotSelect.selectedIndex = 1;
@@ -1237,20 +1234,16 @@
           dom.tenantSelect.append(option);
         });
       dom.tenantSelect.disabled = false;
-      
-      // Auto-select 'force.com' if available, otherwise default to 'all'
-      const forceTenantOption = Array.from(dom.tenantSelect.options).find(
-        (option) => option.value.toLowerCase() === 'force.com'
-      );
-      
-      if (forceTenantOption) {
-        dom.tenantSelect.value = forceTenantOption.value;
-      } else {
-        dom.tenantSelect.value = 'all';
+
+      // const forceTenantOption = Array.from(dom.tenantSelect.options).find(
+      //   (option) => option.value.toLowerCase() === 'force.com'
+      // );
+      // Auto-select first element
+      if (dom.tenantSelect.options.length > 1) {
+        dom.tenantSelect.selectedIndex = 1;
+        dom.tenantSelect.dispatchEvent(new Event('change'));
       }
-      
-      // Trigger change to update accounts
-      dom.tenantSelect.dispatchEvent(new Event('change'));
+
       populateAccountOptions(snapshot, 'all');
     };
 
@@ -1611,16 +1604,16 @@
       const accountLabelSource = !isBlank(sourceRow.__accountLabel)
         ? sourceRow.__accountLabel
         : !isBlank(sourceRow['Account Name'])
-        ? sourceRow['Account Name']
-        : !isBlank(sourceRow['Account Local Name'])
-        ? sourceRow['Account Local Name']
-        : !isBlank(sourceRow['ORG ID'])
-        ? sourceRow['ORG ID']
-        : !isBlank(sourceRow['Account ID'])
-        ? sourceRow['Account ID']
-        : !isBlank(sourceRow['ACCOUNT ID'])
-        ? sourceRow['ACCOUNT ID']
-        : '';
+          ? sourceRow['Account Name']
+          : !isBlank(sourceRow['Account Local Name'])
+            ? sourceRow['Account Local Name']
+            : !isBlank(sourceRow['ORG ID'])
+              ? sourceRow['ORG ID']
+              : !isBlank(sourceRow['Account ID'])
+                ? sourceRow['Account ID']
+                : !isBlank(sourceRow['ACCOUNT ID'])
+                  ? sourceRow['ACCOUNT ID']
+                  : '';
       const accountLabel = !isBlank(accountLabelSource) ? String(accountLabelSource) : '';
       const customHeader = [groupLabel, typeLabel].filter(Boolean).join(' - ');
       const titleText = customHeader || level2Label || level1Label || accountLabel || 'License metrics';
@@ -1893,20 +1886,20 @@
       const query = state.filters.summarySearch.trim().toLowerCase();
       const filteredRows = query
         ? rows.filter((row) => {
-            if (!searchableHeaders.size) return false;
-            for (const header of searchableHeaders) {
-              let value = '';
-              if (SUMMARY_LEVEL_COLUMNS.includes(header)) {
-                value = !isBlank(row[header]) ? String(row[header]) : '';
-              } else {
-                value = getSummaryCellValue(header, row);
-              }
-              if (value && value.toLowerCase().includes(query)) {
-                return true;
-              }
+          if (!searchableHeaders.size) return false;
+          for (const header of searchableHeaders) {
+            let value = '';
+            if (SUMMARY_LEVEL_COLUMNS.includes(header)) {
+              value = !isBlank(row[header]) ? String(row[header]) : '';
+            } else {
+              value = getSummaryCellValue(header, row);
             }
-            return false;
-          })
+            if (value && value.toLowerCase().includes(query)) {
+              return true;
+            }
+          }
+          return false;
+        })
         : rows;
 
       if (!filteredRows.length) {
@@ -2695,4 +2688,5 @@
     resetDashboard('Upload an adoption workbook to begin the analysis.');
   </script>
 </body>
+
 </html>
