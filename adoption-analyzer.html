@@ -1596,28 +1596,11 @@
       header.className = 'license-chart-card-header';
 
       const title = document.createElement('h3');
-      const apmLevel2Label = !isBlank(sourceRow['APM Level 2']) ? String(sourceRow['APM Level 2']) : '';
       const groupLabel = !isBlank(sourceRow['Group']) ? String(sourceRow['Group']) : '';
       const typeLabel = !isBlank(sourceRow[' Type']) ? String(sourceRow[' Type']) : '';
       const level2Label = !isBlank(sourceRow['Level 2 Cloud']) ? String(sourceRow['Level 2 Cloud']) : '';
-      const level1Label = !isBlank(sourceRow['Level 1 Cloud']) ? String(sourceRow['Level 1 Cloud']) : '';
-      const accountLabelSource = !isBlank(sourceRow.__accountLabel)
-        ? sourceRow.__accountLabel
-        : !isBlank(sourceRow['Account Name'])
-          ? sourceRow['Account Name']
-          : !isBlank(sourceRow['Account Local Name'])
-            ? sourceRow['Account Local Name']
-            : !isBlank(sourceRow['ORG ID'])
-              ? sourceRow['ORG ID']
-              : !isBlank(sourceRow['Account ID'])
-                ? sourceRow['Account ID']
-                : !isBlank(sourceRow['ACCOUNT ID'])
-                  ? sourceRow['ACCOUNT ID']
-                  : '';
-      const accountLabel = !isBlank(accountLabelSource) ? String(accountLabelSource) : '';
-      const customHeader = [groupLabel, typeLabel].filter(Boolean).join(' - ');
-      const titleText = customHeader || level2Label || level1Label || accountLabel || 'License metrics';
-      title.textContent = titleText;
+      const titleParts = [level2Label, groupLabel, typeLabel].filter(Boolean);
+      title.textContent = titleParts.length ? titleParts.join(' - ') : 'License metrics';
       header.append(title);
 
       card.append(closeButton, header);
