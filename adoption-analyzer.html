@@ -445,6 +445,9 @@
       padding: 0.75rem 1rem;
       border-bottom: 1px solid var(--border);
       font-size: 0.9rem;
+    }
+
+    .summary-table td:not(.summary-action-cell) {
       word-break: break-word;
       white-space: normal;
       max-width: 240px;
@@ -452,6 +455,8 @@
 
     .summary-action-cell {
       white-space: nowrap;
+      word-break: keep-all;
+      max-width: none;
     }
 
     .summary-action-button {
