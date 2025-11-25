@@ -949,6 +949,12 @@
     const SUMMARY_LEVEL_COLUMNS = ['Level 1 Cloud', 'Level 2 Cloud'];
     const SUMMARY_PERCENT_COLUMNS = new Set(['License Activation', 'True Login Percentage']);
 
+    const getLicenseTypeLabel = (row) => {
+      if (!row || typeof row !== 'object') return 'Not specified';
+      const rawType = !isBlank(row.Type) ? row.Type : row[' Type'];
+      return !isBlank(rawType) ? String(rawType) : 'Not specified';
+    };
+
     const getSummaryCellValue = (header, row) => {
       if (header === 'SNAPSHOT_DT') {
         const dateValue = parseDate(row[header]) || row.__snapshotDate;
@@ -1472,12 +1478,14 @@
       rows.forEach((row) => {
         const level1 = !isBlank(row['Level 1 Cloud']) ? String(row['Level 1 Cloud']) : 'Not specified';
         const level2 = !isBlank(row['Level 2 Cloud']) ? String(row['Level 2 Cloud']) : level1;
-        const key = `${level1}__${level2}`;
+        const type = getLicenseTypeLabel(row);
+        const key = `${level1}__${level2}__${type}`;
         if (!aggregates.has(key)) {
           aggregates.set(key, {
             key,
             level1,
             level2,
+            type,
             provisioned: null,
             activated: null,
             used: null,
@@ -1513,7 +1521,12 @@
 
       entries.sort((a, b) => {
         if (a.level1 === b.level1) {
-          if (a.level2 === b.level2) return 0;
+          if (a.level2 === b.level2) {
+            if (a.type === b.type) return 0;
+            if (a.type === 'Not specified') return 1;
+            if (b.type === 'Not specified') return -1;
+            return a.type.localeCompare(b.type, undefined, { sensitivity: 'base' });
+          }
           if (a.level2 === 'Not specified') return 1;
           if (b.level2 === 'Not specified') return -1;
           return a.level2.localeCompare(b.level2, undefined, { sensitivity: 'base' });
@@ -1593,7 +1606,7 @@
 
       const title = document.createElement('h3');
       const groupLabel = !isBlank(sourceRow['Group']) ? String(sourceRow['Group']) : '';
-      const typeLabel = !isBlank(sourceRow[' Type']) ? String(sourceRow[' Type']) : '';
+      const typeLabel = getLicenseTypeLabel(sourceRow);
       const level2Label = !isBlank(sourceRow['Level 2 Cloud']) ? String(sourceRow['Level 2 Cloud']) : '';
       const titleParts = [level2Label, groupLabel, typeLabel].filter(Boolean);
       title.textContent = titleParts.length ? titleParts.join(' - ') : 'License metrics';
@@ -1764,7 +1777,8 @@
 
       const level1 = !isBlank(row['Level 1 Cloud']) ? String(row['Level 1 Cloud']) : 'Not specified';
       const level2 = !isBlank(row['Level 2 Cloud']) ? String(row['Level 2 Cloud']) : level1;
-      const key = `${level1}__${level2}`;
+      const type = getLicenseTypeLabel(row);
+      const key = `${level1}__${level2}__${type}`;
       const aggregate = state.licenseChartAggregates.get(key);
 
       if (!aggregate) {
