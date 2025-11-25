@@ -1238,9 +1238,9 @@
       // const forceTenantOption = Array.from(dom.tenantSelect.options).find(
       //   (option) => option.value.toLowerCase() === 'force.com'
       // );
-      // Auto-select first element
-      if (dom.tenantSelect.options.length > 1) {
-        dom.tenantSelect.selectedIndex = 1;
+      // Auto-select the first available option to keep the dropdown in sync with the snapshot
+      if (dom.tenantSelect.options.length > 0) {
+        dom.tenantSelect.selectedIndex = 0;
         dom.tenantSelect.dispatchEvent(new Event('change'));
       }
 
@@ -1535,17 +1535,13 @@
     const createLicenseChartCard = (aggregate, sourceRow = {}) => {
       if (!aggregate || !dom.licenseChartRoot) return;
 
-      const key = aggregate.key;
+      let key = aggregate.key;
       if (!(state.licenseChartCards instanceof Map)) {
         state.licenseChartCards = new Map();
       }
 
       if (state.licenseChartCards.has(key)) {
-        const existing = state.licenseChartCards.get(key);
-        if (existing?.card instanceof HTMLElement) {
-          existing.card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return;
+        key = `${key}__${state.licenseChartCards.size + 1}`;
       }
 
       if (typeof Chart === 'undefined') {
