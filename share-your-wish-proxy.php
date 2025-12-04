@@ -40,6 +40,19 @@ try {
         exit;
     }
 
+    if (looks_like_html($response)) {
+        // Some Apps Script errors are returned as HTML even when the Web App is
+        // configured for anonymous access (e.g., scripting errors such as
+        // calling an undefined method). Detect that here and normalize the
+        // response into JSON so the frontend does not try to parse HTML as JSON.
+        http_response_code($statusCode ?: 502);
+        echo json_encode([
+            'success' => false,
+            'message' => extract_error_text($response) ?? 'Wish backend returned an HTML error page.'
+        ]);
+        exit;
+    }
+
     if ($statusCode) {
         http_response_code($statusCode);
     }
@@ -72,4 +85,25 @@ function forward_request(string $method, string $url, ?string $postData = null):
     curl_close($ch);
 
     return [$response, $statusCode];
+}
+
+function looks_like_html(string $response): bool
+{
+    return preg_match('/<\s*!?doctype|<html/i', $response) === 1;
+}
+
+function extract_error_text(string $html): ?string
+{
+    // Try to pull out the inner text from the main error container returned by
+    // Apps Script (the monospace div). If parsing fails, fall back to a
+    // stripped-down version of the whole document.
+    if (preg_match('/<div[^>]*>\s*TypeError:[^<]+<\/div>/', $html, $match)) {
+        $text = strip_tags(html_entity_decode($match[0], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        return trim(preg_replace('/\s+/', ' ', $text));
+    }
+
+    $fallback = strip_tags(html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    $fallback = trim(preg_replace('/\s+/', ' ', $fallback));
+
+    return $fallback !== '' ? $fallback : null;
 }

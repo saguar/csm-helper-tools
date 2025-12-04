@@ -123,6 +123,10 @@
                     throw new Error(`Invalid JSON returned from wish list endpoint. Body: ${responseText}`);
                 }
 
+                if (data.success === false) {
+                    throw new Error(data.message || 'Wish service returned an error.');
+                }
+
                 cachedWishes = Array.isArray(data?.wishes) ? data.wishes : [];
             } catch (err) {
                 console.error('Failed to load wishes', err);
