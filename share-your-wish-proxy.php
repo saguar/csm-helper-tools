@@ -5,7 +5,7 @@
 // "/a/macros/<domain>/" editor URL) so unauthenticated clients can reach the
 // deployed Web App without redirects.
 
-const SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzpy8--MuXzqbUJfcYZpMY09-Ud6_rnUb_YND5szlg_Ow887rkap5_-E6rdxH1NQDiWRQ/exec';
+const SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbw2XmGqLyxh2HuOcubIZoTXmREIn6AMUzsT7ho1Qy7b_gsh5Kyn8rwN0YnQO-3pM9ucuw/exec';
 
 // Preflight handling for browsers.
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
