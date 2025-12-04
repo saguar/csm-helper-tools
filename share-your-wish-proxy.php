@@ -24,11 +24,10 @@ try {
     if ($method === 'GET') {
         $queryString = $_SERVER['QUERY_STRING'] ?? '';
         $targetUrl = SHEET_ENDPOINT . ($queryString ? '?' . $queryString : '');
-        $response = file_get_contents($targetUrl);
-        $statusCode = http_response_code_from_headers($http_response_header ?? []);
+        [$response, $statusCode] = forward_request('GET', $targetUrl);
     } elseif ($method === 'POST') {
         $postData = http_build_query($_POST);
-        [$response, $statusCode] = forward_post_request(SHEET_ENDPOINT, $postData);
+        [$response, $statusCode] = forward_request('POST', SHEET_ENDPOINT, $postData);
     } else {
         http_response_code(405);
         echo json_encode(['success' => false, 'message' => 'Method not allowed']);
@@ -51,31 +50,26 @@ try {
     echo json_encode(['success' => false, 'message' => 'Proxy error: ' . $error->getMessage()]);
 }
 
-function forward_post_request(string $url, string $postData): array
+function forward_request(string $method, string $url, ?string $postData = null): array
 {
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
+    $options = [
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => $postData,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_MAXREDIRS => 5,
         CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
-    ]);
+    ];
+
+    if ($method === 'POST') {
+        $options[CURLOPT_POST] = true;
+        $options[CURLOPT_POSTFIELDS] = $postData ?? '';
+    }
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, $options);
 
     $response = curl_exec($ch);
     $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE) ?: null;
     curl_close($ch);
 
     return [$response, $statusCode];
-}
-
-function http_response_code_from_headers(array $headers): ?int
-{
-    foreach ($headers as $header) {
-        if (stripos($header, 'HTTP/') === 0) {
-            $parts = explode(' ', $header);
-            return isset($parts[1]) ? (int) $parts[1] : null;
-        }
-    }
-
-    return null;
 }
