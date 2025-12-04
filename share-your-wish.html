@@ -10,7 +10,7 @@
 <body>
     <div class="container" style="max-width: 900px;">
         <h1>Share Your Wish</h1>
-        <p>Share the wishes you want to store in the jar or pick a random one from everyone else. Everything is saved in your browser and you can delete it whenever you want from the administration section.</p>
+        <p>Share the wishes you want to store in the jar or pick a random one from everyone else. Please keep submissions polite and compliant—avoid profanity, offensive content, or anything inappropriate.</p>
 
         <div class="button-group" style="margin-top: 1rem;">
             <button id="shareViewBtn">Share your wish</button>
@@ -36,11 +36,11 @@
             <p id="readFeedback" class="footer-text" style="text-align: left; margin-top: 1rem;"></p>
         </section>
 
-        <button id="adminUnlockBtn" class="delete-btn" style="margin-top: 2rem;">🔒 Local administration</button>
+        <button id="adminUnlockBtn" class="delete-btn" style="margin-top: 2rem;">🔒 Cloud administration</button>
 
         <section id="adminSection" class="card" style="margin-top: 2rem; display: none;">
-            <h3>Local administration</h3>
-            <p class="footer-text" style="text-align: left;">Wishes are stored in the browser's <strong>localStorage</strong>. Use the button below to delete them all.</p>
+            <h3>Cloud administration</h3>
+            <p class="footer-text" style="text-align: left;">Wishes are stored in a shared Google Sheet so multiple users can participate. Use the button below to delete them all.</p>
             <div class="stats-container" style="margin: 1rem 0;">
                 <div class="stat-box">
                     <p>Saved wishes</p>
@@ -53,7 +53,7 @@
 
         <div id="adminModal" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); align-items: center; justify-content: center;">
             <div class="modal-content" style="max-width: 420px; background: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); width: calc(100% - 2rem);">
-                <h3 style="margin-bottom: 0.5rem;">Unlock local administration</h3>
+                <h3 style="margin-bottom: 0.5rem;">Unlock cloud administration</h3>
                 <p class="footer-text" style="text-align: left;">Enter the password to manage saved wishes.</p>
                 <div class="form-group" style="margin-top: 1rem;">
                     <label for="adminPasswordInput">Password</label>
@@ -69,8 +69,9 @@
     </div>
 
     <script>
-        const STORAGE_KEY = 'shareYourWishList';
+        const SHEET_ENDPOINT = 'https://script.google.com/macros/s/REPLACE_WITH_WEB_APP_ID/exec'; // Google Apps Script Web App URL
         const ADMIN_PASSWORD = 'Password.123';
+        const ADMIN_TOKEN = 'REPLACE_WITH_ADMIN_TOKEN'; // Optional extra protection for destructive operations
 
         const shareSection = document.getElementById('shareSection');
         const readSection = document.getElementById('readSection');
@@ -94,25 +95,37 @@
         const adminFeedback = document.getElementById('adminFeedback');
         const wishCount = document.getElementById('wishCount');
 
-        function loadWishes() {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (!stored) return [];
+        let cachedWishes = [];
+
+        async function loadWishes() {
             try {
-                const parsed = JSON.parse(stored);
-                return Array.isArray(parsed) ? parsed : [];
+                const response = await fetch(`${SHEET_ENDPOINT}?action=list`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                cachedWishes = Array.isArray(data?.wishes) ? data.wishes : [];
             } catch (err) {
-                console.warn('LocalStorage parsing error', err);
-                return [];
+                console.error('Failed to load wishes', err);
+                cachedWishes = [];
+                showMessage(readFeedback, 'Unable to load wishes from the cloud. Please try again later.', true);
             }
+            updateCount();
         }
 
-        function saveWishes(wishes) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(wishes));
-            wishCount.textContent = wishes.length;
+        async function saveWishToCloud(text) {
+            const body = new URLSearchParams({ action: 'add', text });
+            const response = await fetch(SHEET_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body
+            });
+
+            if (!response.ok) throw new Error('Failed to save wish');
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'Unknown error');
         }
 
         function updateCount() {
-            wishCount.textContent = loadWishes().length;
+            wishCount.textContent = cachedWishes.length;
         }
 
         function switchView(view) {
@@ -130,48 +143,67 @@
         shareViewBtn.addEventListener('click', () => switchView('share'));
         readViewBtn.addEventListener('click', () => switchView('read'));
 
-        submitWishBtn.addEventListener('click', () => {
+        submitWishBtn.addEventListener('click', async () => {
             const text = wishInput.value.trim();
             if (!text) {
                 showMessage(shareFeedback, 'Enter a wish before submitting.', true);
                 return;
             }
 
-            const wishes = loadWishes();
-            wishes.push({ text, createdAt: new Date().toISOString() });
-            saveWishes(wishes);
-            showMessage(shareFeedback, 'Wish added successfully!');
-            wishInput.value = '';
+            try {
+                await saveWishToCloud(text);
+                await loadWishes();
+                showMessage(shareFeedback, 'Wish added successfully!');
+                wishInput.value = '';
+            } catch (err) {
+                console.error('Failed to save wish', err);
+                showMessage(shareFeedback, 'Could not save your wish to the cloud. Please try again.', true);
+            }
         });
 
-        randomWishBtn.addEventListener('click', () => {
-            const wishes = loadWishes();
-            if (!wishes.length) {
+        randomWishBtn.addEventListener('click', async () => {
+            if (!cachedWishes.length) await loadWishes();
+            if (!cachedWishes.length) {
                 randomWishDisplay.style.display = 'none';
                 showMessage(readFeedback, 'There are no saved wishes: add one first.', true);
                 return;
             }
 
-            const randomIndex = Math.floor(Math.random() * wishes.length);
-            const wish = wishes[randomIndex];
+            const randomIndex = Math.floor(Math.random() * cachedWishes.length);
+            const wish = cachedWishes[randomIndex];
             randomWishDisplay.textContent = wish.text;
             randomWishDisplay.style.display = 'block';
             showMessage(readFeedback, 'Here is a randomly selected wish.');
         });
 
-        clearWishesBtn.addEventListener('click', () => {
-            const wishes = loadWishes();
-            if (!wishes.length) {
+        clearWishesBtn.addEventListener('click', async () => {
+            if (!cachedWishes.length) await loadWishes();
+            if (!cachedWishes.length) {
                 showMessage(adminFeedback, 'There are no wishes to delete.');
                 return;
             }
-            const confirmDelete = confirm('Do you really want to delete all wishes saved in the browser?');
+            const confirmDelete = confirm('Do you really want to delete all wishes saved in the shared cloud sheet?');
             if (!confirmDelete) return;
-            localStorage.removeItem(STORAGE_KEY);
-            randomWishDisplay.style.display = 'none';
-            wishInput.value = '';
-            updateCount();
-            showMessage(adminFeedback, 'All wishes have been removed from the browser.');
+            try {
+                const body = new URLSearchParams({ action: 'clear', token: ADMIN_TOKEN });
+                const response = await fetch(SHEET_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body
+                });
+                if (!response.ok) throw new Error('Failed to clear wishes');
+                const result = await response.json();
+                if (!result.success) throw new Error(result.message || 'Unknown error');
+
+                cachedWishes = [];
+                randomWishDisplay.style.display = 'none';
+                wishInput.value = '';
+                updateCount();
+                showMessage(adminFeedback, 'All wishes have been removed from the cloud.');
+            } catch (err) {
+                console.error('Failed to clear wishes', err);
+                showMessage(adminFeedback, 'Could not clear wishes. Please verify admin credentials and try again.', true);
+            }
         });
 
         function openAdminModal() {
@@ -194,7 +226,7 @@
             adminSection.style.display = 'block';
             adminUnlockBtn.style.display = 'none';
             closeAdminModal();
-            showMessage(adminFeedback, 'Local administration unlocked.');
+            showMessage(adminFeedback, 'Cloud administration unlocked.');
         }
 
         adminUnlockBtn.addEventListener('click', openAdminModal);
@@ -208,7 +240,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            updateCount();
+            loadWishes().finally(updateCount);
             switchView('share');
         });
     </script>
