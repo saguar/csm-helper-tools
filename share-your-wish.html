@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +10,7 @@
 <body>
     <div class="container" style="max-width: 900px;">
         <h1>Share Your Wish</h1>
-        <p>Condividi i desideri che vuoi mettere nel cassetto oppure pescane uno a caso tra quelli degli altri. Tutto viene salvato nel tuo browser e puoi cancellarlo quando vuoi dalla sezione di amministrazione.</p>
+        <p>Share the wishes you want to store in the jar or pick a random one from everyone else. Everything is saved in your browser and you can delete it whenever you want from the administration section.</p>
 
         <div class="button-group" style="margin-top: 1rem;">
             <button id="shareViewBtn">Share your wish</button>
@@ -18,40 +18,59 @@
         </div>
 
         <section id="shareSection" class="card" style="display: none;">
-            <h2>Invia un desiderio</h2>
-            <p>Scrivi il tuo messaggio e aggiungilo al vaso dei desideri.</p>
+            <h2>Send a wish</h2>
+            <p>Write your message and add it to the wish jar.</p>
             <div class="form-group">
-                <label for="wishInput">Il tuo desiderio</label>
-                <textarea id="wishInput" rows="5" placeholder="Scrivi qui il tuo desiderio"></textarea>
+                <label for="wishInput">Your wish</label>
+                <textarea id="wishInput" rows="5" placeholder="Write your wish here"></textarea>
             </div>
-            <button id="submitWishBtn">Invia</button>
+            <button id="submitWishBtn">Send</button>
             <p id="shareFeedback" class="footer-text" style="text-align: left; margin-top: 1rem;"></p>
         </section>
 
         <section id="readSection" class="card" style="display: none;">
-            <h2>Leggi un desiderio casuale</h2>
-            <p>Premi il pulsante per pescare un desiderio tra quelli inviati.</p>
-            <button id="randomWishBtn">Pesca un desiderio</button>
+            <h2>Read a random wish</h2>
+            <p>Press the button to pick a wish from those submitted.</p>
+            <button id="randomWishBtn">Pick a wish</button>
             <div id="randomWishDisplay" class="card" style="display: none; margin-top: 1rem; background-color: #f9fafb;"></div>
             <p id="readFeedback" class="footer-text" style="text-align: left; margin-top: 1rem;"></p>
         </section>
 
-        <section id="adminSection" class="card" style="margin-top: 2rem;">
-            <h3>Amministrazione locale</h3>
-            <p class="footer-text" style="text-align: left;">I desideri vengono salvati nel <strong>localStorage</strong> del browser. Usa il pulsante seguente per cancellarli tutti.</p>
+        <button id="adminUnlockBtn" class="delete-btn" style="margin-top: 2rem;">🔒 Local administration</button>
+
+        <section id="adminSection" class="card" style="margin-top: 2rem; display: none;">
+            <h3>Local administration</h3>
+            <p class="footer-text" style="text-align: left;">Wishes are stored in the browser's <strong>localStorage</strong>. Use the button below to delete them all.</p>
             <div class="stats-container" style="margin: 1rem 0;">
                 <div class="stat-box">
-                    <p>Desideri salvati</p>
+                    <p>Saved wishes</p>
                     <h2 id="wishCount">0</h2>
                 </div>
             </div>
-            <button id="clearWishesBtn" class="delete-btn">Pulisci tutti i desideri</button>
+            <button id="clearWishesBtn" class="delete-btn">Clear all wishes</button>
             <p id="adminFeedback" class="footer-text" style="text-align: left; margin-top: 1rem;"></p>
         </section>
+
+        <div id="adminModal" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); align-items: center; justify-content: center;">
+            <div class="modal-content" style="max-width: 420px; background: white; padding: 1.5rem; border-radius: 0.75rem; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); width: calc(100% - 2rem);">
+                <h3 style="margin-bottom: 0.5rem;">Unlock local administration</h3>
+                <p class="footer-text" style="text-align: left;">Enter the password to manage saved wishes.</p>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="adminPasswordInput">Password</label>
+                    <input type="password" id="adminPasswordInput" placeholder="Enter password" />
+                </div>
+                <p id="adminModalFeedback" class="footer-text" style="text-align: left; margin-top: 0.5rem;"></p>
+                <div class="button-group" style="justify-content: flex-end; margin-top: 1rem;">
+                    <button id="adminModalCancelBtn" class="secondary-btn">Cancel</button>
+                    <button id="adminModalSubmitBtn">Unlock</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         const STORAGE_KEY = 'shareYourWishList';
+        const ADMIN_PASSWORD = 'Password.123';
 
         const shareSection = document.getElementById('shareSection');
         const readSection = document.getElementById('readSection');
@@ -60,6 +79,13 @@
         const submitWishBtn = document.getElementById('submitWishBtn');
         const randomWishBtn = document.getElementById('randomWishBtn');
         const clearWishesBtn = document.getElementById('clearWishesBtn');
+        const adminUnlockBtn = document.getElementById('adminUnlockBtn');
+        const adminModal = document.getElementById('adminModal');
+        const adminModalCancelBtn = document.getElementById('adminModalCancelBtn');
+        const adminModalSubmitBtn = document.getElementById('adminModalSubmitBtn');
+        const adminPasswordInput = document.getElementById('adminPasswordInput');
+        const adminModalFeedback = document.getElementById('adminModalFeedback');
+        const adminSection = document.getElementById('adminSection');
 
         const wishInput = document.getElementById('wishInput');
         const shareFeedback = document.getElementById('shareFeedback');
@@ -75,7 +101,7 @@
                 const parsed = JSON.parse(stored);
                 return Array.isArray(parsed) ? parsed : [];
             } catch (err) {
-                console.warn('Errore di parsing localStorage', err);
+                console.warn('LocalStorage parsing error', err);
                 return [];
             }
         }
@@ -107,14 +133,14 @@
         submitWishBtn.addEventListener('click', () => {
             const text = wishInput.value.trim();
             if (!text) {
-                showMessage(shareFeedback, 'Inserisci un desiderio prima di inviare.', true);
+                showMessage(shareFeedback, 'Enter a wish before submitting.', true);
                 return;
             }
 
             const wishes = loadWishes();
             wishes.push({ text, createdAt: new Date().toISOString() });
             saveWishes(wishes);
-            showMessage(shareFeedback, 'Desiderio aggiunto con successo!');
+            showMessage(shareFeedback, 'Wish added successfully!');
             wishInput.value = '';
         });
 
@@ -122,7 +148,7 @@
             const wishes = loadWishes();
             if (!wishes.length) {
                 randomWishDisplay.style.display = 'none';
-                showMessage(readFeedback, 'Non ci sono desideri salvati: aggiungine uno prima.', true);
+                showMessage(readFeedback, 'There are no saved wishes: add one first.', true);
                 return;
             }
 
@@ -130,22 +156,55 @@
             const wish = wishes[randomIndex];
             randomWishDisplay.textContent = wish.text;
             randomWishDisplay.style.display = 'block';
-            showMessage(readFeedback, 'Ecco un desiderio scelto a caso.');
+            showMessage(readFeedback, 'Here is a randomly selected wish.');
         });
 
         clearWishesBtn.addEventListener('click', () => {
             const wishes = loadWishes();
             if (!wishes.length) {
-                showMessage(adminFeedback, 'Non ci sono desideri da eliminare.');
+                showMessage(adminFeedback, 'There are no wishes to delete.');
                 return;
             }
-            const confirmDelete = confirm('Vuoi davvero cancellare tutti i desideri salvati nel browser?');
+            const confirmDelete = confirm('Do you really want to delete all wishes saved in the browser?');
             if (!confirmDelete) return;
             localStorage.removeItem(STORAGE_KEY);
             randomWishDisplay.style.display = 'none';
             wishInput.value = '';
             updateCount();
-            showMessage(adminFeedback, 'Tutti i desideri sono stati rimossi dal browser.');
+            showMessage(adminFeedback, 'All wishes have been removed from the browser.');
+        });
+
+        function openAdminModal() {
+            adminModal.style.display = 'flex';
+            adminModalFeedback.textContent = '';
+            adminPasswordInput.value = '';
+            adminPasswordInput.focus();
+        }
+
+        function closeAdminModal() {
+            adminModal.style.display = 'none';
+        }
+
+        function unlockAdminSection() {
+            const providedPassword = adminPasswordInput.value;
+            if (providedPassword !== ADMIN_PASSWORD) {
+                showMessage(adminModalFeedback, 'Incorrect password. Please try again.', true);
+                return;
+            }
+            adminSection.style.display = 'block';
+            adminUnlockBtn.style.display = 'none';
+            closeAdminModal();
+            showMessage(adminFeedback, 'Local administration unlocked.');
+        }
+
+        adminUnlockBtn.addEventListener('click', openAdminModal);
+        adminModalCancelBtn.addEventListener('click', closeAdminModal);
+        adminModalSubmitBtn.addEventListener('click', unlockAdminSection);
+        adminPasswordInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                unlockAdminSection();
+            }
         });
 
         document.addEventListener('DOMContentLoaded', () => {
