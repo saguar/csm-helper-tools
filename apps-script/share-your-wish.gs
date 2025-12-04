@@ -91,9 +91,17 @@ function getSheet() {
 }
 
 function jsonResponse(payload, status = 200) {
-  return ContentService.createTextOutput(JSON.stringify(payload))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setResponseCode(status);
+  const output = ContentService.createTextOutput(JSON.stringify(payload))
+    .setMimeType(ContentService.MimeType.JSON);
+
+  // Apps Script's ContentService.TextOutput does not support setResponseCode,
+  // but checking for it keeps the helper compatible with any future APIs and
+  // prevents runtime errors on platforms where the method is missing.
+  if (typeof output.setResponseCode === 'function') {
+    output.setResponseCode(status);
+  }
+
+  return output;
 }
 
 function badRequest(message) {
