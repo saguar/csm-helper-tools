@@ -1,7 +1,11 @@
 <?php
 // Proxy requests to the Google Apps Script backend to avoid browser CORS errors.
+//
+// Note: use the public "/macros/s/" execution URL (not the domain-scoped
+// "/a/macros/<domain>/" editor URL) so unauthenticated clients can reach the
+// deployed Web App without redirects.
 
-const SHEET_ENDPOINT = 'https://script.google.com/a/macros/salesforce.com/s/AKfycbzpy8--MuXzqbUJfcYZpMY09-Ud6_rnUb_YND5szlg_Ow887rkap5_-E6rdxH1NQDiWRQ/exec';
+const SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzpy8--MuXzqbUJfcYZpMY09-Ud6_rnUb_YND5szlg_Ow887rkap5_-E6rdxH1NQDiWRQ/exec';
 
 // Preflight handling for browsers.
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
