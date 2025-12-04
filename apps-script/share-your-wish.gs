@@ -91,17 +91,12 @@ function getSheet() {
 }
 
 function jsonResponse(payload, status = 200) {
-  // Build the JSON response and attempt to apply a status code only when the
-  // method exists (it is absent in classic Web Apps, which is why the previous
-  // chained call failed with `setResponseCode is not a function`).
-  const output = ContentService.createTextOutput(JSON.stringify(payload))
+  // ContentService.TextOutput does not provide setResponseCode(), so avoid
+  // chaining it here to prevent runtime errors in Web Apps that only support
+  // the basic methods. The status parameter is kept for future compatibility
+  // with environments that may introduce status handling.
+  return ContentService.createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
-
-  if (typeof output.setResponseCode === 'function' && status && status !== 200) {
-    output.setResponseCode(status);
-  }
-
-  return output;
 }
 
 function badRequest(message) {
