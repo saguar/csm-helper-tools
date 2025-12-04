@@ -90,15 +90,15 @@ function getSheet() {
   return sheet;
 }
 
-function jsonResponse(payload, status = 200) {
-  // ContentService.TextOutput does not provide setResponseCode(), so avoid
-  // chaining it here to prevent runtime errors in Web Apps that only support
-  // the basic methods. The status parameter is kept for future compatibility
-  // with environments that may introduce status handling.
+function jsonResponse(payload) {
+  // ContentService.TextOutput does not provide setResponseCode(), so keep the
+  // response simple to avoid runtime errors such as
+  // "TypeError: ContentService.createTextOutput(...).setMimeType(...).setResponseCode is not a function".
+  // Any status information should be encoded in the payload instead.
   return ContentService.createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
 function badRequest(message) {
-  return jsonResponse({ success: false, message }, 400);
+  return jsonResponse({ success: false, message });
 }

@@ -131,9 +131,15 @@
             } catch (err) {
                 console.error('Failed to load wishes', err);
                 cachedWishes = [];
+
+                const hint =
+                    err?.message?.includes('setResponseCode')
+                        ? 'The Apps Script backend is using setResponseCode(), which is not available on ContentService responses. Redeploy share-your-wish.gs from the apps-script folder without that call.'
+                        : '';
+
                 showMessage(
                     readFeedback,
-                    `Unable to load wishes from the cloud. ${err.message || 'Unknown error.'}`,
+                    `Unable to load wishes from the cloud. ${err.message || 'Unknown error.'} ${hint}`.trim(),
                     true
                 );
             }
