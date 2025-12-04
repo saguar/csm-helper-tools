@@ -108,8 +108,18 @@
 
                 let data;
                 try {
+                    const looksLikeHtml = /<\s*(!doctype|html)/i.test(responseText);
+                    if (looksLikeHtml) {
+                        throw new Error(
+                            'The wish service returned HTML (likely a login page). Make sure the Apps Script Web App is deployed to "Anyone" and that requests go through share-your-wish-proxy.php.'
+                        );
+                    }
+
                     data = JSON.parse(responseText || '{}');
                 } catch (parseErr) {
+                    if (parseErr instanceof Error && parseErr.message.includes('wish service returned HTML')) {
+                        throw parseErr;
+                    }
                     throw new Error(`Invalid JSON returned from wish list endpoint. Body: ${responseText}`);
                 }
 
