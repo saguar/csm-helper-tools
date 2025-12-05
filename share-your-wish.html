@@ -117,7 +117,9 @@
         }
 
         async function clearAllWishes() {
-            const { error } = await db.from('wishes').delete().neq('id', null);
+            // Supabase requires a filter on delete operations; filter on a non-UUID column
+            // to avoid casting issues with null when deleting all rows.
+            const { error } = await db.from('wishes').delete().not('text', 'is', null);
             if (error) throw error;
         }
 
