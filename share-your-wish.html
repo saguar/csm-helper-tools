@@ -40,7 +40,7 @@
 
         <section id="adminSection" class="card" style="margin-top: 2rem; display: none;">
             <h3>Cloud administration</h3>
-            <p class="footer-text" style="text-align: left;">Wishes are stored in a shared Google Sheet so multiple users can participate. Use the button below to delete them all.</p>
+            <p class="footer-text" style="text-align: left;">Manage wishes stored in the shared cloud service. Use the button below to delete them all.</p>
             <div class="stats-container" style="margin: 1rem 0;">
                 <div class="stat-box">
                     <p>Saved wishes</p>
@@ -68,10 +68,14 @@
         </div>
     </div>
 
-    <script>
-        const SHEET_ENDPOINT = 'share-your-wish-proxy.php'; // Same-origin proxy to Google Apps Script Web App URL
+    <script type="module">
+        import { createClient } from "https://esm.sh/@supabase/supabase-js";
+
+        const SUPABASE_URL = "https://YOUR-PROJECT-URL.supabase.co";
+        const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
+        const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         const ADMIN_PASSWORD = 'Password.123';
-        const ADMIN_TOKEN = 'REPLACE_WITH_ADMIN_TOKEN'; // Optional extra protection for destructive operations
 
         const shareSection = document.getElementById('shareSection');
         const readSection = document.getElementById('readSection');
@@ -97,70 +101,81 @@
 
         let cachedWishes = [];
 
+        async function addWish(text) {
+            const { error } = await db.from('wishes').insert({ text });
+            if (error) throw error;
+        }
+
+        async function listWishes() {
+            const { data, error } = await db
+                .from('wishes')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+            return data;
+        }
+
+        async function clearAllWishes() {
+            const { error } = await db.from('wishes').delete().neq('id', null);
+            if (error) throw error;
+        }
+
+        async function countWishes() {
+            const { count, error } = await db.from('wishes').select('*', { count: 'exact', head: true });
+
+            if (error) throw error;
+            return count;
+        }
+
         async function loadWishes() {
             try {
-                const response = await fetch(`${SHEET_ENDPOINT}?action=list`);
-                const responseText = await response.text();
-
-                if (!response.ok) {
-                    throw new Error(`Status ${response.status} ${response.statusText}: ${responseText || 'No body returned'}`);
-                }
-
-                let data;
-                try {
-                    const looksLikeHtml = /<\s*(!doctype|html)/i.test(responseText);
-                    if (looksLikeHtml) {
-                        throw new Error(
-                            'The wish service returned HTML (likely a login page). Make sure the Apps Script Web App is deployed to "Anyone" and that requests go through share-your-wish-proxy.php.'
-                        );
-                    }
-
-                    data = JSON.parse(responseText || '{}');
-                } catch (parseErr) {
-                    if (parseErr instanceof Error && parseErr.message.includes('wish service returned HTML')) {
-                        throw parseErr;
-                    }
-                    throw new Error(`Invalid JSON returned from wish list endpoint. Body: ${responseText}`);
-                }
-
-                if (data.success === false) {
-                    throw new Error(data.message || 'Wish service returned an error.');
-                }
-
-                cachedWishes = Array.isArray(data?.wishes) ? data.wishes : [];
+                const wishes = await listWishes();
+                cachedWishes = wishes || [];
             } catch (err) {
                 console.error('Failed to load wishes', err);
                 cachedWishes = [];
-
-                const hint =
-                    err?.message?.includes('setResponseCode')
-                        ? 'The Apps Script backend is using setResponseCode(), which is not available on ContentService responses. Redeploy share-your-wish.gs from the apps-script folder without that call.'
-                        : '';
-
-                showMessage(
-                    readFeedback,
-                    `Unable to load wishes from the cloud. ${err.message || 'Unknown error.'} ${hint}`.trim(),
-                    true
-                );
+                showMessage(readFeedback, 'Unable to load wishes from the cloud. Please try again later.', true);
             }
             updateCount();
         }
 
-        async function saveWishToCloud(text) {
-            const body = new URLSearchParams({ action: 'add', text });
-            const response = await fetch(SHEET_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body
-            });
-
-            if (!response.ok) throw new Error('Failed to save wish');
-            const result = await response.json();
-            if (!result.success) throw new Error(result.message || 'Unknown error');
+        function getRandomWishFromCache() {
+            if (!cachedWishes || !cachedWishes.length) return null;
+            const index = Math.floor(Math.random() * cachedWishes.length);
+            return cachedWishes[index];
         }
 
-        function updateCount() {
-            wishCount.textContent = cachedWishes.length;
+        function updateCount(total) {
+            const value = typeof total === 'number' ? total : cachedWishes.length;
+            wishCount.textContent = value;
+        }
+
+        async function refreshWishCountInAdmin(showError = true) {
+            try {
+                const total = await countWishes();
+                updateCount(total ?? 0);
+            } catch (err) {
+                console.error('Failed to fetch wish count', err);
+                if (showError) {
+                    showMessage(adminFeedback, 'Unable to fetch wish count from the cloud.', true);
+                }
+            }
+        }
+
+        async function handleClearAllWishes() {
+            try {
+                await clearAllWishes();
+                cachedWishes = [];
+                randomWishDisplay.style.display = 'none';
+                wishInput.value = '';
+                updateCount(0);
+                await refreshWishCountInAdmin(false);
+                showMessage(adminFeedback, 'All wishes have been removed from the cloud.');
+            } catch (err) {
+                console.error('Failed to clear wishes', err);
+                showMessage(adminFeedback, 'Error while clearing all wishes.', true);
+            }
         }
 
         function switchView(view) {
@@ -186,8 +201,9 @@
             }
 
             try {
-                await saveWishToCloud(text);
+                await addWish(text);
                 await loadWishes();
+                await refreshWishCountInAdmin(false);
                 showMessage(shareFeedback, 'Wish added successfully!');
                 wishInput.value = '';
             } catch (err) {
@@ -204,8 +220,7 @@
                 return;
             }
 
-            const randomIndex = Math.floor(Math.random() * cachedWishes.length);
-            const wish = cachedWishes[randomIndex];
+            const wish = getRandomWishFromCache();
             randomWishDisplay.textContent = wish.text;
             randomWishDisplay.style.display = 'block';
             showMessage(readFeedback, 'Here is a randomly selected wish.');
@@ -217,28 +232,9 @@
                 showMessage(adminFeedback, 'There are no wishes to delete.');
                 return;
             }
-            const confirmDelete = confirm('Do you really want to delete all wishes saved in the shared cloud sheet?');
+            const confirmDelete = confirm('Do you really want to delete all wishes saved in the shared cloud service?');
             if (!confirmDelete) return;
-            try {
-                const body = new URLSearchParams({ action: 'clear', token: ADMIN_TOKEN });
-                const response = await fetch(SHEET_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body
-                });
-                if (!response.ok) throw new Error('Failed to clear wishes');
-                const result = await response.json();
-                if (!result.success) throw new Error(result.message || 'Unknown error');
-
-                cachedWishes = [];
-                randomWishDisplay.style.display = 'none';
-                wishInput.value = '';
-                updateCount();
-                showMessage(adminFeedback, 'All wishes have been removed from the cloud.');
-            } catch (err) {
-                console.error('Failed to clear wishes', err);
-                showMessage(adminFeedback, 'Could not clear wishes. Please verify admin credentials and try again.', true);
-            }
+            await handleClearAllWishes();
         });
 
         function openAdminModal() {
@@ -262,6 +258,7 @@
             adminUnlockBtn.style.display = 'none';
             closeAdminModal();
             showMessage(adminFeedback, 'Cloud administration unlocked.');
+            refreshWishCountInAdmin();
         }
 
         adminUnlockBtn.addEventListener('click', openAdminModal);
