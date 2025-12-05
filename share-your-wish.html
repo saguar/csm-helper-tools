@@ -71,11 +71,9 @@
     <script type="module">
         import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
-        const SUPABASE_URL = "https://ifyxecbwwjuvyyzoqyut.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmeXhlY2J3d2p1dnl5em9xeXV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NzIxNDIsImV4cCI6MjA4MDQ0ODE0Mn0.tmAF2w6nWECaXWQf0diPW44Ykj8JkmFgwAXWTboaAIA";
-        const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        const ADMIN_PASSWORD = 'Password.123';
+        const secretsFile = 'secrets.txt';
+        let db = null;
+        let adminPassword = '';
 
         const shareSection = document.getElementById('shareSection');
         const readSection = document.getElementById('readSection');
@@ -101,12 +99,35 @@
 
         let cachedWishes = [];
 
+        async function loadSecrets() {
+            const response = await fetch(secretsFile);
+            if (!response.ok) throw new Error('Unable to load secrets file.');
+
+            const text = await response.text();
+            const entries = Object.fromEntries(
+                text
+                    .split('\n')
+                    .map((line) => line.trim())
+                    .filter((line) => line && !line.startsWith('#'))
+                    .map((line) => line.split('='))
+                    .filter((pair) => pair.length === 2)
+            );
+
+            return {
+                supabaseUrl: entries.SUPABASE_URL || '',
+                supabaseAnonKey: entries.SUPABASE_ANON_KEY || '',
+                adminPassword: entries.ADMIN_PASSWORD || '',
+            };
+        }
+
         async function addWish(text) {
+            if (!db) throw new Error('Database not initialized');
             const { error } = await db.from('wishes').insert({ text });
             if (error) throw error;
         }
 
         async function listWishes() {
+            if (!db) throw new Error('Database not initialized');
             const { data, error } = await db
                 .from('wishes')
                 .select('*')
@@ -117,6 +138,7 @@
         }
 
         async function clearAllWishes() {
+            if (!db) throw new Error('Database not initialized');
             // Supabase requires a filter on delete operations; filter on a non-UUID column
             // to avoid casting issues with null when deleting all rows.
             const { error } = await db.from('wishes').delete().not('text', 'is', null);
@@ -124,6 +146,7 @@
         }
 
         async function countWishes() {
+            if (!db) throw new Error('Database not initialized');
             const { count, error } = await db.from('wishes').select('*', { count: 'exact', head: true });
 
             if (error) throw error;
@@ -192,6 +215,26 @@
             element.style.color = isError ? '#b91c1c' : '#065f46';
         }
 
+        async function initializeApp() {
+            try {
+                const { supabaseUrl, supabaseAnonKey, adminPassword: passwordFromSecrets } = await loadSecrets();
+
+                if (!supabaseUrl || !supabaseAnonKey) {
+                    throw new Error('Missing Supabase credentials in secrets.txt.');
+                }
+
+                db = createClient(supabaseUrl, supabaseAnonKey);
+                adminPassword = passwordFromSecrets;
+
+                await loadWishes().finally(updateCount);
+                switchView('share');
+            } catch (err) {
+                console.error('Failed to initialize application', err);
+                showMessage(shareFeedback, 'Unable to initialize the wish service. Please check configuration.', true);
+                showMessage(readFeedback, 'Unable to initialize the wish service. Please check configuration.', true);
+            }
+        }
+
         shareViewBtn.addEventListener('click', () => switchView('share'));
         readViewBtn.addEventListener('click', () => switchView('read'));
 
@@ -252,7 +295,12 @@
 
         function unlockAdminSection() {
             const providedPassword = adminPasswordInput.value;
-            if (providedPassword !== ADMIN_PASSWORD) {
+            if (!adminPassword) {
+                showMessage(adminModalFeedback, 'Admin password is not configured.', true);
+                return;
+            }
+
+            if (providedPassword !== adminPassword) {
                 showMessage(adminModalFeedback, 'Incorrect password. Please try again.', true);
                 return;
             }
@@ -274,8 +322,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadWishes().finally(updateCount);
-            switchView('share');
+            initializeApp();
         });
     </script>
 </body>
