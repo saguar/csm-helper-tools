@@ -6,22 +6,91 @@
 <style>
     body { margin: 0; background: #111; color: white; font-family: sans-serif; }
     canvas { display: block; }
+    #status {
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        padding: 10px 16px;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.55);
+        color: #f0f0f0;
+        font-size: 14px;
+        letter-spacing: 0.02em;
+    }
 </style>
 </head>
 <body>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
 
-<script>
-try {
-    // Lista di parole/frasi da visualizzare
-    const parole = [
-        "Programmazione", "JavaScript", "Creatività", "Innovazione",
-        "Sfera 3D", "Codice", "Web", "Tecnologia",
-        "Open Source", "Design", "Interattivo", "Three.js"
-    ];
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
-    // Creazione scena, camera e renderer
+const secretsFile = 'secrets.txt';
+const fallbackParole = [
+    "Programmazione", "JavaScript", "Creatività", "Innovazione",
+    "Sfera 3D", "Codice", "Web", "Tecnologia",
+    "Open Source", "Design", "Interattivo", "Three.js"
+];
+
+const statusBox = document.createElement('div');
+statusBox.id = 'status';
+statusBox.textContent = 'Caricamento desideri dalla nuvola...';
+document.body.appendChild(statusBox);
+
+function mostraMessaggio(testo, isError = false) {
+    statusBox.textContent = testo;
+    statusBox.style.color = isError ? '#ffb3b3' : '#f0f0f0';
+}
+
+async function caricaSegreti() {
+    const response = await fetch(secretsFile);
+    if (!response.ok) throw new Error('Impossibile leggere il file di configurazione');
+
+    const text = await response.text();
+    const entries = Object.fromEntries(
+        text
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line && !line.startsWith('#'))
+            .map((line) => line.split('='))
+            .filter((pair) => pair.length === 2)
+    );
+
+    return {
+        supabaseUrl: entries.SUPABASE_URL || '',
+        supabaseAnonKey: entries.SUPABASE_ANON_KEY || '',
+    };
+}
+
+async function recuperaDesideri(db) {
+    const { data, error } = await db
+        .from('wishes')
+        .select('text')
+        .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return (data || []).map((row) => row.text).filter(Boolean);
+}
+
+function creaTestoSprite(testo) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 256;
+    canvas.height = 64;
+    ctx.fillStyle = 'white';
+    ctx.font = '28px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(testo, canvas.width / 2, canvas.height / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    return new THREE.Sprite(material);
+}
+
+function creaSfera(parole) {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -30,29 +99,10 @@ try {
 
     camera.position.z = 5;
 
-    // Luce
     const light = new THREE.PointLight(0xffffff, 1);
     light.position.set(5, 5, 5);
     scene.add(light);
 
-    // Funzione per creare testo 2D su sprite
-    function creaTestoSprite(testo) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 256;
-        canvas.height = 64;
-        ctx.fillStyle = 'white';
-        ctx.font = '28px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(testo, canvas.width / 2, canvas.height / 2);
-
-        const texture = new THREE.CanvasTexture(canvas);
-        const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-        return new THREE.Sprite(material);
-    }
-
-    // Posizionamento delle parole sulla sfera
     const raggio = 2;
     parole.forEach((p, i) => {
         const phi = Math.acos(-1 + (2 * i) / parole.length);
@@ -63,25 +113,39 @@ try {
         scene.add(sprite);
     });
 
-    // Animazione
     function animate() {
         requestAnimationFrame(animate);
-        scene.rotation.y += 0.002; // Rotazione lenta
+        scene.rotation.y += 0.002;
         renderer.render(scene, camera);
     }
     animate();
 
-    // Adattamento a finestra
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
-
-} catch (err) {
-    console.error("Errore durante la creazione della sfera:", err);
-    document.body.innerHTML = "<h2>Si è verificato un errore nel rendering della sfera.</h2>";
 }
+
+(async function inizializza() {
+    try {
+        const { supabaseUrl, supabaseAnonKey } = await caricaSegreti();
+        if (!supabaseUrl || !supabaseAnonKey) {
+            throw new Error('Credenziali Supabase mancanti.');
+        }
+
+        const db = createClient(supabaseUrl, supabaseAnonKey);
+        const desideri = await recuperaDesideri(db);
+        const parole = desideri.length ? desideri : fallbackParole;
+
+        creaSfera(parole);
+        mostraMessaggio(desideri.length ? 'Desideri caricati dalla community.' : 'Nessun desiderio trovato, mostra messaggi predefiniti.');
+    } catch (err) {
+        console.error('Errore durante il caricamento dei desideri', err);
+        creaSfera(fallbackParole);
+        mostraMessaggio('Impossibile caricare i desideri dalla nuvola. Mostro esempi predefiniti.', true);
+    }
+})();
 </script>
 
 </body>
