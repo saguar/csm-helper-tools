@@ -106,12 +106,35 @@
             'crap',
             'cunt',
             'damn',
+            'dick',
             'fuck',
+            'fuk',
             'motherfucker',
             'piss',
             'shit',
+            'slut',
             'twat',
+            'whore',
         ];
+
+        const bannedPhrases = [
+            'go fuck yourself',
+            'fuck you',
+            'f you',
+        ];
+
+        const leetspeakMap = {
+            '@': 'a',
+            '4': 'a',
+            '3': 'e',
+            '1': 'i',
+            '!': 'i',
+            '0': 'o',
+            '$': 's',
+            '5': 's',
+            '7': 't',
+            '8': 'b',
+        };
 
         async function loadSecrets() {
             const response = await fetch(secretsFile);
@@ -229,9 +252,29 @@
             element.style.color = isError ? '#b91c1c' : '#065f46';
         }
 
+        function normalizeForProfanity(text) {
+            const deaccented = text
+                .normalize('NFD')
+                .replace(/\p{Diacritic}/gu, '')
+                .toLowerCase();
+
+            const unleet = deaccented.replace(/[@431!0$578]/g, (char) => leetspeakMap[char] || char);
+            const collapsed = unleet.replace(/[^a-z0-9]+/g, ' ').replace(/([a-z])\1{2,}/g, '$1$1');
+
+            return collapsed.trim().replace(/\s+/g, ' ');
+        }
+
         function containsProfanity(text) {
-            const normalized = text.toLowerCase();
-            return bannedWords.some((word) => new RegExp(`\\b${word}\\b`, 'i').test(normalized));
+            const normalized = normalizeForProfanity(text);
+            const normalizedNoSpaces = normalized.replace(/\s+/g, '');
+
+            if (bannedPhrases.some((phrase) => normalized.includes(phrase))) return true;
+
+            return bannedWords.some((word) => {
+                const wordPattern = new RegExp(`(^|\\s)${word}(\\s|$)`);
+                if (wordPattern.test(normalized)) return true;
+                return normalizedNoSpaces.includes(word.replace(/\s+/g, ''));
+            });
         }
 
         async function initializeApp() {
