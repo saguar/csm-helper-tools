@@ -169,15 +169,29 @@ function creaSfera(parole) {
     scene.add(gruppoTesti);
 
     const raggio = 2;
-    parole.forEach((p, i) => {
-        const phi = Math.acos(-1 + (2 * i) / parole.length);
-        const theta = Math.sqrt(parole.length * Math.PI) * phi;
 
-        const sprite = creaTestoSprite(p);
-        const raggioPersonalizzato = raggio + Math.sin(i) * 0.15;
-        sprite.position.setFromSphericalCoords(raggioPersonalizzato, phi, theta);
-        gruppoTesti.add(sprite);
-    });
+    function pulisciGruppo() {
+        gruppoTesti.children.forEach((sprite) => {
+            if (sprite.material.map) sprite.material.map.dispose();
+            sprite.material.dispose();
+        });
+        gruppoTesti.clear();
+    }
+
+    function popolaGruppo(listaParole) {
+        pulisciGruppo();
+        listaParole.forEach((p, i) => {
+            const phi = Math.acos(-1 + (2 * i) / listaParole.length);
+            const theta = Math.sqrt(listaParole.length * Math.PI) * phi;
+
+            const sprite = creaTestoSprite(p);
+            const raggioPersonalizzato = raggio + Math.sin(i) * 0.15;
+            sprite.position.setFromSphericalCoords(raggioPersonalizzato, phi, theta);
+            gruppoTesti.add(sprite);
+        });
+    }
+
+    popolaGruppo(parole);
 
     let clock = new THREE.Clock();
     let angoloCamera = 0;
@@ -200,6 +214,10 @@ function creaSfera(parole) {
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
+
+    return {
+        aggiornaParole: popolaGruppo,
+    };
 }
 
 (async function inizializza() {
@@ -213,8 +231,27 @@ function creaSfera(parole) {
         const desideri = await recuperaDesideri(db);
         const parole = desideri.length ? desideri : fallbackParole;
 
-        creaSfera(parole);
+        const { aggiornaParole } = creaSfera(parole);
         mostraMessaggio(desideri.length ? 'Desideri caricati dalla community.' : 'Nessun desiderio trovato, mostra messaggi predefiniti.');
+
+        let aggiornamentoInCorso = false;
+        async function aggiornaDesideriPeriodicamente() {
+            if (aggiornamentoInCorso) return;
+            aggiornamentoInCorso = true;
+            try {
+                const desideriAggiornati = await recuperaDesideri(db);
+                const paroleAggiornate = desideriAggiornati.length ? desideriAggiornati : fallbackParole;
+                aggiornaParole(paroleAggiornate);
+                mostraMessaggio(desideriAggiornati.length ? 'Desideri aggiornati dalla community.' : 'Nessun nuovo desiderio, mostro esempi predefiniti.');
+            } catch (err) {
+                console.error('Errore durante l\'aggiornamento dei desideri', err);
+                mostraMessaggio('Errore nel recupero degli ultimi desideri.', true);
+            } finally {
+                aggiornamentoInCorso = false;
+            }
+        }
+
+        setInterval(aggiornaDesideriPeriodicamente, 5000);
     } catch (err) {
         console.error('Errore durante il caricamento dei desideri', err);
         creaSfera(fallbackParole);
