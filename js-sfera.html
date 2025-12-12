@@ -4,7 +4,13 @@
 <meta charset="UTF-8">
 <title>Sfera con parole e frasi - Three.js</title>
 <style>
-    body { margin: 0; background: #111; color: white; font-family: sans-serif; }
+    body {
+        margin: 0;
+        background: radial-gradient(circle at 30% 30%, #1a1a1a, #0a0a0f 60%);
+        color: white;
+        font-family: sans-serif;
+        overflow: hidden;
+    }
     canvas { display: block; }
     #status {
         position: fixed;
@@ -79,29 +85,62 @@ function creaTestoSprite(testo) {
     const ctx = canvas.getContext('2d');
     canvas.width = 256;
     canvas.height = 64;
-    ctx.fillStyle = 'white';
-    ctx.font = '28px Arial';
+
+    // Glow
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, 'rgba(86, 158, 255, 0.45)');
+    gradient.addColorStop(1, 'rgba(120, 77, 255, 0.65)');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.roundRect(8, 8, canvas.width - 16, canvas.height - 16, 18);
+    ctx.fill();
+
+    ctx.shadowColor = 'rgba(0,0,0,0.55)';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = '#f7f7ff';
+    ctx.font = '700 26px "Segoe UI", Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(testo, canvas.width / 2, canvas.height / 2);
 
     const texture = new THREE.CanvasTexture(canvas);
-    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
-    return new THREE.Sprite(material);
+    const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthWrite: false,
+    });
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(1.6, 0.5, 1);
+    return sprite;
 }
 
 function creaSfera(parole) {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    camera.position.z = 5;
+    camera.position.set(0, 0.2, 6);
 
-    const light = new THREE.PointLight(0xffffff, 1);
-    light.position.set(5, 5, 5);
+    const light = new THREE.PointLight(0xffffff, 1.15);
+    light.position.set(4, 6, 5);
     scene.add(light);
+    scene.add(new THREE.AmbientLight(0x324080, 0.4));
+
+    const stelle = new THREE.BufferGeometry();
+    const starCount = 800;
+    const starVertices = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount * 3; i++) {
+        starVertices[i] = (Math.random() - 0.5) * 80;
+    }
+    stelle.setAttribute('position', new THREE.BufferAttribute(starVertices, 3));
+    const starMaterial = new THREE.PointsMaterial({ color: 0x6b7bff, size: 0.08, transparent: true, opacity: 0.8 });
+    scene.add(new THREE.Points(stelle, starMaterial));
+
+    const gruppoTesti = new THREE.Group();
+    scene.add(gruppoTesti);
 
     const raggio = 2;
     parole.forEach((p, i) => {
@@ -109,13 +148,23 @@ function creaSfera(parole) {
         const theta = Math.sqrt(parole.length * Math.PI) * phi;
 
         const sprite = creaTestoSprite(p);
-        sprite.position.setFromSphericalCoords(raggio, phi, theta);
-        scene.add(sprite);
+        const raggioPersonalizzato = raggio + Math.sin(i) * 0.15;
+        sprite.position.setFromSphericalCoords(raggioPersonalizzato, phi, theta);
+        gruppoTesti.add(sprite);
     });
 
+    let clock = new THREE.Clock();
+    let angoloCamera = 0;
     function animate() {
         requestAnimationFrame(animate);
-        scene.rotation.y += 0.002;
+        const delta = clock.getDelta();
+        angoloCamera += delta * 0.15;
+        camera.position.x = Math.sin(angoloCamera) * 0.3;
+        camera.position.y = Math.cos(angoloCamera) * 0.2;
+        camera.lookAt(0, 0, 0);
+
+        gruppoTesti.rotation.y += 0.0035;
+        gruppoTesti.rotation.x = Math.sin(clock.elapsedTime * 0.6) * 0.18;
         renderer.render(scene, camera);
     }
     animate();
