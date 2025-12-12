@@ -98,6 +98,20 @@
         const wishCount = document.getElementById('wishCount');
 
         let cachedWishes = [];
+        const bannedWords = [
+            'ass',
+            'bastard',
+            'bitch',
+            'bollocks',
+            'crap',
+            'cunt',
+            'damn',
+            'fuck',
+            'motherfucker',
+            'piss',
+            'shit',
+            'twat',
+        ];
 
         async function loadSecrets() {
             const response = await fetch(secretsFile);
@@ -215,6 +229,11 @@
             element.style.color = isError ? '#b91c1c' : '#065f46';
         }
 
+        function containsProfanity(text) {
+            const normalized = text.toLowerCase();
+            return bannedWords.some((word) => new RegExp(`\\b${word}\\b`, 'i').test(normalized));
+        }
+
         async function initializeApp() {
             try {
                 const { supabaseUrl, supabaseAnonKey, adminPassword: passwordFromSecrets } = await loadSecrets();
@@ -242,6 +261,11 @@
             const text = wishInput.value.trim();
             if (!text) {
                 showMessage(shareFeedback, 'Enter a wish before submitting.', true);
+                return;
+            }
+
+            if (containsProfanity(text)) {
+                showMessage(shareFeedback, 'Please remove profanity before sending your wish.', true);
                 return;
             }
 
