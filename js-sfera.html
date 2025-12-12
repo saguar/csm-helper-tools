@@ -83,8 +83,30 @@ async function recuperaDesideri(db) {
 function creaTestoSprite(testo) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = 256;
-    canvas.height = 64;
+    const font = '700 24px "Segoe UI", Arial, sans-serif';
+    const maxLineWidth = 420;
+    const padding = 36;
+
+    // Calcola linee con wrapping per evitare il taglio dei testi lunghi
+    ctx.font = font;
+    const parole = testo.split(/\s+/);
+    const righe = [];
+    let corrente = '';
+    parole.forEach((word) => {
+        const testLine = corrente ? `${corrente} ${word}` : word;
+        if (ctx.measureText(testLine).width > maxLineWidth && corrente) {
+            righe.push(corrente);
+            corrente = word;
+        } else {
+            corrente = testLine;
+        }
+    });
+    if (corrente) righe.push(corrente);
+
+    const maxWidth = Math.max(...righe.map((r) => ctx.measureText(r).width), 1);
+    const lineHeight = 32;
+    canvas.width = Math.min(Math.max(Math.ceil(maxWidth + padding * 2), 240), 800);
+    canvas.height = righe.length * lineHeight + padding * 2;
 
     // Glow
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
@@ -98,10 +120,14 @@ function creaTestoSprite(testo) {
     ctx.shadowColor = 'rgba(0,0,0,0.55)';
     ctx.shadowBlur = 14;
     ctx.fillStyle = '#f7f7ff';
-    ctx.font = '700 26px "Segoe UI", Arial, sans-serif';
+    ctx.font = font;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(testo, canvas.width / 2, canvas.height / 2);
+
+    const startY = canvas.height / 2 - ((righe.length - 1) * lineHeight) / 2;
+    righe.forEach((linea, idx) => {
+        ctx.fillText(linea, canvas.width / 2, startY + idx * lineHeight);
+    });
 
     const texture = new THREE.CanvasTexture(canvas);
     const material = new THREE.SpriteMaterial({
@@ -110,7 +136,7 @@ function creaTestoSprite(testo) {
         depthWrite: false,
     });
     const sprite = new THREE.Sprite(material);
-    sprite.scale.set(1.6, 0.5, 1);
+    sprite.scale.set(canvas.width / 160, canvas.height / 128, 1);
     return sprite;
 }
 
