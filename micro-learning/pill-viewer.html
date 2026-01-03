@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -156,7 +156,7 @@
                 <img id="card-image" class="mx-auto mb-6 max-h-48 w-auto rounded-xl hidden" alt="">
 
                 <h1 id="main-text" class="text-dynamic font-extrabold leading-tight text-white transition-all duration-300">
-                    Caricamento contenuto...
+                    Loading content...
                 </h1>
             </div>
 
@@ -175,7 +175,7 @@
         </button>
 
         <div class="flex flex-col items-center">
-            <span class="text-xs text-slate-500 uppercase tracking-widest mb-1">Naviga</span>
+            <span class="text-xs text-slate-500 uppercase tracking-widest mb-1">Navigate</span>
             <div class="flex gap-1">
                 <div class="w-1 h-1 rounded-full bg-slate-600"></div>
                 <div class="w-1 h-1 rounded-full bg-slate-600"></div>
@@ -189,7 +189,7 @@
     </footer>
 
     <div class="fixed bottom-4 text-slate-600 text-[10px] hidden md:block">
-        Usa le frecce <i class="fa-solid fa-arrow-left mx-1"></i> <i class="fa-solid fa-arrow-right mx-1"></i> della tastiera
+        Use the keyboard arrows <i class="fa-solid fa-arrow-left mx-1"></i> <i class="fa-solid fa-arrow-right mx-1"></i>
     </div>
 
 <script type="module">
@@ -215,7 +215,7 @@
     function ensureContentFallback(message) {
         contentData = [
             message,
-            "Torna alla lista con <a href=\"pills-list.html\" class=\"underline\">questo link</a>."
+            "Go back to the list with <a href=\"pills-list.html\" class=\"underline\">this link</a>."
         ];
     }
 
@@ -225,7 +225,7 @@
         const contentEntry = contentList.find((item) => item.id === contentId);
 
         if (!contentEntry) {
-            ensureContentFallback("Contenuto non trovato.");
+            ensureContentFallback("Content not found.");
             updateUI(0);
             return;
         }
@@ -238,7 +238,7 @@
             document.title = contentConfig.title;
             updateUI(0);
         } catch (error) {
-            ensureContentFallback("Impossibile caricare il contenuto.");
+            ensureContentFallback("Unable to load the content.");
             updateUI(0);
         }
     }
