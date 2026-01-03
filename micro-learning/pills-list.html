@@ -12,15 +12,30 @@
     <div class="container">
         <div>
             <h1 class="text-2xl font-bold mb-6 text-gray-800">Micro Learning Pills</h1>
-            <div class="space-y-4">
-                <a href="Career Breaking Change.html" target="_blank" class="link-item">Career Breaking Change</a>
-                <a href="Humans and AI together.html" target="_blank" class="link-item">Humans and AI together</a>
-            </div>
+            <div id="content-list" class="space-y-4"></div>
         </div>
 
         <footer class="footer-text">
             These tools are not official or Salesforce authorized. They have been developed for personal purposes by Saverio Guardato with the aim of improving CSM tasks.
         </footer>
     </div>
+    <script type="module">
+        import { contentList } from "./content/index.js";
+
+        const container = document.getElementById("content-list");
+
+        if (!contentList.length) {
+            container.textContent = "Nessun contenuto disponibile.";
+        } else {
+            contentList.forEach((item) => {
+                const link = document.createElement("a");
+                link.href = `pill-viewer.html?content=${encodeURIComponent(item.id)}`;
+                link.target = "_blank";
+                link.className = "link-item";
+                link.textContent = item.title;
+                container.appendChild(link);
+            });
+        }
+    </script>
 </body>
 </html>
