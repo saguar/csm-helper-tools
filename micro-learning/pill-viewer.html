@@ -153,6 +153,8 @@
                     <i class="fa-solid fa-route"></i>
                 </div>
 
+                <img id="card-image" class="mx-auto mb-6 max-h-48 w-auto rounded-xl hidden" alt="">
+
                 <h1 id="main-text" class="text-dynamic font-extrabold leading-tight text-white transition-all duration-300">
                     Caricamento contenuto...
                 </h1>
@@ -206,6 +208,7 @@
     const prevBtn = document.getElementById("prevBtn");
     const nextBtn = document.getElementById("nextBtn");
     const iconContainer = document.getElementById("icon-container");
+    const cardImage = document.getElementById("card-image");
 
     const baseBodyClass = "h-screen w-full flex flex-col items-center justify-center transition-colors duration-500";
 
@@ -245,7 +248,11 @@
             return;
         }
 
-        const text = contentData[currentIndex];
+        const entry = contentData[currentIndex];
+        const isObject = typeof entry === "object" && entry !== null;
+        const text = isObject ? entry.text : entry;
+        const image = isObject ? entry.image : null;
+        const alt = isObject ? entry.alt || "" : "";
         const { theme, icon, label } = getThemeAndIcon(text, currentIndex);
 
         body.className = `${baseBodyClass} ${theme}`;
@@ -253,6 +260,15 @@
         counter.textContent = `${String(currentIndex + 1).padStart(2, "0")} / ${contentData.length}`;
         sectionLabel.textContent = label;
         iconContainer.innerHTML = icon;
+        if (image) {
+            cardImage.src = image;
+            cardImage.alt = alt;
+            cardImage.classList.remove("hidden");
+        } else {
+            cardImage.classList.add("hidden");
+            cardImage.removeAttribute("src");
+            cardImage.removeAttribute("alt");
+        }
 
         const progress = ((currentIndex + 1) / contentData.length) * 100;
         progressBar.style.width = `${progress}%`;

@@ -2,11 +2,11 @@ export const contentConfig = {
     id: "humans-and-ai-together",
     title: "Humans and AI together",
     contentData: [
-        "Humans and AI together", // 1
+        { text: "Humans and AI together", image: "./assets/ai-team.svg", alt: "Humans and AI team" }, // 1
         "Two minds work better than one.", // 2
         "Even when one is artificial.", // 3
         "AI does not replace people.", // 4
-        "It supports them.", // 5
+        { text: "It supports them.", image: "./assets/ai-support.svg", alt: "AI support" }, // 5
         "It spots patterns fast.", // 6
         "It handles data and repetition.", // 7
         "Humans bring judgment.", // 8
