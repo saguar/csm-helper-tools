@@ -2,7 +2,7 @@ export const contentConfig = {
     id: "smarter-skip-connections",
     title: "Smarter Models, Same Size",
     contentData: [
-            { text: "Scaling Isn’t Enough", image: "assets/img/ai-scaling.png", alt: "Exponential growth of AI model sizes from millions to trillions of parameters" }, // 1
+            { text: "Scaling Isn’t Enough", image: "./assets/img/ai-scaling.png", alt: "Exponential growth of AI model sizes from millions to trillions of parameters" }, // 1
             "For years, AI improved by making models bigger", // 2
             "More parameters meant better results", // 3
             "But this path has limits", // 4
@@ -11,7 +11,7 @@ export const contentConfig = {
             "The deeper the chain, the more information degrades", // 7
             "Like a message whispered many times", // 8
             "After enough steps, meaning is lost", // 9
-            { text: "Information Gets Lost", image: "assets/img/telephone-game.png", alt: "People whispering a message in sequence, like the telephone game" },
+            { text: "Information Gets Lost", image: "./assets/img/telephone-game.png", alt: "People whispering a message in sequence, like the telephone game" },
             "Skip connections were the fix", // 10
             "They act as shortcuts for the signal", // 11
             "The original input can bypass a layer", // 12
@@ -20,7 +20,7 @@ export const contentConfig = {
             "For years, this became standard practice", // 15
             "Then a new question appeared", // 16
             "Why keep shortcuts so simple?", // 17
-            { text: "Shortcuts Save Signals", image: "assets/img/skip-connection.png", alt: "Neural network diagram showing skip connections bypassing layers" }, // 3
+            { text: "Shortcuts Save Signals", image: "./assets/img/skip-connection.png", alt: "Neural network diagram showing skip connections bypassing layers" }, // 3
             "Why not make them learn too?", // 18
             "More flexibility sounds powerful", // 19
             "In theory, it should help", // 20
@@ -58,7 +58,7 @@ export const contentConfig = {
             "Huge models train without collapsing", // 52
             "With measurable gains in reasoning", // 53
             "The final message is clear", // 54
-            { text: "Nothing Is Lost", image: "assets/img/signal-conservation.png", alt: "Two glasses with equal water levels connected by arrows, symbolizing conservation" }, // 4
+            { text: "Nothing Is Lost", image: "./assets/img/signal-conservation.png", alt: "Two glasses with equal water levels connected by arrows, symbolizing conservation" }, // 4
             "Bigger is not always better", // 55
             "Sometimes fundamentals matter more", // 56
             "Even those we took for granted", // 57
@@ -67,7 +67,7 @@ export const contentConfig = {
             "Geometry before scale", // 60
             "Not higher towers", // 61
             "Better stairs", // 62
-                "<a href=\"https://open.substack.com/pub/alifeengineered/p/your-career-needs-a-breaking-change/\" target=\"_blank\" rel=\"noopener noreferrer\">Source Article</a>" // 61
+                "<a href=\"https://huggingface.co/papers/2512.24880\" target=\"_blank\" rel=\"noopener noreferrer\">Scietific Paper</a>" // 61
     ],
     getThemeAndIcon(text, index) {
         if (index >= 54) {
