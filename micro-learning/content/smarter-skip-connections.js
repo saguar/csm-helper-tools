@@ -2,72 +2,25 @@ export const contentConfig = {
     id: "smarter-skip-connections",
     title: "Smarter Models, Same Size",
     contentData: [
-            { text: "Scaling Isn’t Enough", image: "./assets/ai-scaling.png", alt: "Exponential growth of AI model sizes from millions to trillions of parameters" }, // 1
-            "For years, AI improved by making models bigger", // 2
-            "More parameters meant better results", // 3
-            "But this path has limits", // 4
-            "Deep networks are chains of transformations", // 5
-            "Each layer passes a signal forward", // 6
-            "The deeper the chain, the more information degrades", // 7
-            "Like a message whispered many times", // 8
-            "After enough steps, meaning is lost", // 9
-            { text: "Information Gets Lost", image: "./assets/telephone-game.png", alt: "People whispering a message in sequence, like the telephone game" },
-            "Skip connections were the fix", // 10
-            "They act as shortcuts for the signal", // 11
-            "The original input can bypass a layer", // 12
-            "If a layer adds no value, it can be ignored", // 13
-            "This made very deep networks trainable", // 14
-            "For years, this became standard practice", // 15
-            "Then a new question appeared", // 16
-            "Why keep shortcuts so simple?", // 17
-            { text: "Shortcuts Save Signals", image: "./assets/skip-connection.png", alt: "Neural network diagram showing skip connections bypassing layers" }, // 3
-            "Why not make them learn too?", // 18
-            "More flexibility sounds powerful", // 19
-            "In theory, it should help", // 20
-            "In practice, it causes instability", // 21
-            "The shortcut stops being a shortcut", // 22
-            "It turns into another complex block", // 23
-            "Training becomes fragile", // 24
-            "An emergency exit becomes a maze", // 25
-            "This is where DeepSeek steps in", // 26
-            "Their insight is subtle but critical", // 27
-            "Skip connections can be smarter", // 28
-            "But they must behave like identity mappings", // 29
-            "The signal must be preserved", // 30
-            "No uncontrolled amplification", // 31
-            "No unpredictable distortion", // 32
-            "Especially when stacked many times", // 33
-            "The solution is strong constraints", // 34
-            "Shortcuts are learnable", // 35
-            "But only inside a controlled space", // 36
-            "Only safe transformations are allowed", // 37
-            "A key rule keeps things stable", // 38
-            "What goes in equals what comes out", // 39
-            "Nothing is created or destroyed", // 40
-            "Only redistributed", // 41
-            "Like water poured between glasses", // 42
-            "A strict normalizer enforces this rule", // 43
-            "Every transformation is kept in bounds", // 44
-            "Always and automatically", // 45
-            "The practical outcome matters", // 46
-            "More expressive skip connections", // 47
-            "Stable training", // 48
-            "No extra parameters needed", // 49
-            "Only a small training overhead", // 50
-            "Far cheaper than scaling the model", // 51
-            "Huge models train without collapsing", // 52
-            "With measurable gains in reasoning", // 53
-            "The final message is clear", // 54
-            { text: "Nothing Is Lost", image: "./assets/signal-conservation.png", alt: "Two glasses with equal water levels connected by arrows, symbolizing conservation" }, // 4
-            "Bigger is not always better", // 55
-            "Sometimes fundamentals matter more", // 56
-            "Even those we took for granted", // 57
-            "This is engineering, not brute force", // 58
-            "Stability before raw power", // 59
-            "Geometry before scale", // 60
-            "Not higher towers", // 61
-            "Better stairs", // 62
-                "<a href=\"https://huggingface.co/papers/2512.24880\" target=\"_blank\" rel=\"noopener noreferrer\">Scietific Paper</a>" // 61
+        "Skip connections, but better", // 1
+        "DeepSeek shows a trick to make skip connections learn, without losing training stability.", // 2
+        "Skip connections are shortcuts: the input skips a layer and gets added to the output.", // 3
+        "That addition keeps signals and gradients alive, even when the network gets very deep.", // 4
+        "If a layer isn’t useful, the model can almost copy through, avoiding vanishing and exploding gradients.", // 5
+        "The classic limit is this: the shortcut is a fixed identity, so it doesn’t learn by itself.", // 6
+        "A tempting idea is to make the shortcut learnable: a transform that can change and adapt.", // 7
+        "Hyper-Connections add capacity, but often pay for it with instability during training.", // 8
+        "DeepSeek’s point is specific: the problem isn’t learning, it’s respecting the geometry of identity.", // 9
+        "So DeepSeek introduces mHC: matrices that can learn, but only inside stability rules.", // 10
+        "The key rule is elegant: doubly stochastic matrices, with rows summing to 1 and columns too.", // 11
+        "That preserves the signal and keeps compositions stable, like identities that still behave nicely.", // 12
+        "To enforce the constraint, they use Sinkhorn–Knopp projection, bringing matrices back onto a valid manifold.", // 13
+        "Practical outcome: the shortcut stays safe, but gains parameters when learning actually helps.", // 14
+        "The cost stays modest: about 6.7% extra overall training overhead.", // 15
+        "With mHC, training holds up to 27B parameters without exploding or vanishing gradients.", // 16
+        "On reasoning benchmarks, it delivers a real gain: +2.1% on BBH at the same depth.", // 17
+        "Maybe the future isn’t only scaling bigger models, but redesigning “settled” ideas to work smarter.", // 18
+        "<a href=\"https://huggingface.co/papers/2512.24880\" target=\"_blank\" rel=\"noopener noreferrer\">Scientific Paper</a>" // 19
     ],
     getThemeAndIcon(text, index) {
         if (index >= 54) {
