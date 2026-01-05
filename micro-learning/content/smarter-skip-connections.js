@@ -23,52 +23,65 @@ export const contentConfig = {
         "<a href=\"https://huggingface.co/papers/2512.24880\" target=\"_blank\" rel=\"noopener noreferrer\">Scientific Paper</a>" // 19
     ],
     getThemeAndIcon(text, index) {
-        if (index >= 54) {
+    // Principle / Reflection (final takeaway + link)
+    if (index >= 17) {
         return {
             theme: "theme-reflection",
             icon: "<i class=\"fa-solid fa-stairs\"></i>",
             label: "Principle"
         };
     }
-    if (index >= 46) {
+
+    // Results (overhead, scale, benchmark gain)
+    if (index >= 13) {
         return {
             theme: "theme-outcome",
             icon: "<i class=\"fa-solid fa-chart-line\"></i>",
             label: "Results"
         };
     }
-    if (index >= 34) {
+
+    // Design (mHC + constraints + Sinkhorn–Knopp)
+    if (index >= 9) {
         return {
             theme: "theme-solution",
             icon: "<i class=\"fa-solid fa-shapes\"></i>",
             label: "Design"
         };
     }
-    if (index >= 26) {
+
+    // Insight (the “geometry of identity” point)
+    if (index >= 8) {
         return {
             theme: "theme-insight",
             icon: "<i class=\"fa-solid fa-lightbulb\"></i>",
             label: "Insight"
         };
     }
-    if (index >= 16) {
+
+    // Problem (learnable shortcuts → instability)
+    if (index >= 6) {
         return {
             theme: "theme-problem",
             icon: "<i class=\"fa-solid fa-triangle-exclamation\"></i>",
             label: "Problem"
         };
     }
-    if (index >= 10) {
+
+    // Foundations (what skip connections are + why they work)
+    if (index >= 2) {
         return {
             theme: "theme-foundation",
             icon: "<i class=\"fa-solid fa-diagram-project\"></i>",
             label: "Foundations"
         };
     }
+
+    // Context (intro)
     return {
         theme: "theme-default",
         icon: "<i class=\"fa-solid fa-brain\"></i>",
         label: "Context"
     };
-    }
+}
 };

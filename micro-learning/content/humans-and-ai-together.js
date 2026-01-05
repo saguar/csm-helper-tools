@@ -2,73 +2,57 @@ export const contentConfig = {
     id: "humans-and-ai-together",
     title: "Humans and AI together",
     contentData: [
-        { text: "Humans and AI together", image: "./assets/ai-team.svg", alt: "Humans and AI team" }, // 1
-        "Two minds work better than one.", // 2
-        "Even when one is artificial.", // 3
-        "AI does not replace people.", // 4
-        { text: "It supports them.", image: "./assets/ai-support.svg", alt: "AI support" }, // 5
-        "It spots patterns fast.", // 6
-        "It handles data and repetition.", // 7
-        "Humans bring judgment.", // 8
-        "Creativity and empathy.", // 9
-        "Collaboration comes from different roles.", // 10
-        "It is not magic.", // 11
-        "It is a skill.", // 12
-        "And it is in high demand today.", // 13
-        "People who use AI perform better.", // 14
-        "And stay relevant.", // 15
-        "But AI needs input.", // 16
-        "Clear instructions.", // 17
-        "Context.", // 18
-        "Ongoing feedback.", // 19
-        "Like a real teammate.", // 20
-        "The first step is to experiment.", // 21
-        "Use the tools without fear.", // 22
-        "Expect an early slowdown.", // 23
-        "Then speed follows.", // 24
-        "Trust grows with use.", // 25
-        "The second step is understanding how it works.", // 26
-        "Knowing what to ask.", // 27
-        "And what to correct.", // 28
-        "AI needs coaching.", // 29
-        "Not neglect.", // 30
-        "The third step is asking better questions.", // 31
-        "The right questions.", // 32
-        "Vague prompts give vague answers.", // 33
-        "Clear prompts change everything.", // 34
-        "Asking for clarification helps both sides.", // 35
-        "The fourth step is thinking.", // 36
-        "Always.", // 37
-        "Check the output.", // 38
-        "Question the results.", // 39
-        "Know when to stop.", // 40
-        "AI can help.", // 41
-        "But it can also narrow ideas.", // 42
-        "Diversity stays human.", // 43
-        "Value is not just speed.", // 44
-        "It is quality.", // 45
-        "It is growth.", // 46
-        "It is satisfaction.", // 47
-        "Human-AI collaboration reshapes work.", // 48
-        "And decision-making.", // 49
-        "Outcomes matter more than tools.", // 50
-        "Humans and AI work best together.", // 51
-        "Not because they are perfect.", // 52
+        "Human-AI collaboration for Customer Success. A new way to deliver value at scale.", // 1
+        "Customer Success is changing. Customers expect speed, but also judgment and trust.", // 2
+        "AI handles the volume. Signals, data, patterns and repetitive analysis without fatigue.", // 3
+        "The CSM brings meaning. Context, priorities, business impact and human nuance.", // 4
+        "Together they work better. AI suggests, the CSM decides and explains.", // 5
+        "AI helps you see earlier. Risks, trends and weak signals before customers feel them.", // 6
+        "Early insight changes conversations. From reactive support to proactive guidance.", // 7
+        "AI accelerates preparation. Account reviews, health analysis and data synthesis.", // 8
+        "Time saved becomes quality. More space for listening, strategy and relationships.", // 9
+        "Prompting is a CSM skill. Clear questions and context create better answers.", // 10
+        "Critical thinking stays human. AI outputs are inputs, not conclusions.", // 11
+        "Trust is still personal. Customers trust people who explain decisions.", // 12
+        "AI supports consistency. Same standards and depth across many accounts.", // 13
+        "Success is not speed alone. It is adoption, outcomes and long-term value.", // 14
+        "Human-AI collaboration does not replace the CSM. It sharpens their impact.", // 15
+        "The best CSMs ahead will not fight AI. They will lead with it.", // 16
         "<a href=\"https://www.salesforce.com/blog/human-ai-collaboration/\" target=\"_blank\" rel=\"noopener noreferrer\">Source Article</a>" // 53
     ],
     getThemeAndIcon(text, index) {
-        if (index >= 40) {
-            return { theme: "theme-reflection", icon: "<i class=\"fa-solid fa-rocket\"></i>", label: "Outcomes" };
-        }
-        if (index >= 30) {
-            return { theme: "theme-start", icon: "<i class=\"fa-solid fa-magnifying-glass\"></i>", label: "Critical" };
-        }
-        if (index >= 20) {
-            return { theme: "theme-keep", icon: "<i class=\"fa-solid fa-flask\"></i>", label: "Practice" };
-        }
-        if (index >= 10) {
-            return { theme: "theme-stop", icon: "<i class=\"fa-solid fa-compass\"></i>", label: "Foundations" };
-        }
-        return { theme: "theme-default", icon: "<i class=\"fa-solid fa-people-group\"></i>", label: "Intro" };
+    if (index >= 14) {
+        return { 
+            theme: "theme-reflection", 
+            icon: "<i class=\"fa-solid fa-rocket\"></i>", 
+            label: "Outcomes" 
+        };
     }
+    if (index >= 11) {
+        return { 
+            theme: "theme-start", 
+            icon: "<i class=\"fa-solid fa-magnifying-glass\"></i>", 
+            label: "Critical" 
+        };
+    }
+    if (index >= 7) {
+        return { 
+            theme: "theme-keep", 
+            icon: "<i class=\"fa-solid fa-flask\"></i>", 
+            label: "Practice" 
+        };
+    }
+    if (index >= 3) {
+        return { 
+            theme: "theme-stop", 
+            icon: "<i class=\"fa-solid fa-compass\"></i>", 
+            label: "Foundations" 
+        };
+    }
+    return { 
+        theme: "theme-default", 
+        icon: "<i class=\"fa-solid fa-people-group\"></i>", 
+        label: "Intro" 
+    };
+}
 };
