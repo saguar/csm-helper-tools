@@ -1,4 +1,5 @@
 export const contentList = [
+    { id: "aela-contract-model", title: "AELA Contract Model" },
     { id: "career-breaking-change", title: "Career Breaking Change" },
     { id: "humans-and-ai-together", title: "Humans and AI together" },
     { id: "ai-security-in-enterprise", title: "AI Security in Enterprise" },
