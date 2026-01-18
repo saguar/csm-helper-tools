@@ -1288,6 +1288,12 @@
             </select>
           </div>
           <div class="form-group">
+            <label for="successPlanFilter">Success plan</label>
+            <select id="successPlanFilter" disabled>
+              <option value="" disabled selected>Select a snapshot date first</option>
+            </select>
+          </div>
+          <div class="form-group">
             <label for="accountFilter">Account name</label>
             <select id="accountFilter" disabled>
               <option value="" disabled selected>Select a snapshot date first</option>
@@ -3180,6 +3186,7 @@
     const selectedAccountLabel = document.getElementById('selectedAccount');
     const referenceMonthSelect = document.getElementById('referenceMonth');
     const tenantTypeFilterSelect = document.getElementById('tenantTypeFilter');
+    const successPlanFilterSelect = document.getElementById('successPlanFilter');
     const accountFilterSelect = document.getElementById('accountFilter');
     const scoreUploadInput = document.getElementById('scoreUpload');
     const loadScoreBtn = document.getElementById('loadScoreBtn');
@@ -4712,6 +4719,12 @@
       tenantTypeFilterSelect.disabled = true;
     };
 
+    const resetSuccessPlanSelect = (message) => {
+      if (!successPlanFilterSelect) return;
+      successPlanFilterSelect.innerHTML = `<option value="" disabled selected>${message}</option>`;
+      successPlanFilterSelect.disabled = true;
+    };
+
     const resetAccountSelect = (message) => {
       accountFilterSelect.innerHTML = `<option value="" disabled selected>${message}</option>`;
       accountFilterSelect.disabled = true;
@@ -4900,7 +4913,7 @@
       }
     };
 
-    const populateAccountOptions = (snapshotDate, tenantTypeValue = 'all') => {
+    const populateAccountOptions = (snapshotDate, tenantTypeValue = 'all', successPlanValue = 'all') => {
       if (!parsedDataset || !snapshotDate) {
         resetAccountSelect(snapshotDate ? 'No accounts for selected date' : 'Select a snapshot date first');
         updateLoadButtonState();
@@ -4912,7 +4925,9 @@
         (parsedDataset[key] || []).forEach((row) => {
           const matchesTenant =
             tenantTypeValue === 'all' || !tenantTypeValue || (row.tenantType || '') === tenantTypeValue;
-          if (row.snapshotDate === snapshotDate && row.accountName && matchesTenant) {
+          const matchesSuccessPlan =
+            successPlanValue === 'all' || !successPlanValue || (row.successPlan || '') === successPlanValue;
+          if (row.snapshotDate === snapshotDate && row.accountName && matchesTenant && matchesSuccessPlan) {
             accounts.add(row.accountName);
           }
         });
@@ -4926,7 +4941,13 @@
         option.value = '';
         option.disabled = true;
         option.selected = true;
-        option.textContent = tenantTypeValue && tenantTypeValue !== 'all' ? 'No accounts for selected tenant type' : 'No accounts for selected date';
+        if (tenantTypeValue && tenantTypeValue !== 'all') {
+          option.textContent = 'No accounts for selected tenant type';
+        } else if (successPlanValue && successPlanValue !== 'all') {
+          option.textContent = 'No accounts for selected success plan';
+        } else {
+          option.textContent = 'No accounts for selected date';
+        }
         accountFilterSelect.appendChild(option);
         accountFilterSelect.disabled = true;
         updateLoadButtonState();
@@ -4995,6 +5016,54 @@
       tenantTypeFilterSelect.value = sorted.length === 1 ? sorted[0] : 'all';
     };
 
+    const populateSuccessPlanOptions = (snapshotDate, tenantTypeValue = 'all') => {
+      if (!successPlanFilterSelect) return;
+      if (!parsedDataset || !snapshotDate) {
+        resetSuccessPlanSelect(snapshotDate ? 'No success plans for selected date' : 'Select a snapshot date first');
+        return;
+      }
+
+      const plans = new Set();
+      ['signals', 'categories', 'subcategories', 'overall'].forEach((key) => {
+        (parsedDataset[key] || []).forEach((row) => {
+          const matchesTenant =
+            tenantTypeValue === 'all' || !tenantTypeValue || (row.tenantType || '') === tenantTypeValue;
+          if (row.snapshotDate === snapshotDate && row.successPlan && matchesTenant) {
+            plans.add(row.successPlan);
+          }
+        });
+      });
+
+      const sorted = Array.from(plans).sort((a, b) => a.localeCompare(b));
+
+      if (!sorted.length) {
+        successPlanFilterSelect.innerHTML = '<option value="all">Success plan: all</option>';
+        successPlanFilterSelect.value = 'all';
+        successPlanFilterSelect.disabled = true;
+        return;
+      }
+
+      const previousValue = successPlanFilterSelect.value || 'all';
+      successPlanFilterSelect.innerHTML = '';
+      const allOption = document.createElement('option');
+      allOption.value = 'all';
+      allOption.textContent = 'Success plan: all';
+      successPlanFilterSelect.appendChild(allOption);
+      sorted.forEach((plan) => {
+        const option = document.createElement('option');
+        option.value = plan;
+        option.textContent = plan;
+        successPlanFilterSelect.appendChild(option);
+      });
+
+      successPlanFilterSelect.disabled = false;
+      if (sorted.includes(previousValue)) {
+        successPlanFilterSelect.value = previousValue;
+      } else {
+        successPlanFilterSelect.value = sorted.length === 1 ? sorted[0] : 'all';
+      }
+    };
+
     const collectSnapshotDates = (dataset) => {
       if (!dataset) return [];
       const values = new Set();
@@ -5015,12 +5084,14 @@
       });
     };
 
-    const refreshDashboard = (dataset, snapshotDate, accountName, tenantTypeValue = '') => {
+    const refreshDashboard = (dataset, snapshotDate, accountName, tenantTypeValue = '', successPlanValue = '') => {
       if (!dataset) return;
       const activeTenantType = tenantTypeValue && tenantTypeValue !== 'all' ? tenantTypeValue : '';
+      const activeSuccessPlan = successPlanValue && successPlanValue !== 'all' ? successPlanValue : '';
       const filterBySelection = (row) =>
         row.snapshotDate === snapshotDate &&
         (!activeTenantType || (row.tenantType || '') === activeTenantType) &&
+        (!activeSuccessPlan || (row.successPlan || '') === activeSuccessPlan) &&
         (!accountName || row.accountName === accountName);
 
       const overallRows = (dataset.overall || []).filter(filterBySelection);
@@ -5083,6 +5154,7 @@
       selectedAccountLabel.textContent = 'Not selected';
       populateReferenceOptions([]);
       resetTenantTypeSelect('Select a snapshot date first');
+      resetSuccessPlanSelect('Select a snapshot date first');
       resetAccountSelect('Select a snapshot date first');
       scoreUploadInput.value = '';
       loadScoreBtn.disabled = true;
@@ -5165,6 +5237,7 @@
             const dates = collectSnapshotDates(parsedDataset);
             populateReferenceOptions(dates);
             resetTenantTypeSelect(dates.length ? 'Select a snapshot date first' : 'No data available');
+            resetSuccessPlanSelect(dates.length ? 'Select a snapshot date first' : 'No data available');
             resetAccountSelect(dates.length ? 'Select a snapshot date first' : 'No data available');
             clearVisualizations('Select a snapshot date and account, then click "Load score".');
             selectedMonthLabel.textContent = 'Not selected';
@@ -5198,6 +5271,7 @@
             const dates = collectSnapshotDates(parsedDataset);
             populateReferenceOptions(dates);
             resetTenantTypeSelect(dates.length ? 'Select a snapshot date first' : 'No data available');
+            resetSuccessPlanSelect(dates.length ? 'Select a snapshot date first' : 'No data available');
             resetAccountSelect(dates.length ? 'Select a snapshot date first' : 'No data available');
             clearVisualizations('Select a snapshot date and account, then click "Load score".');
             selectedMonthLabel.textContent = 'Not selected';
@@ -5218,7 +5292,10 @@
       populateTenantTypeOptions(referenceMonthSelect.value);
       const tenantValue =
         tenantTypeFilterSelect && !tenantTypeFilterSelect.disabled ? tenantTypeFilterSelect.value || 'all' : 'all';
-      populateAccountOptions(referenceMonthSelect.value, tenantValue);
+      populateSuccessPlanOptions(referenceMonthSelect.value, tenantValue);
+      const successPlanValue =
+        successPlanFilterSelect && !successPlanFilterSelect.disabled ? successPlanFilterSelect.value || 'all' : 'all';
+      populateAccountOptions(referenceMonthSelect.value, tenantValue, successPlanValue);
       selectedAccountLabel.textContent = 'Not selected';
       updateLoadButtonState();
     });
@@ -5226,7 +5303,21 @@
     if (tenantTypeFilterSelect) {
       tenantTypeFilterSelect.addEventListener('change', () => {
         const tenantValue = tenantTypeFilterSelect.disabled ? 'all' : tenantTypeFilterSelect.value || 'all';
-        populateAccountOptions(referenceMonthSelect.value, tenantValue);
+        populateSuccessPlanOptions(referenceMonthSelect.value, tenantValue);
+        const successPlanValue =
+          successPlanFilterSelect && !successPlanFilterSelect.disabled ? successPlanFilterSelect.value || 'all' : 'all';
+        populateAccountOptions(referenceMonthSelect.value, tenantValue, successPlanValue);
+        selectedAccountLabel.textContent = 'Not selected';
+        updateLoadButtonState();
+      });
+    }
+
+    if (successPlanFilterSelect) {
+      successPlanFilterSelect.addEventListener('change', () => {
+        const tenantValue =
+          tenantTypeFilterSelect && !tenantTypeFilterSelect.disabled ? tenantTypeFilterSelect.value || 'all' : 'all';
+        const successPlanValue = successPlanFilterSelect.disabled ? 'all' : successPlanFilterSelect.value || 'all';
+        populateAccountOptions(referenceMonthSelect.value, tenantValue, successPlanValue);
         selectedAccountLabel.textContent = 'Not selected';
         updateLoadButtonState();
       });
@@ -5241,7 +5332,9 @@
       const accountName = accountFilterSelect.value;
       if (!snapshotDate || !parsedDataset || !accountName) return;
       const tenantValue = tenantTypeFilterSelect && !tenantTypeFilterSelect.disabled ? tenantTypeFilterSelect.value : '';
-      refreshDashboard(parsedDataset, snapshotDate, accountName, tenantValue);
+      const successPlanValue =
+        successPlanFilterSelect && !successPlanFilterSelect.disabled ? successPlanFilterSelect.value : '';
+      refreshDashboard(parsedDataset, snapshotDate, accountName, tenantValue, successPlanValue);
     });
 
     searchInputs.forEach((input) => {
