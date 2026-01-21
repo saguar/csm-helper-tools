@@ -18,6 +18,9 @@
     <!-- D3.js for Charts -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
 
+    <!-- SheetJS for Excel parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -61,56 +64,46 @@
         const ChevronRight = (props) => <Icon name="chevron-right" {...props} />;
         const User = (props) => <Icon name="user" {...props} />;
 
-        // --- MOCK DATA EXTRACTED FROM CSV FILES ---
+        const severityColors = {
+            BLOCKER: '#EF4444',
+            CRITICAL: '#F97316',
+            MAJOR: '#EAB308',
+            MINOR: '#3B82F6',
+            INFO: '#9CA3AF'
+        };
 
-        const storageData = [
-            { name: 'Data Storage', used: 26.7, limit: 27.0, unit: 'TB', percent: 99 },
-            { name: 'File Storage', used: 34.3, limit: 36.2, unit: 'TB', percent: 95 },
-            { name: 'Big Objects', used: 0, limit: 1, unit: 'M', percent: 0 }
-        ];
+        const toNumber = (value) => {
+            if (typeof value === 'number') return value;
+            if (typeof value !== 'string') return 0;
+            const cleaned = value.replace(/,/g, '').trim();
+            if (!cleaned) return 0;
+            const num = Number(cleaned);
+            return Number.isFinite(num) ? num : 0;
+        };
 
-        const codeQualityData = [
-            { name: 'Blocker', value: 23, color: '#EF4444' },
-            { name: 'Critical', value: 4453, color: '#F97316' },
-            { name: 'Major', value: 23526, color: '#EAB308' },
-            { name: 'Minor', value: 6910, color: '#3B82F6' },
-            { name: 'Info', value: 28420, color: '#9CA3AF' }
-        ];
+        const parseStorageValue = (value) => {
+            if (typeof value === 'number') return { value, unit: '' };
+            if (typeof value !== 'string') return { value: 0, unit: '' };
+            const match = value.trim().match(/^([\d.]+)\s*([A-Za-z]+)?/);
+            if (!match) return { value: 0, unit: '' };
+            return { value: Number(match[1]), unit: match[2] || '' };
+        };
 
-        const topIssuesFiles = [
-            { name: 'ITA_IFM_VFC304_NPA_Utility.cls', issues: 1503 },
-            { name: 'ITA_IFM_Util027_VasPartner.cls', issues: 1415 },
-            { name: 'ITA_IFM_VFC027_Management_Vas.cls', issues: 1300 },
-            { name: 'ITA_IFM_VFC306_TP_Utility.cls', issues: 1071 },
-            { name: 'ITA_IFM_VFC306_TP.cls', issues: 1008 }
-        ];
+        const formatCount = (value) => {
+            if (!Number.isFinite(value)) return '';
+            const abs = Math.abs(value);
+            if (abs >= 1e9) return `${(value / 1e9).toFixed(1).replace(/\.0$/, '')}B`;
+            if (abs >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, '')}M`;
+            if (abs >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, '')}K`;
+            return `${Math.round(value)}`;
+        };
 
-        const topStorageObjects = [
-            { name: 'Config Item Attr.', count: '2.2B', size: '4.2 TB' },
-            { name: 'Interazioni', count: '1.8B', size: '3.5 TB' },
-            { name: 'Interazioni Cliente', count: '1.8B', size: '3.4 TB' },
-            { name: 'Documents', count: '1.0B', size: '2.0 TB' },
-            { name: 'Cases', count: '716M', size: '1.3 TB' }
-        ];
-
-        const slowApex = [
-            { name: 'ITA_IFM_Queue0010_OM_SendOrder', avgTime: 19042, count: 168707 },
-            { name: 'ITA_IFM_Queue0010_SWP_SendOrder', avgTime: 14432, count: 157110 },
-            { name: 'ITA_IFM_LCC159_Cart/afterCheckout', avgTime: 5823, count: 180655 },
-            { name: 'VFRemote - DataRetrieve', avgTime: 2271, count: 604816 }
-        ];
-
-        const dataSkews = [
-            { obj: 'Case', field: 'Account', size: 98239, id: '0010Y00000FumcY' },
-            { obj: 'Case', field: 'Account', size: 72636, id: '0010Y00000FykLw' },
-            { obj: 'Case', field: 'Account', size: 58486, id: '0010Y00000FdbCn' },
-        ];
-
-        const userStorage = [
-            { name: 'Informatica', storage: '4.9 TB', percent: '18%' },
-            { name: 'Tibco User', storage: '1.6 TB', percent: '6%' },
-            { name: 'Informatica Caricatore', storage: '1.5 TB', percent: '6%' },
-        ];
+        const getCell = (row, keys) => {
+            for (const key of keys) {
+                if (key in row) return row[key];
+            }
+            return '';
+        };
 
         // --- COMPONENTS ---
 
@@ -209,36 +202,49 @@
             </div>
         );
 
-        const OverviewTab = () => (
+        const OverviewTab = ({ storageData, codeQualityData, topStorageObjects, userStorage, apexClassCount, apiVersionRange }) => {
+            const dataStorage = storageData.find((item) => item.name === 'Data Storage');
+            const blocker = codeQualityData.find((item) => item.name === 'BLOCKER');
+            const topUser = userStorage[0];
+            const topObject = topStorageObjects[0];
+            const storageValue = dataStorage ? `${Math.round(dataStorage.percent)}%` : '--';
+            const storageSubtext = dataStorage
+                ? `${dataStorage.used} ${dataStorage.unit} su ${dataStorage.limit} ${dataStorage.unit}`
+                : 'Nessun dato';
+            const blockerValue = blocker ? `${formatCount(blocker.testClasses)}/${formatCount(blocker.codeComponents)}` : '--';
+            const storageAlertMessage = dataStorage
+                ? `Il Data Storage è al ${Math.round(dataStorage.percent)}% della capacità (${dataStorage.used} ${dataStorage.unit}). Azioni di archiviazione o pulizia sono richieste per evitare il blocco dei processi.`
+                : 'Carica un file Excel per valutare lo stato dello storage.';
+            return (
             <div className="space-y-6 animate-fade-in">
                 {/* Stats Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard 
                         title="Storage Dati" 
-                        value="99%" 
-                        subtext="26.7TB su 27.0TB" 
+                        value={storageValue} 
+                        subtext={storageSubtext} 
                         icon={HardDrive} 
                         colorClass="border-red-500" 
-                        alert={true}
+                        alert={dataStorage ? dataStorage.percent > 90 : false}
                     />
                     <StatCard 
                         title="Problemi Bloccanti" 
-                        value="23" 
-                        subtext="Code Quality Issues" 
+                        value={blockerValue} 
+                        subtext="Test / Code" 
                         icon={FileWarning} 
                         colorClass="border-red-500"
                         alert={true}
                     />
                     <StatCard 
                         title="Classi Apex" 
-                        value="63,332" 
-                        subtext="Test Classes & Components" 
+                        value={apexClassCount ? apexClassCount.toLocaleString() : '-'} 
+                        subtext="Totale classi" 
                         icon={Code} 
                         colorClass="border-blue-500"
                     />
                     <StatCard 
                         title="API Versions" 
-                        value="31 - 56" 
+                        value={apiVersionRange || '-'} 
                         subtext="Range versioni attive" 
                         icon={Zap} 
                         colorClass="border-green-500"
@@ -247,25 +253,41 @@
 
                 <AlertBanner 
                     title="Attenzione: Storage Critico" 
-                    message="Il Data Storage è al 99% della capacità (26.7 TB). Azioni di archiviazione o pulizia sono richieste immediatamente per evitare il blocco dei processi."
+                    message={storageAlertMessage}
                 />
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Chart 1: Quality Summary */}
                     <div className="bg-white p-6 rounded-xl card-shadow">
                         <h3 className="font-bold text-lg text-slate-800 mb-4">Stato Salute Codice</h3>
-                        <div className="h-64 flex items-end justify-around gap-2 px-4">
+                        <div className="h-64 flex items-end justify-around gap-4 px-4">
                             {codeQualityData.map((item, idx) => {
-                                const maxValue = Math.max(...codeQualityData.map(d => d.value));
-                                const heightPercent = (item.value / maxValue) * 100;
+                                const maxValue = Math.max(...codeQualityData.map(d => Math.max(d.testClasses, d.codeComponents)), 0);
+                                const testHeight = maxValue ? (item.testClasses / maxValue) * 100 : 0;
+                                const codeHeight = maxValue ? (item.codeComponents / maxValue) * 100 : 0;
                                 return (
                                     <div key={idx} className="flex-1 flex flex-col items-center">
-                                        <div className="w-full bg-slate-200 rounded-t relative" style={{ height: `${heightPercent}%`, backgroundColor: item.color, minHeight: '20px' }} title={`${item.name}: ${item.value.toLocaleString()}`}></div>
+                                        <div className="w-full flex items-end gap-1 h-48">
+                                            <div
+                                                className="flex-1 rounded-t"
+                                                style={{ height: `${testHeight}%`, backgroundColor: item.color, minHeight: '8px', opacity: 0.6 }}
+                                                title={`${item.name} Test: ${item.testClasses.toLocaleString()}`}
+                                            ></div>
+                                            <div
+                                                className="flex-1 rounded-t"
+                                                style={{ height: `${codeHeight}%`, backgroundColor: item.color, minHeight: '8px' }}
+                                                title={`${item.name} Code: ${item.codeComponents.toLocaleString()}`}
+                                            ></div>
+                                        </div>
                                         <p className="text-xs text-slate-600 mt-2 text-center truncate">{item.name}</p>
-                                        <p className="text-xs font-bold text-slate-800">{(item.value / 1000).toFixed(1)}k</p>
+                                        <p className="text-xs font-bold text-slate-800">{formatCount(item.testClasses)}/{formatCount(item.codeComponents)}</p>
                                     </div>
                                 );
                             })}
+                        </div>
+                        <div className="flex items-center justify-center gap-4 text-xs text-slate-500 mt-4">
+                            <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-slate-400"></span>Test Classes</span>
+                            <span className="inline-flex items-center gap-2"><span className="w-3 h-3 rounded bg-slate-600"></span>Code Components</span>
                         </div>
                     </div>
 
@@ -293,17 +315,18 @@
                         <div className="mt-6 bg-blue-50 p-4 rounded-lg">
                             <h4 className="text-sm font-bold text-blue-800 mb-2">Insight Rapidi</h4>
                             <ul className="text-sm text-blue-700 space-y-1">
-                                <li>• Utente principale storage: <strong>Informatica (4.9 TB)</strong></li>
-                                <li>• Oggetto più pesante: <strong>Config Item Attributes (4.2 TB)</strong></li>
-                                <li>• Problemi critici codice: <strong>4,453</strong></li>
+                                <li>• Utente principale storage: <strong>{topUser ? `${topUser.name} (${topUser.storage})` : '-'}</strong></li>
+                                <li>• Oggetto più pesante: <strong>{topObject ? `${topObject.name} (${topObject.size})` : '-'}</strong></li>
+                                <li>• Problemi critici codice: <strong>{codeQualityData.find((item) => item.name === 'CRITICAL')?.codeComponents?.toLocaleString() || '-'}</strong></li>
                             </ul>
                         </div>
                     </div>
                 </div>
             </div>
         );
+        };
 
-        const QualityTab = () => (
+        const QualityTab = ({ codeQualityData, topIssuesFiles, codeQualityRules }) => (
             <div className="space-y-6 animate-fade-in">
                 <div className="bg-white p-6 rounded-xl card-shadow">
                     <div className="flex justify-between items-center mb-6">
@@ -340,27 +363,18 @@
                     <div className="bg-white p-6 rounded-xl card-shadow">
                         <h3 className="font-bold text-lg text-slate-800 mb-4">Regole Violate (Top 3)</h3>
                         <ul className="space-y-4">
-                            <li className="flex items-start">
-                                <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-orange-100 text-orange-600 rounded-full mr-3 text-xs font-bold">1</span>
-                                <div>
-                                    <p className="font-medium text-slate-800">Avoid using debug statements</p>
-                                    <p className="text-sm text-slate-500">28,823 occorrenze. Impatta le performance e sporca i log.</p>
-                                </div>
-                            </li>
-                            <li className="flex items-start">
-                                <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-orange-100 text-orange-600 rounded-full mr-3 text-xs font-bold">2</span>
-                                <div>
-                                    <p className="font-medium text-slate-800">Unit Test Method should include System.Assert</p>
-                                    <p className="text-sm text-slate-500">12,603 occorrenze. I test senza assert non validano realmente la logica.</p>
-                                </div>
-                            </li>
-                            <li className="flex items-start">
-                                <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-orange-100 text-orange-600 rounded-full mr-3 text-xs font-bold">3</span>
-                                <div>
-                                    <p className="font-medium text-slate-800">Deeply Nested IF Statements</p>
-                                    <p className="text-sm text-slate-500">9,334 occorrenze. Rende il codice difficile da mantenere e leggere.</p>
-                                </div>
-                            </li>
+                            {codeQualityRules.length === 0 && (
+                                <li className="text-sm text-slate-500">Nessun dato disponibile.</li>
+                            )}
+                            {codeQualityRules.map((rule, idx) => (
+                                <li key={idx} className="flex items-start">
+                                    <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-orange-100 text-orange-600 rounded-full mr-3 text-xs font-bold">{idx + 1}</span>
+                                    <div>
+                                        <p className="font-medium text-slate-800">{rule.name}</p>
+                                        <p className="text-sm text-slate-500">{rule.count.toLocaleString()} occorrenze.</p>
+                                    </div>
+                                </li>
+                            ))}
                         </ul>
                     </div>
                     <div className="bg-white p-6 rounded-xl card-shadow">
@@ -368,8 +382,8 @@
                         <div className="h-56 flex flex-col items-center justify-center">
                             <div className="flex flex-wrap justify-center gap-4">
                                 {codeQualityData.map((item, idx) => {
-                                    const total = codeQualityData.reduce((sum, d) => sum + d.value, 0);
-                                    const percent = ((item.value / total) * 100).toFixed(1);
+                                    const total = codeQualityData.reduce((sum, d) => sum + d.testClasses + d.codeComponents, 0);
+                                    const percent = total ? (((item.testClasses + item.codeComponents) / total) * 100).toFixed(1) : '0.0';
                                     return (
                                         <div key={idx} className="text-center">
                                             <div className="flex items-center justify-center">
@@ -378,7 +392,7 @@
                                                 </div>
                                             </div>
                                             <p className="text-xs text-slate-600 mt-2 font-medium">{item.name}</p>
-                                            <p className="text-xs text-slate-500">{item.value.toLocaleString()}</p>
+                                            <p className="text-xs text-slate-500">{formatCount(item.testClasses)}/{formatCount(item.codeComponents)}</p>
                                         </div>
                                     );
                                 })}
@@ -389,11 +403,15 @@
             </div>
         );
 
-        const StorageTab = () => (
+        const StorageTab = ({ topStorageObjects, topFileStorageObjects, userStorage, softDeletedRecords }) => {
+            const alertMessage = topStorageObjects.length
+                ? `Gli oggetti ${topStorageObjects.slice(0, 2).map((obj) => obj.name).join(' e ')} consumano da soli oltre ${topStorageObjects.slice(0, 2).map((obj) => obj.size).join(' + ')} di spazio.`
+                : 'Carica un file Excel per valutare i maggiori consumer.';
+            return (
              <div className="space-y-6 animate-fade-in">
                 <AlertBanner 
                     title="Analisi Top Consumer" 
-                    message="Gli attributi degli ordini (Configuration Item Attributes) e le Interazioni consumano da soli oltre 11 TB di spazio."
+                    message={alertMessage}
                 />
                 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -420,23 +438,45 @@
                     </div>
 
                     <div className="bg-white p-6 rounded-xl card-shadow">
-                        <h3 className="font-bold text-lg text-slate-800 mb-4">Top Utenti per Consumo Dati</h3>
-                        <div className="space-y-4">
-                            {userStorage.map((user, i) => (
-                                <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                                    <div className="flex items-center">
-                                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3 font-bold text-xs">
-                                            {user.name.charAt(0)}
-                                        </div>
-                                        <span className="font-medium text-slate-700">{user.name}</span>
+                        <h3 className="font-bold text-lg text-slate-800 mb-4">Top 5 Oggetti File Storage</h3>
+                        <table className="min-w-full">
+                            <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                                <tr>
+                                    <th className="px-4 py-2 text-left">Oggetto</th>
+                                    <th className="px-4 py-2 text-right">Record Count</th>
+                                    <th className="px-4 py-2 text-right">Size</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-sm">
+                                {topFileStorageObjects.map((obj, i) => (
+                                    <tr key={i}>
+                                        <td className="px-4 py-3 font-medium text-slate-700">{obj.name}</td>
+                                        <td className="px-4 py-3 text-right text-slate-500">{obj.count}</td>
+                                        <td className="px-4 py-3 text-right font-bold text-slate-800">{obj.size}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl card-shadow">
+                    <h3 className="font-bold text-lg text-slate-800 mb-4">Top Utenti per Consumo Dati</h3>
+                    <div className="space-y-4">
+                        {userStorage.map((user, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                                <div className="flex items-center">
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3 font-bold text-xs">
+                                        {user.name.charAt(0)}
                                     </div>
-                                    <div className="text-right">
-                                        <span className="block font-bold text-slate-800">{user.storage}</span>
-                                        <span className="text-xs text-slate-500">{user.percent} del totale</span>
-                                    </div>
+                                    <span className="font-medium text-slate-700">{user.name}</span>
                                 </div>
-                            ))}
-                        </div>
+                                <div className="text-right">
+                                    <span className="block font-bold text-slate-800">{user.storage}</span>
+                                    <span className="text-xs text-slate-500">{user.percent} del totale</span>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
@@ -444,27 +484,23 @@
                     <h3 className="font-bold text-lg text-slate-800 mb-4">Records Soft Deleted (Cestino)</h3>
                     <p className="text-sm text-slate-600 mb-4">Questi record occupano spazio ma sono nel cestino. Svuotare il cestino potrebbe liberare spazio significativo.</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="p-4 bg-orange-50 border border-orange-100 rounded-lg text-center">
-                            <p className="text-xs uppercase text-orange-600 font-bold">Action Tracking</p>
-                            <p className="text-xl font-bold text-orange-800">21.7 M</p>
-                            <p className="text-xs text-orange-600">Records eliminati</p>
-                        </div>
-                         <div className="p-4 bg-orange-50 border border-orange-100 rounded-lg text-center">
-                            <p className="text-xs uppercase text-orange-600 font-bold">Campaign Member</p>
-                            <p className="text-xl font-bold text-orange-800">7.4 M</p>
-                            <p className="text-xs text-orange-600">Records eliminati</p>
-                        </div>
-                         <div className="p-4 bg-orange-50 border border-orange-100 rounded-lg text-center">
-                            <p className="text-xs uppercase text-orange-600 font-bold">VOC Staging</p>
-                            <p className="text-xl font-bold text-orange-800">2.6 M</p>
-                            <p className="text-xs text-orange-600">Records eliminati</p>
-                        </div>
+                        {softDeletedRecords.length === 0 && (
+                            <div className="col-span-full text-sm text-slate-500">Nessun dato disponibile.</div>
+                        )}
+                        {softDeletedRecords.map((record, i) => (
+                            <div key={i} className="p-4 bg-orange-50 border border-orange-100 rounded-lg text-center">
+                                <p className="text-xs uppercase text-orange-600 font-bold">{record.name}</p>
+                                <p className="text-xl font-bold text-orange-800">{formatCount(record.deleted)}</p>
+                                <p className="text-xs text-orange-600">Records eliminati</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
              </div>
         );
+        };
 
-        const PerformanceTab = () => (
+        const PerformanceTab = ({ slowApex, dataSkews, queries }) => (
             <div className="space-y-6 animate-fade-in">
                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                      <div className="bg-white p-6 rounded-xl card-shadow">
@@ -523,24 +559,14 @@
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                <tr>
-                                    <td className="px-4 py-2 text-slate-700 font-mono text-xs">ITA_IFM_BA0010_OMSendOrder_Schedule.execute</td>
-                                    <td className="px-4 py-2 text-right text-red-600 font-bold">5,338</td>
-                                    <td className="px-4 py-2 text-right">29,464</td>
-                                    <td className="px-4 py-2 text-right">6,838</td>
-                                </tr>
-                                <tr>
-                                    <td className="px-4 py-2 text-slate-700 font-mono text-xs">ITA_IFM_NE_OrderItemsSelector.selectOiQuote...</td>
-                                    <td className="px-4 py-2 text-right text-orange-600 font-bold">2,338</td>
-                                    <td className="px-4 py-2 text-right">129,949</td>
-                                    <td className="px-4 py-2 text-right">68,769</td>
-                                </tr>
-                                 <tr>
-                                    <td className="px-4 py-2 text-slate-700 font-mono text-xs">ITA_IFM_Util240_RipensamentoVerification...</td>
-                                    <td className="px-4 py-2 text-right text-orange-600 font-bold">2,501</td>
-                                    <td className="px-4 py-2 text-right">125,002</td>
-                                    <td className="px-4 py-2 text-right">50,093</td>
-                                </tr>
+                                {queries.map((query, i) => (
+                                    <tr key={i}>
+                                        <td className="px-4 py-2 text-slate-700 font-mono text-xs">{query.name}</td>
+                                        <td className="px-4 py-2 text-right text-red-600 font-bold">{query.avgTime.toLocaleString()}</td>
+                                        <td className="px-4 py-2 text-right">{query.maxTime.toLocaleString()}</td>
+                                        <td className="px-4 py-2 text-right">{query.count.toLocaleString()}</td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
@@ -615,22 +641,219 @@
         const App = () => {
             const [activeTab, setActiveTab] = useState('overview');
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+            const [fileName, setFileName] = useState('');
+            const [loadError, setLoadError] = useState('');
+            const [lastUpdated, setLastUpdated] = useState('Ultimo aggiornamento: -');
+            const [data, setData] = useState({
+                storageData: [],
+                codeQualityData: [],
+                codeQualityRules: [],
+                topIssuesFiles: [],
+                topStorageObjects: [],
+                topFileStorageObjects: [],
+                softDeletedRecords: [],
+                slowApex: [],
+                dataSkews: [],
+                userStorage: [],
+                queries: [],
+                apexClassCount: 0,
+                apiVersionRange: ''
+            });
+            const [warnings, setWarnings] = useState([]);
             
-            // Set current date on mount
-            React.useEffect(() => {
-                const now = new Date();
-                const dateStr = now.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' }).replace(/\s/g, ' ');
-                document.getElementById('lastUpdate').textContent = `Ultimo aggiornamento: ${dateStr}`;
-            }, []);
+            const parseWorkbook = (workbook) => {
+                const warnings = [];
+                const toRows = (sheetName) => {
+                    const sheet = workbook.Sheets[sheetName];
+                    if (!sheet) {
+                        warnings.push(`Foglio mancante: ${sheetName}.`);
+                        return [];
+                    }
+                    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+                    if (!rows.length) warnings.push(`Foglio vuoto: ${sheetName}.`);
+                    return rows;
+                };
+                const validateColumns = (rows, sheetName, required) => {
+                    if (!rows.length) return;
+                    const columns = Object.keys(rows[0]);
+                    required.forEach((col) => {
+                        if (!columns.includes(col)) {
+                            warnings.push(`Colonna mancante in ${sheetName}: ${col}.`);
+                        }
+                    });
+                };
+
+                const qualityRows = toRows('Code Quality Issues by Severity');
+                validateColumns(qualityRows, 'Code Quality Issues by Severity', ['Severity', 'Test classes', 'Code Components']);
+                const codeQualityData = qualityRows.map((row) => ({
+                    name: getCell(row, ['Severity']),
+                    testClasses: toNumber(getCell(row, ['Test classes'])),
+                    codeComponents: toNumber(getCell(row, ['Code Components'])),
+                    color: severityColors[getCell(row, ['Severity'])] || '#9CA3AF'
+                })).filter((row) => row.name);
+
+                const rulesRows = toRows('Code Quality Issues by Rule');
+                validateColumns(rulesRows, 'Code Quality Issues by Rule', ['Rule Name']);
+                const codeQualityRules = rulesRows.map((row) => ({
+                    name: getCell(row, ['Rule Name']),
+                    count: toNumber(getCell(row, ['Code Components', 'Test classes']))
+                })).filter((row) => row.name).slice(0, 3);
+
+                if (rulesRows.length) {
+                    const columns = Object.keys(rulesRows[0] || {});
+                    if (!columns.includes('Code Components') && !columns.includes('Test classes')) {
+                        warnings.push('Colonna mancante in Code Quality Issues by Rule: Code Components o Test classes.');
+                    }
+                }
+
+                const topComponentsRows = toRows('Top Components List');
+                validateColumns(topComponentsRows, 'Top Components List', ['File Name', 'Issues']);
+                const topIssuesFiles = topComponentsRows.map((row) => ({
+                    name: getCell(row, ['File Name']),
+                    issues: toNumber(getCell(row, ['Issues']))
+                })).filter((row) => row.name).slice(0, 5);
+
+                const storageRows = toRows('Overall Storage Usage');
+                validateColumns(storageRows, 'Overall Storage Usage', ['Storage Type', 'Limit', 'Used', 'Percent Used']);
+                const storageData = storageRows.map((row) => {
+                    const used = parseStorageValue(getCell(row, ['Used']));
+                    const limit = parseStorageValue(getCell(row, ['Limit']));
+                    const percentRaw = toNumber(getCell(row, ['Percent Used']));
+                    const percent = percentRaw <= 1 ? percentRaw * 100 : percentRaw;
+                    return {
+                        name: getCell(row, ['Storage Type']),
+                        used: used.value,
+                        limit: limit.value,
+                        unit: used.unit || limit.unit || '',
+                        percent: Math.round(percent)
+                    };
+                }).filter((row) => row.name);
+
+                const dataStorageRows = toRows('Current Data Storage Usage');
+                validateColumns(dataStorageRows, 'Current Data Storage Usage', ['Record Type', 'Record Count', 'Storage']);
+                const topStorageObjects = dataStorageRows.map((row) => ({
+                    name: getCell(row, ['Record Type']),
+                    count: formatCount(toNumber(getCell(row, ['Record Count']))),
+                    size: getCell(row, ['Storage'])
+                })).filter((row) => row.name).slice(0, 5);
+
+                const fileStorageRows = toRows('Current File Storage Usage');
+                validateColumns(fileStorageRows, 'Current File Storage Usage', ['Record Type', 'Record Count', 'Storage']);
+                const topFileStorageObjects = fileStorageRows.map((row) => ({
+                    name: getCell(row, ['Record Type']),
+                    count: formatCount(toNumber(getCell(row, ['Record Count']))),
+                    size: getCell(row, ['Storage'])
+                })).filter((row) => row.name).slice(0, 5);
+
+                const userStorageRows = toRows('Top users by Data Storage Usage');
+                validateColumns(userStorageRows, 'Top users by Data Storage Usage', ['User', 'Storage', 'Percent']);
+                const userStorage = userStorageRows.map((row) => {
+                    const percentRaw = toNumber(getCell(row, ['Percent']));
+                    const percent = percentRaw <= 1 ? percentRaw * 100 : percentRaw;
+                    return {
+                        name: getCell(row, ['User']),
+                        storage: getCell(row, ['Storage']),
+                        percent: `${Math.round(percent)}%`
+                    };
+                }).filter((row) => row.name).slice(0, 5);
+
+                const softDeletedRows = toRows('Soft Deleted Records');
+                validateColumns(softDeletedRows, 'Soft Deleted Records', ['Current Storage Usage', 'Record Count', 'Deleted Counts']);
+                const softDeletedRecords = softDeletedRows.map((row) => ({
+                    name: getCell(row, ['Current Storage Usage']),
+                    total: toNumber(getCell(row, ['Record Count'])),
+                    deleted: toNumber(getCell(row, ['Deleted Counts']))
+                })).filter((row) => row.name).slice(0, 3);
+
+                const dataSkewRows = toRows('Data Skews Inventory');
+                validateColumns(dataSkewRows, 'Data Skews Inventory', ['Skewed Relationship', 'Parent ID']);
+                if (dataSkewRows.length) {
+                    const columns = Object.keys(dataSkewRows[0] || {});
+                    if (!columns.includes('Skew Size ') && !columns.includes('Skew Size')) {
+                        warnings.push('Colonna mancante in Data Skews Inventory: Skew Size.');
+                    }
+                }
+                const dataSkews = dataSkewRows.map((row) => ({
+                    obj: getCell(row, ['Skewed Relationship']).split('.')[0] || getCell(row, ['Skewed Relationship']),
+                    field: getCell(row, ['Skewed Relationship']).split('.')[1] || '',
+                    size: toNumber(getCell(row, ['Skew Size ', 'Skew Size'])),
+                    id: getCell(row, ['Parent ID'])
+                })).filter((row) => row.id).slice(0, 5);
+
+                const apexRows = toRows('Apex Classes');
+                validateColumns(apexRows, 'Apex Classes', ['Name', 'Total Average Time', 'Count']);
+                const slowApex = apexRows.map((row) => ({
+                    name: getCell(row, ['Name']),
+                    avgTime: toNumber(getCell(row, ['Total Average Time'])),
+                    count: toNumber(getCell(row, ['Count']))
+                })).filter((row) => row.name).slice(0, 5);
+                const apexClassCount = apexRows.filter((row) => getCell(row, ['Name'])).length;
+
+                const queriesRows = toRows('Queries');
+                validateColumns(queriesRows, 'Queries', ['Unique Query Locator', 'Average Query Time', 'Max Query Time', 'Count']);
+                const queries = queriesRows.map((row) => ({
+                    name: getCell(row, ['Unique Query Locator']),
+                    avgTime: toNumber(getCell(row, ['Average Query Time'])),
+                    maxTime: toNumber(getCell(row, ['Max Query Time'])),
+                    count: toNumber(getCell(row, ['Count']))
+                })).filter((row) => row.name).slice(0, 5);
+
+                const apiRows = toRows('API Versions');
+                validateColumns(apiRows, 'API Versions', ['ApiVersion']);
+                const apiVersions = apiRows.map((row) => toNumber(getCell(row, ['ApiVersion']))).filter((val) => val > 0);
+                const apiVersionRange = apiVersions.length ? `${Math.min(...apiVersions)} - ${Math.max(...apiVersions)}` : '';
+
+                return {
+                    storageData,
+                    codeQualityData,
+                    codeQualityRules,
+                    topIssuesFiles,
+                    topStorageObjects,
+                    topFileStorageObjects,
+                    softDeletedRecords,
+                    slowApex,
+                    dataSkews,
+                    userStorage,
+                    queries,
+                    apexClassCount,
+                    apiVersionRange,
+                    warnings
+                };
+            };
+
+            const handleFileUpload = (event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                setLoadError('');
+                setWarnings([]);
+                setFileName(file.name);
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const dataBuffer = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(dataBuffer, { type: 'array' });
+                        const parsed = parseWorkbook(workbook);
+                        const { warnings: parsedWarnings, ...parsedData } = parsed;
+                        setData(parsedData);
+                        setWarnings(parsedWarnings || []);
+                        const dateStr = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' }).replace(/\s/g, ' ');
+                        setLastUpdated(`Ultimo aggiornamento: ${dateStr}`);
+                    } catch (error) {
+                        setLoadError('Errore durante la lettura del file Excel. Verifica il formato.');
+                    }
+                };
+                reader.onerror = () => setLoadError('Errore durante la lettura del file Excel.');
+                reader.readAsArrayBuffer(file);
+            };
 
             const renderContent = () => {
                 switch(activeTab) {
-                    case 'overview': return <OverviewTab />;
-                    case 'quality': return <QualityTab />;
-                    case 'storage': return <StorageTab />;
-                    case 'performance': return <PerformanceTab />;
+                    case 'overview': return <OverviewTab storageData={data.storageData} codeQualityData={data.codeQualityData} topStorageObjects={data.topStorageObjects} userStorage={data.userStorage} apexClassCount={data.apexClassCount} apiVersionRange={data.apiVersionRange} />;
+                    case 'quality': return <QualityTab codeQualityData={data.codeQualityData} topIssuesFiles={data.topIssuesFiles} codeQualityRules={data.codeQualityRules} />;
+                    case 'storage': return <StorageTab topStorageObjects={data.topStorageObjects} topFileStorageObjects={data.topFileStorageObjects} userStorage={data.userStorage} softDeletedRecords={data.softDeletedRecords} />;
+                    case 'performance': return <PerformanceTab slowApex={data.slowApex} dataSkews={data.dataSkews} queries={data.queries} />;
                     case 'inventory': return <InventoryTab />;
-                    default: return <OverviewTab />;
+                    default: return <OverviewTab storageData={data.storageData} codeQualityData={data.codeQualityData} topStorageObjects={data.topStorageObjects} userStorage={data.userStorage} apexClassCount={data.apexClassCount} apiVersionRange={data.apiVersionRange} />;
                 }
             };
 
@@ -649,9 +872,15 @@
                         {/* Header Mobile */}
                         <div className="lg:hidden bg-white shadow-sm p-4 flex items-center justify-between sticky top-0 z-10">
                             <h1 className="font-bold text-slate-800">Enel Global Services</h1>
-                            <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-600">
-                                <Menu />
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                                    <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileUpload} />
+                                    <span className="px-2 py-1 bg-slate-100 rounded-md font-medium">Carica</span>
+                                </label>
+                                <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-600">
+                                    <Menu />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Top Bar Desktop */}
@@ -664,7 +893,12 @@
                                 {activeTab === 'inventory' && 'Inventario Oggetti & Metadati'}
                             </h2>
                             <div className="flex items-center space-x-4">
-                                <span className="text-sm text-slate-500" id="lastUpdate">Ultimo aggiornamento: -</span>
+                                <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                                    <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileUpload} />
+                                    <span className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium">Carica Excel</span>
+                                    <span className="text-xs text-slate-400">{fileName || 'Nessun file'}</span>
+                                </label>
+                                <span className="text-sm text-slate-500">{lastUpdated}</span>
                                 <div className="h-8 w-8 bg-blue-600 rounded-full text-white flex items-center justify-center font-bold text-sm">
                                     EG
                                 </div>
@@ -674,6 +908,26 @@
                         {/* Content Scroll Area */}
                         <main className="flex-1 p-6 overflow-y-auto">
                             <div className="max-w-7xl mx-auto">
+                                {loadError && (
+                                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700 mb-6">
+                                        {loadError}
+                                    </div>
+                                )}
+                                {warnings.length > 0 && (
+                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800 mb-6">
+                                        <p className="font-semibold mb-2">Attenzione: alcuni dati potrebbero mancare</p>
+                                        <ul className="list-disc list-inside space-y-1">
+                                            {warnings.map((warning, idx) => (
+                                                <li key={idx}>{warning}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                {!data.storageData.length && (
+                                    <div className="bg-white border border-slate-200 rounded-lg p-6 text-sm text-slate-600 mb-6">
+                                        Carica un file Excel per visualizzare i dati reali del dashboard.
+                                    </div>
+                                )}
                                 {renderContent()}
                             </div>
                         </main>
