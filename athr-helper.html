@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enel Global Services | Org Health Dashboard</title>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- D3.js for Charts -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body { background-color: #f3f4f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+        
+        // Icon component using Font Awesome
+        const Icon = ({ name, size = 24, className = '' }) => (
+            <i className={`fas fa-${name}`} style={{ fontSize: `${size}px` }} />
+        );
+        
+        // Icon mappings
+        const LayoutDashboard = (props) => <Icon name="th-large" {...props} />;
+        const Database = (props) => <Icon name="database" {...props} />;
+        const Activity = (props) => <Icon name="activity" {...props} />;
+        const Code = (props) => <Icon name="code" {...props} />;
+        const Layers = (props) => <Icon name="layer-group" {...props} />;
+        const AlertTriangle = (props) => <Icon name="triangle-exclamation" {...props} />;
+        const CheckCircle = (props) => <Icon name="check-circle" {...props} />;
+        const HardDrive = (props) => <Icon name="hard-drive" {...props} />;
+        const FileWarning = (props) => <Icon name="file-circle-exclamation" {...props} />;
+        const Server = (props) => <Icon name="server" {...props} />;
+        const Zap = (props) => <Icon name="bolt" {...props} />;
+        const Menu = (props) => <Icon name="bars" {...props} />;
+        const X = (props) => <Icon name="xmark" {...props} />;
+        const ChevronRight = (props) => <Icon name="chevron-right" {...props} />;
+        const User = (props) => <Icon name="user" {...props} />;
+
+        // --- MOCK DATA EXTRACTED FROM CSV FILES ---
+
+        const storageData = [
+            { name: 'Data Storage', used: 26.7, limit: 27.0, unit: 'TB', percent: 99 },
+            { name: 'File Storage', used: 34.3, limit: 36.2, unit: 'TB', percent: 95 },
+            { name: 'Big Objects', used: 0, limit: 1, unit: 'M', percent: 0 }
+        ];
+
+        const codeQualityData = [
+            { name: 'Blocker', value: 23, color: '#EF4444' },
+            { name: 'Critical', value: 4453, color: '#F97316' },
+            { name: 'Major', value: 23526, color: '#EAB308' },
+            { name: 'Minor', value: 6910, color: '#3B82F6' },
+            { name: 'Info', value: 28420, color: '#9CA3AF' }
+        ];
+
+        const topIssuesFiles = [
+            { name: 'ITA_IFM_VFC304_NPA_Utility.cls', issues: 1503 },
+            { name: 'ITA_IFM_Util027_VasPartner.cls', issues: 1415 },
+            { name: 'ITA_IFM_VFC027_Management_Vas.cls', issues: 1300 },
+            { name: 'ITA_IFM_VFC306_TP_Utility.cls', issues: 1071 },
+            { name: 'ITA_IFM_VFC306_TP.cls', issues: 1008 }
+        ];
+
+        const topStorageObjects = [
+            { name: 'Config Item Attr.', count: '2.2B', size: '4.2 TB' },
+            { name: 'Interazioni', count: '1.8B', size: '3.5 TB' },
+            { name: 'Interazioni Cliente', count: '1.8B', size: '3.4 TB' },
+            { name: 'Documents', count: '1.0B', size: '2.0 TB' },
+            { name: 'Cases', count: '716M', size: '1.3 TB' }
+        ];
+
+        const slowApex = [
+            { name: 'ITA_IFM_Queue0010_OM_SendOrder', avgTime: 19042, count: 168707 },
+            { name: 'ITA_IFM_Queue0010_SWP_SendOrder', avgTime: 14432, count: 157110 },
+            { name: 'ITA_IFM_LCC159_Cart/afterCheckout', avgTime: 5823, count: 180655 },
+            { name: 'VFRemote - DataRetrieve', avgTime: 2271, count: 604816 }
+        ];
+
+        const dataSkews = [
+            { obj: 'Case', field: 'Account', size: 98239, id: '0010Y00000FumcY' },
+            { obj: 'Case', field: 'Account', size: 72636, id: '0010Y00000FykLw' },
+            { obj: 'Case', field: 'Account', size: 58486, id: '0010Y00000FdbCn' },
+        ];
+
+        const userStorage = [
+            { name: 'Informatica', storage: '4.9 TB', percent: '18%' },
+            { name: 'Tibco User', storage: '1.6 TB', percent: '6%' },
+            { name: 'Informatica Caricatore', storage: '1.5 TB', percent: '6%' },
+        ];
+
+        // --- COMPONENTS ---
+
+        const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
+            const menuItems = [
+                { id: 'overview', label: 'Panoramica', icon: LayoutDashboard },
+                { id: 'quality', label: 'Qualità Codice', icon: Code },
+                { id: 'storage', label: 'Storage & Dati', icon: Database },
+                { id: 'performance', label: 'Performance', icon: Activity },
+                { id: 'inventory', label: 'Inventario', icon: Layers },
+            ];
+
+            return (
+                <>
+                    {/* Mobile Overlay */}
+                    {isOpen && (
+                        <div 
+                            className="fixed inset-0 z-20 bg-black bg-opacity-50 lg:hidden"
+                            onClick={() => setIsOpen(false)}
+                        ></div>
+                    )}
+
+                    {/* Sidebar */}
+                    <aside className={`fixed top-0 left-0 z-30 h-full w-64 bg-slate-900 text-white transition-transform transform lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                        <div className="flex items-center justify-between p-4 border-b border-slate-700">
+                            <div className="flex items-center space-x-2">
+                                <div className="p-2 bg-blue-600 rounded-lg">
+                                    <Server size={20} />
+                                </div>
+                                <div>
+                                    <h1 className="font-bold text-lg leading-tight">Enel Global</h1>
+                                    <p className="text-xs text-slate-400">Salesforce Dashboard</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setIsOpen(false)} className="lg:hidden">
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <nav className="mt-6 px-2 space-y-2">
+                            {menuItems.map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => { setActiveTab(item.id); setIsOpen(false); }}
+                                    className={`flex items-center w-full px-4 py-3 rounded-lg transition-colors ${
+                                        activeTab === item.id 
+                                        ? 'bg-blue-600 text-white shadow-lg' 
+                                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                                    }`}
+                                >
+                                    <item.icon size={20} className="mr-3" />
+                                    <span className="font-medium">{item.label}</span>
+                                    {activeTab === item.id && <ChevronRight size={16} className="ml-auto" />}
+                                </button>
+                            ))}
+                        </nav>
+
+                        <div className="absolute bottom-0 w-full p-4 border-t border-slate-800 bg-slate-900">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center">
+                                    <User size={16} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium">Admin User</p>
+                                    <p className="text-xs text-slate-400">View Only</p>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+                </>
+            );
+        };
+
+        const StatCard = ({ title, value, subtext, icon: Icon, colorClass, alert }) => (
+            <div className={`bg-white p-6 rounded-xl card-shadow border-l-4 ${colorClass}`}>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">{title}</p>
+                        <h3 className="text-2xl font-bold text-slate-800 mt-1">{value}</h3>
+                        {subtext && <p className="text-sm text-slate-400 mt-2">{subtext}</p>}
+                    </div>
+                    <div className={`p-3 rounded-full ${alert ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
+                        <Icon size={24} />
+                    </div>
+                </div>
+            </div>
+        );
+
+        const AlertBanner = ({ title, message }) => (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3 mb-6">
+                <AlertTriangle className="text-red-600 mt-1 flex-shrink-0" size={20} />
+                <div>
+                    <h4 className="font-semibold text-red-800">{title}</h4>
+                    <p className="text-sm text-red-700 mt-1">{message}</p>
+                </div>
+            </div>
+        );
+
+        const OverviewTab = () => (
+            <div className="space-y-6 animate-fade-in">
+                {/* Stats Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <StatCard 
+                        title="Storage Dati" 
+                        value="99%" 
+                        subtext="26.7TB su 27.0TB" 
+                        icon={HardDrive} 
+                        colorClass="border-red-500" 
+                        alert={true}
+                    />
+                    <StatCard 
+                        title="Problemi Bloccanti" 
+                        value="23" 
+                        subtext="Code Quality Issues" 
+                        icon={FileWarning} 
+                        colorClass="border-red-500"
+                        alert={true}
+                    />
+                    <StatCard 
+                        title="Classi Apex" 
+                        value="63,332" 
+                        subtext="Test Classes & Components" 
+                        icon={Code} 
+                        colorClass="border-blue-500"
+                    />
+                    <StatCard 
+                        title="API Versions" 
+                        value="31 - 56" 
+                        subtext="Range versioni attive" 
+                        icon={Zap} 
+                        colorClass="border-green-500"
+                    />
+                </div>
+
+                <AlertBanner 
+                    title="Attenzione: Storage Critico" 
+                    message="Il Data Storage è al 99% della capacità (26.7 TB). Azioni di archiviazione o pulizia sono richieste immediatamente per evitare il blocco dei processi."
+                />
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Chart 1: Quality Summary */}
+                    <div className="bg-white p-6 rounded-xl card-shadow">
+                        <h3 className="font-bold text-lg text-slate-800 mb-4">Stato Salute Codice</h3>
+                        <div className="h-64 flex items-end justify-around gap-2 px-4">
+                            {codeQualityData.map((item, idx) => {
+                                const maxValue = Math.max(...codeQualityData.map(d => d.value));
+                                const heightPercent = (item.value / maxValue) * 100;
+                                return (
+                                    <div key={idx} className="flex-1 flex flex-col items-center">
+                                        <div className="w-full bg-slate-200 rounded-t relative" style={{ height: `${heightPercent}%`, backgroundColor: item.color, minHeight: '20px' }} title={`${item.name}: ${item.value.toLocaleString()}`}></div>
+                                        <p className="text-xs text-slate-600 mt-2 text-center truncate">{item.name}</p>
+                                        <p className="text-xs font-bold text-slate-800">{(item.value / 1000).toFixed(1)}k</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Chart 2: Storage Usage */}
+                    <div className="bg-white p-6 rounded-xl card-shadow">
+                        <h3 className="font-bold text-lg text-slate-800 mb-4">Utilizzo Storage (TB)</h3>
+                        <div className="space-y-4">
+                            {storageData.map((item, idx) => (
+                                <div key={idx}>
+                                    <div className="flex justify-between text-sm mb-1">
+                                        <span className="font-medium text-slate-700">{item.name}</span>
+                                        <span className={`font-bold ${item.percent > 90 ? 'text-red-600' : 'text-slate-600'}`}>
+                                            {item.used} / {item.limit} {item.unit} ({item.percent}%)
+                                        </span>
+                                    </div>
+                                    <div className="w-full bg-slate-200 rounded-full h-2.5">
+                                        <div 
+                                            className={`h-2.5 rounded-full ${item.percent > 90 ? 'bg-red-600' : 'bg-blue-600'}`} 
+                                            style={{ width: `${item.percent}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-6 bg-blue-50 p-4 rounded-lg">
+                            <h4 className="text-sm font-bold text-blue-800 mb-2">Insight Rapidi</h4>
+                            <ul className="text-sm text-blue-700 space-y-1">
+                                <li>• Utente principale storage: <strong>Informatica (4.9 TB)</strong></li>
+                                <li>• Oggetto più pesante: <strong>Config Item Attributes (4.2 TB)</strong></li>
+                                <li>• Problemi critici codice: <strong>4,453</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const QualityTab = () => (
+            <div className="space-y-6 animate-fade-in">
+                <div className="bg-white p-6 rounded-xl card-shadow">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="font-bold text-lg text-slate-800">Top 5 Componenti con più Problemi</h3>
+                        <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full font-bold">Priority High</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full text-left">
+                            <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                                <tr>
+                                    <th className="px-4 py-3">Nome File</th>
+                                    <th className="px-4 py-3">Numero Issues</th>
+                                    <th className="px-4 py-3">Stato</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-sm">
+                                {topIssuesFiles.map((file, i) => (
+                                    <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                        <td className="px-4 py-3 font-medium text-slate-700">{file.name}</td>
+                                        <td className="px-4 py-3 text-red-600 font-bold">{file.issues}</td>
+                                        <td className="px-4 py-3">
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                                Refactor Richiesto
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-white p-6 rounded-xl card-shadow">
+                        <h3 className="font-bold text-lg text-slate-800 mb-4">Regole Violate (Top 3)</h3>
+                        <ul className="space-y-4">
+                            <li className="flex items-start">
+                                <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-orange-100 text-orange-600 rounded-full mr-3 text-xs font-bold">1</span>
+                                <div>
+                                    <p className="font-medium text-slate-800">Avoid using debug statements</p>
+                                    <p className="text-sm text-slate-500">28,823 occorrenze. Impatta le performance e sporca i log.</p>
+                                </div>
+                            </li>
+                            <li className="flex items-start">
+                                <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-orange-100 text-orange-600 rounded-full mr-3 text-xs font-bold">2</span>
+                                <div>
+                                    <p className="font-medium text-slate-800">Unit Test Method should include System.Assert</p>
+                                    <p className="text-sm text-slate-500">12,603 occorrenze. I test senza assert non validano realmente la logica.</p>
+                                </div>
+                            </li>
+                            <li className="flex items-start">
+                                <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-orange-100 text-orange-600 rounded-full mr-3 text-xs font-bold">3</span>
+                                <div>
+                                    <p className="font-medium text-slate-800">Deeply Nested IF Statements</p>
+                                    <p className="text-sm text-slate-500">9,334 occorrenze. Rende il codice difficile da mantenere e leggere.</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl card-shadow">
+                        <h3 className="font-bold text-lg text-slate-800 mb-4">Distribuzione Gravità</h3>
+                        <div className="h-56 flex flex-col items-center justify-center">
+                            <div className="flex flex-wrap justify-center gap-4">
+                                {codeQualityData.map((item, idx) => {
+                                    const total = codeQualityData.reduce((sum, d) => sum + d.value, 0);
+                                    const percent = ((item.value / total) * 100).toFixed(1);
+                                    return (
+                                        <div key={idx} className="text-center">
+                                            <div className="flex items-center justify-center">
+                                                <div className="w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: item.color }}>
+                                                    {percent}%
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-slate-600 mt-2 font-medium">{item.name}</p>
+                                            <p className="text-xs text-slate-500">{item.value.toLocaleString()}</p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const StorageTab = () => (
+             <div className="space-y-6 animate-fade-in">
+                <AlertBanner 
+                    title="Analisi Top Consumer" 
+                    message="Gli attributi degli ordini (Configuration Item Attributes) e le Interazioni consumano da soli oltre 11 TB di spazio."
+                />
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-white p-6 rounded-xl card-shadow">
+                        <h3 className="font-bold text-lg text-slate-800 mb-4">Top 5 Oggetti per Storage</h3>
+                        <table className="min-w-full">
+                            <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                                <tr>
+                                    <th className="px-4 py-2 text-left">Oggetto</th>
+                                    <th className="px-4 py-2 text-right">Record Count</th>
+                                    <th className="px-4 py-2 text-right">Size</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-sm">
+                                {topStorageObjects.map((obj, i) => (
+                                    <tr key={i}>
+                                        <td className="px-4 py-3 font-medium text-slate-700">{obj.name}</td>
+                                        <td className="px-4 py-3 text-right text-slate-500">{obj.count}</td>
+                                        <td className="px-4 py-3 text-right font-bold text-slate-800">{obj.size}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-xl card-shadow">
+                        <h3 className="font-bold text-lg text-slate-800 mb-4">Top Utenti per Consumo Dati</h3>
+                        <div className="space-y-4">
+                            {userStorage.map((user, i) => (
+                                <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                                    <div className="flex items-center">
+                                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3 font-bold text-xs">
+                                            {user.name.charAt(0)}
+                                        </div>
+                                        <span className="font-medium text-slate-700">{user.name}</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="block font-bold text-slate-800">{user.storage}</span>
+                                        <span className="text-xs text-slate-500">{user.percent} del totale</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl card-shadow">
+                    <h3 className="font-bold text-lg text-slate-800 mb-4">Records Soft Deleted (Cestino)</h3>
+                    <p className="text-sm text-slate-600 mb-4">Questi record occupano spazio ma sono nel cestino. Svuotare il cestino potrebbe liberare spazio significativo.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="p-4 bg-orange-50 border border-orange-100 rounded-lg text-center">
+                            <p className="text-xs uppercase text-orange-600 font-bold">Action Tracking</p>
+                            <p className="text-xl font-bold text-orange-800">21.7 M</p>
+                            <p className="text-xs text-orange-600">Records eliminati</p>
+                        </div>
+                         <div className="p-4 bg-orange-50 border border-orange-100 rounded-lg text-center">
+                            <p className="text-xs uppercase text-orange-600 font-bold">Campaign Member</p>
+                            <p className="text-xl font-bold text-orange-800">7.4 M</p>
+                            <p className="text-xs text-orange-600">Records eliminati</p>
+                        </div>
+                         <div className="p-4 bg-orange-50 border border-orange-100 rounded-lg text-center">
+                            <p className="text-xs uppercase text-orange-600 font-bold">VOC Staging</p>
+                            <p className="text-xl font-bold text-orange-800">2.6 M</p>
+                            <p className="text-xs text-orange-600">Records eliminati</p>
+                        </div>
+                    </div>
+                </div>
+             </div>
+        );
+
+        const PerformanceTab = () => (
+            <div className="space-y-6 animate-fade-in">
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                     <div className="bg-white p-6 rounded-xl card-shadow">
+                        <h3 className="font-bold text-lg text-slate-800 mb-4">Processi Apex più Lenti (Avg Time)</h3>
+                         <div className="space-y-4">
+                            {slowApex.map((item, i) => (
+                                <div key={i}>
+                                    <div className="flex justify-between text-sm mb-1 gap-2">
+                                        <span className="font-medium text-slate-700 truncate">{item.name}</span>
+                                        <span className="font-bold text-red-600 whitespace-nowrap">{item.avgTime} ms</span>
+                                    </div>
+                                    <div className="w-full bg-slate-200 rounded-full h-1.5">
+                                        <div 
+                                            className="bg-red-500 h-1.5 rounded-full" 
+                                            style={{ width: `${(item.avgTime / 20000) * 100}%` }}
+                                        ></div>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-1">Eseguito {item.count.toLocaleString()} volte</p>
+                                </div>
+                            ))}
+                        </div>
+                     </div>
+
+                     <div className="bg-white p-6 rounded-xl card-shadow">
+                        <h3 className="font-bold text-lg text-slate-800 mb-4">Data Skew (Account Parent)</h3>
+                        <p className="text-sm text-slate-600 mb-4">I seguenti Account hanno un numero eccessivo di Case associati (>10k), causando potenziali problemi di locking.</p>
+                        <table className="min-w-full text-sm">
+                            <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                                <tr>
+                                    <th className="px-2 py-2 text-left">Parent ID</th>
+                                    <th className="px-2 py-2 text-right">Child Count</th>
+                                </tr>
+                            </thead>
+                             <tbody className="divide-y divide-slate-100">
+                                {dataSkews.map((skew, i) => (
+                                    <tr key={i}>
+                                        <td className="px-2 py-2 font-mono text-slate-600">{skew.id}</td>
+                                        <td className="px-2 py-2 text-right font-bold text-red-600">{skew.size.toLocaleString()}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                     </div>
+                 </div>
+
+                 <div className="bg-white p-6 rounded-xl card-shadow">
+                    <h3 className="font-bold text-lg text-slate-800 mb-4">Query Lente (Slowest Queries)</h3>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full text-sm">
+                            <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                                <tr>
+                                    <th className="px-4 py-2 text-left">Query Origin</th>
+                                    <th className="px-4 py-2 text-right">Avg Time (ms)</th>
+                                    <th className="px-4 py-2 text-right">Max Time (ms)</th>
+                                    <th className="px-4 py-2 text-right">Count</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                <tr>
+                                    <td className="px-4 py-2 text-slate-700 font-mono text-xs">ITA_IFM_BA0010_OMSendOrder_Schedule.execute</td>
+                                    <td className="px-4 py-2 text-right text-red-600 font-bold">5,338</td>
+                                    <td className="px-4 py-2 text-right">29,464</td>
+                                    <td className="px-4 py-2 text-right">6,838</td>
+                                </tr>
+                                <tr>
+                                    <td className="px-4 py-2 text-slate-700 font-mono text-xs">ITA_IFM_NE_OrderItemsSelector.selectOiQuote...</td>
+                                    <td className="px-4 py-2 text-right text-orange-600 font-bold">2,338</td>
+                                    <td className="px-4 py-2 text-right">129,949</td>
+                                    <td className="px-4 py-2 text-right">68,769</td>
+                                </tr>
+                                 <tr>
+                                    <td className="px-4 py-2 text-slate-700 font-mono text-xs">ITA_IFM_Util240_RipensamentoVerification...</td>
+                                    <td className="px-4 py-2 text-right text-orange-600 font-bold">2,501</td>
+                                    <td className="px-4 py-2 text-right">125,002</td>
+                                    <td className="px-4 py-2 text-right">50,093</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const InventoryTab = () => (
+             <div className="space-y-6 animate-fade-in">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-white p-6 rounded-xl card-shadow border-t-4 border-purple-500">
+                        <h4 className="text-slate-500 text-sm uppercase">Flows</h4>
+                        <p className="text-3xl font-bold text-slate-800 mt-2">128+</p>
+                        <p className="text-xs text-slate-400 mt-1">Definizioni attive</p>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl card-shadow border-t-4 border-pink-500">
+                        <h4 className="text-slate-500 text-sm uppercase">Trigger Apex</h4>
+                        <p className="text-3xl font-bold text-slate-800 mt-2">Multiple</p>
+                        <p className="text-xs text-slate-400 mt-1">Per oggetto (es. ITA_IFM_Privacy__c ha 2 trigger)</p>
+                    </div>
+                     <div className="bg-white p-6 rounded-xl card-shadow border-t-4 border-indigo-500">
+                        <h4 className="text-slate-500 text-sm uppercase">Record Types</h4>
+                        <p className="text-3xl font-bold text-slate-800 mt-2">313</p>
+                        <p className="text-xs text-slate-400 mt-1">Solo sull'oggetto Case</p>
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl card-shadow">
+                    <h3 className="font-bold text-lg text-slate-800 mb-4">Complessità Oggetti (Campi & Layout)</h3>
+                    <table className="min-w-full text-sm">
+                        <thead className="bg-slate-50 text-slate-500 uppercase text-xs">
+                             <tr>
+                                <th className="px-4 py-2 text-left">Oggetto</th>
+                                <th className="px-4 py-2 text-center">Record Types</th>
+                                <th className="px-4 py-2 text-center">Page Layouts</th>
+                                <th className="px-4 py-2 text-center">Validation Rules Attive</th>
+                            </tr>
+                        </thead>
+                         <tbody className="divide-y divide-slate-100">
+                            <tr>
+                                <td className="px-4 py-3 font-medium">Case</td>
+                                <td className="px-4 py-3 text-center">313</td>
+                                <td className="px-4 py-3 text-center">81</td>
+                                <td className="px-4 py-3 text-center">13</td>
+                            </tr>
+                             <tr>
+                                <td className="px-4 py-3 font-medium">ITA_IFM_Case_Items__c</td>
+                                <td className="px-4 py-3 text-center">263</td>
+                                <td className="px-4 py-3 text-center">63</td>
+                                <td className="px-4 py-3 text-center">5</td>
+                            </tr>
+                            <tr>
+                                <td className="px-4 py-3 font-medium">NE__Order_Header__c</td>
+                                <td className="px-4 py-3 text-center">208</td>
+                                <td className="px-4 py-3 text-center">-</td>
+                                <td className="px-4 py-3 text-center">-</td>
+                            </tr>
+                             <tr>
+                                <td className="px-4 py-3 font-medium">ITA_IFM_Agent__c</td>
+                                <td className="px-4 py-3 text-center">-</td>
+                                <td className="px-4 py-3 text-center">-</td>
+                                <td className="px-4 py-3 text-center font-bold text-orange-600">22</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+             </div>
+        );
+
+        // --- MAIN APP ---
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('overview');
+            const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+            
+            // Set current date on mount
+            React.useEffect(() => {
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' }).replace(/\s/g, ' ');
+                document.getElementById('lastUpdate').textContent = `Ultimo aggiornamento: ${dateStr}`;
+            }, []);
+
+            const renderContent = () => {
+                switch(activeTab) {
+                    case 'overview': return <OverviewTab />;
+                    case 'quality': return <QualityTab />;
+                    case 'storage': return <StorageTab />;
+                    case 'performance': return <PerformanceTab />;
+                    case 'inventory': return <InventoryTab />;
+                    default: return <OverviewTab />;
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-100 flex">
+                    {/* Sidebar */}
+                    <Sidebar 
+                        activeTab={activeTab} 
+                        setActiveTab={setActiveTab} 
+                        isOpen={isSidebarOpen}
+                        setIsOpen={setIsSidebarOpen}
+                    />
+
+                    {/* Main Content */}
+                    <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+                        {/* Header Mobile */}
+                        <div className="lg:hidden bg-white shadow-sm p-4 flex items-center justify-between sticky top-0 z-10">
+                            <h1 className="font-bold text-slate-800">Enel Global Services</h1>
+                            <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-600">
+                                <Menu />
+                            </button>
+                        </div>
+
+                        {/* Top Bar Desktop */}
+                        <header className="hidden lg:flex bg-white shadow-sm py-4 px-8 justify-between items-center sticky top-0 z-10">
+                            <h2 className="text-xl font-bold text-slate-800">
+                                {activeTab === 'overview' && 'Panoramica Sistema'}
+                                {activeTab === 'quality' && 'Analisi Qualità Codice'}
+                                {activeTab === 'storage' && 'Analisi Storage & Utilizzo'}
+                                {activeTab === 'performance' && 'Metriche Performance'}
+                                {activeTab === 'inventory' && 'Inventario Oggetti & Metadati'}
+                            </h2>
+                            <div className="flex items-center space-x-4">
+                                <span className="text-sm text-slate-500" id="lastUpdate">Ultimo aggiornamento: -</span>
+                                <div className="h-8 w-8 bg-blue-600 rounded-full text-white flex items-center justify-center font-bold text-sm">
+                                    EG
+                                </div>
+                            </div>
+                        </header>
+
+                        {/* Content Scroll Area */}
+                        <main className="flex-1 p-6 overflow-y-auto">
+                            <div className="max-w-7xl mx-auto">
+                                {renderContent()}
+                            </div>
+                        </main>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
