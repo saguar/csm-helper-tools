@@ -2033,6 +2033,14 @@
         return { type: 'scored' };
       }
 
+      if (row.syntheticSource) {
+        return {
+          type: 'scored',
+          subcategoryName: row.subcategoryName || TECH_HEALTH_INFORMATIONAL_SUBCATEGORY,
+          capabilityName: row.capabilityName || row.signalName || row.subcategoryName || TECH_HEALTH_INFORMATIONAL_SUBCATEGORY,
+        };
+      }
+
       const capabilityKey = normalizeKey(row.capabilityName);
       const signalKey = normalizeKey(row.signalName);
 
@@ -2288,9 +2296,9 @@
     };
 
     const normalizeSignalRow = (row) => {
-      const normalized = {};
+      const normalized = { ...row };
       for (const [column, key] of Object.entries(SIGNAL_COLUMN_MAP)) {
-        const value = row[column] ?? row[column.replace(/\s+/g, ' ')] ?? '';
+        const value = row[column] ?? row[key] ?? row[column.replace(/\s+/g, ' ')] ?? '';
         if (key === 'snapshotDate') {
           normalized[key] = normalizeDateValue(value);
         } else if (typeof value === 'string') {
@@ -2329,6 +2337,42 @@
       normalized.moMChange = parseNumber(normalized.moMChangeRaw);
       normalized.qoQChange = parseNumber(normalized.qoQChangeRaw);
       return normalized;
+    };
+
+    const synthesizeSignalRowsFromSummaries = (subcategories = [], categories = []) => {
+      const derivedRows = (subcategories.length ? subcategories : categories).map((row) => {
+        const hasSubcategory = Boolean(row.subcategoryName);
+        const summaryLabel = hasSubcategory ? 'subcategory' : 'category';
+        const signalName = row.subcategoryName || row.categoryName || 'Summary score';
+        return {
+          snapshotDate: row.snapshotDate || '',
+          companyName: row.companyName || '',
+          companyId: row.companyId || '',
+          accountName: row.accountName || '',
+          accountId: row.accountId || '',
+          tenantType: row.tenantType || '',
+          tenantId: row.tenantId || '',
+          accountLocalName: row.accountLocalName || '',
+          successPlan: row.successPlan || '',
+          categoryName: row.categoryName || '',
+          subcategoryName: row.subcategoryName || '',
+          capabilityName: hasSubcategory ? row.subcategoryName || '' : row.categoryName || '',
+          signalName,
+          definition: `Derived from the ${summaryLabel} score because this workbook does not include a Signal Scores sheet.`,
+          scoreRaw: row.scoreRaw ?? row.score ?? '',
+          score: row.score,
+          value: '',
+          valueNumeric: NaN,
+          moMChangeRaw: row.moMChangeRaw ?? '',
+          moMChange: row.moMChange,
+          qoQChangeRaw: row.qoQChangeRaw ?? '',
+          qoQChange: row.qoQChange,
+          benchmark: '',
+          syntheticSource: hasSubcategory ? 'Subcategory Scores' : 'Category Scores',
+        };
+      });
+
+      return derivedRows;
     };
 
     const formatChangeDisplay = (value, raw) => {
@@ -5213,7 +5257,11 @@
       const overall = extractSheet('Overall Scores').map((row) => normalizeScoreRow(row, OVERALL_COLUMN_MAP));
       const categories = extractSheet('Category Scores').map((row) => normalizeScoreRow(row, CATEGORY_COLUMN_MAP));
       const subcategories = extractSheet('Subcategory Scores').map((row) => normalizeScoreRow(row, SUBCATEGORY_COLUMN_MAP));
-      const signals = extractSheet('Signal Scores').map((row) => normalizeSignalRow(row));
+      const signalSheetRows = extractSheet('Signal Scores');
+      const signals = (signalSheetRows.length
+        ? signalSheetRows
+        : synthesizeSignalRowsFromSummaries(subcategories, categories)
+      ).map((row) => normalizeSignalRow(row));
 
       if (!overall.length && !categories.length && !subcategories.length && !signals.length) {
         throw new Error('The workbook does not contain score data.');
